@@ -9,3 +9,4 @@ export * from "./errors";
 export * from "./db";
 export * from "./constants";
 export * from "./slug";
+export * from "./users";

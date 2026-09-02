@@ -15,6 +15,140 @@ importers:
         specifier: ^6.0.2
         version: 6.0.3
 
+  apps/admin:
+    dependencies:
+      '@flowers/api':
+        specifier: workspace:*
+        version: link:../../packages/api
+      '@flowers/auth':
+        specifier: workspace:*
+        version: link:../../packages/auth
+      '@flowers/db':
+        specifier: workspace:*
+        version: link:../../packages/db
+      '@flowers/ui':
+        specifier: workspace:*
+        version: link:../../packages/ui
+      '@tailwindcss/vite':
+        specifier: ^4.1.18
+        version: 4.3.3(vite@8.2.2(@types/node@22.20.1)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13))
+      '@tanstack/react-query':
+        specifier: ^5.101.4
+        version: 5.102.8(react@19.2.8)
+      '@tanstack/react-router':
+        specifier: ^1.170.27
+        version: 1.170.32(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      '@tanstack/react-start':
+        specifier: ^1.168.44
+        version: 1.168.49(esbuild@0.28.2)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(rolldown@1.2.6)(vite@8.2.2(@types/node@22.20.1)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13))
+      lucide-react:
+        specifier: ^0.560.0
+        version: 0.560.0(react@19.2.8)
+      react:
+        specifier: ^19.2.0
+        version: 19.2.8
+      react-dom:
+        specifier: ^19.2.0
+        version: 19.2.8(react@19.2.8)
+      tailwindcss:
+        specifier: ^4.1.18
+        version: 4.3.3
+    devDependencies:
+      '@cloudflare/vite-plugin':
+        specifier: ^1.52.0
+        version: 1.54.3(vite@8.2.2(@types/node@22.20.1)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13))(wrangler@4.128.0)
+      '@flowers/config':
+        specifier: workspace:*
+        version: link:../../packages/config
+      '@types/node':
+        specifier: ^22.10.2
+        version: 22.20.1
+      '@types/react':
+        specifier: ^19.2.0
+        version: 19.2.18
+      '@types/react-dom':
+        specifier: ^19.2.0
+        version: 19.2.5(@types/react@19.2.18)
+      '@vitejs/plugin-react':
+        specifier: ^6.0.1
+        version: 6.1.1(vite@8.2.2(@types/node@22.20.1)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13))
+      typescript:
+        specifier: ^6.0.2
+        version: 6.0.3
+      vite:
+        specifier: ^8.0.0
+        version: 8.2.2(@types/node@22.20.1)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13)
+      wrangler:
+        specifier: ^4.122.0
+        version: 4.128.0
+
+  apps/supplier:
+    dependencies:
+      '@flowers/api':
+        specifier: workspace:*
+        version: link:../../packages/api
+      '@flowers/auth':
+        specifier: workspace:*
+        version: link:../../packages/auth
+      '@flowers/db':
+        specifier: workspace:*
+        version: link:../../packages/db
+      '@flowers/ui':
+        specifier: workspace:*
+        version: link:../../packages/ui
+      '@tailwindcss/vite':
+        specifier: ^4.1.18
+        version: 4.3.3(vite@8.2.2(@types/node@22.20.1)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13))
+      '@tanstack/react-query':
+        specifier: ^5.101.4
+        version: 5.102.8(react@19.2.8)
+      '@tanstack/react-router':
+        specifier: ^1.170.27
+        version: 1.170.32(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      '@tanstack/react-start':
+        specifier: ^1.168.44
+        version: 1.168.49(esbuild@0.28.2)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(rolldown@1.2.6)(vite@8.2.2(@types/node@22.20.1)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13))
+      lucide-react:
+        specifier: ^0.560.0
+        version: 0.560.0(react@19.2.8)
+      react:
+        specifier: ^19.2.0
+        version: 19.2.8
+      react-dom:
+        specifier: ^19.2.0
+        version: 19.2.8(react@19.2.8)
+      tailwindcss:
+        specifier: ^4.1.18
+        version: 4.3.3
+    devDependencies:
+      '@cloudflare/vite-plugin':
+        specifier: ^1.52.0
+        version: 1.54.3(vite@8.2.2(@types/node@22.20.1)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13))(wrangler@4.128.0)
+      '@flowers/config':
+        specifier: workspace:*
+        version: link:../../packages/config
+      '@types/node':
+        specifier: ^22.10.2
+        version: 22.20.1
+      '@types/react':
+        specifier: ^19.2.0
+        version: 19.2.18
+      '@types/react-dom':
+        specifier: ^19.2.0
+        version: 19.2.5(@types/react@19.2.18)
+      '@vitejs/plugin-react':
+        specifier: ^6.0.1
+        version: 6.1.1(vite@8.2.2(@types/node@22.20.1)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13))
+      typescript:
+        specifier: ^6.0.2
+        version: 6.0.3
+      vite:
+        specifier: ^8.0.0
+        version: 8.2.2(@types/node@22.20.1)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13)
+      wrangler:
+        specifier: ^4.122.0
+        version: 4.128.0
+
   apps/web:
     dependencies:
       '@flowers/api':
