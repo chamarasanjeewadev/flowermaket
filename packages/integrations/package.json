@@ -1,0 +1,23 @@
+{
+  "name": "@flowers/integrations",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "build": "echo 'source package - nothing to build'"
+  },
+  "dependencies": {
+    "js-md5": "^0.8.3"
+  },
+  "devDependencies": {
+    "@flowers/config": "workspace:*",
+    "@types/node": "^22.20.1",
+    "typescript": "^6.0.2",
+    "vitest": "^4.0.0"
+  }
+}

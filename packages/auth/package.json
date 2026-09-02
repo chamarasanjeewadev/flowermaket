@@ -1,0 +1,21 @@
+{
+  "name": "@flowers/auth",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "build": "echo 'source package - nothing to build'"
+  },
+  "dependencies": {
+    "@supabase/ssr": "^0.8.0",
+    "@supabase/supabase-js": "^2.112.3"
+  },
+  "devDependencies": {
+    "@flowers/config": "workspace:*",
+    "typescript": "^6.0.2"
+  }
+}
