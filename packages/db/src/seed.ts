@@ -72,6 +72,9 @@ async function main() {
         email: demoEmail,
         fullName: "Demo Shop Owner",
       })
+      // No conflict target: users has UNIQUE constraints on both id and
+      // email; a collision on either should no-op. All other seed inserts
+      // use an explicit target because slug is their single natural key.
       .onConflictDoNothing();
 
     const demoShopSlug = "demo-florist";
@@ -89,7 +92,7 @@ async function main() {
         verificationStatus: "verified",
         isActive: true,
       })
-      .onConflictDoNothing();
+      .onConflictDoNothing({ target: schema.shops.slug });
 
     const [demoShop] = await db
       .select({ id: schema.shops.id })

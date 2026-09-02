@@ -64,7 +64,9 @@ BEGIN
           COALESCE(NEW.raw_user_meta_data ->> 'full_name', NULL),
           'buyer'
         )
-        ON CONFLICT (id) DO NOTHING;
+        -- No conflict target: users has UNIQUE constraints on both id and
+        -- email; a collision on either should no-op, not raise.
+        ON CONFLICT DO NOTHING;
         RETURN NEW;
       END;
       $fn$;
