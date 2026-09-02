@@ -1,0 +1,30 @@
+{
+  "name": "flowers",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@10.28.0",
+  "scripts": {
+    "dev": "turbo dev",
+    "build": "turbo build",
+    "typecheck": "turbo typecheck",
+    "lint": "turbo lint",
+    "test": "turbo test",
+    "db:generate": "pnpm --filter @flowers/db db:generate",
+    "db:migrate": "pnpm --filter @flowers/db db:migrate",
+    "db:seed": "pnpm --filter @flowers/db db:seed",
+    "db:studio": "pnpm --filter @flowers/db db:studio",
+    "deploy:web": "pnpm --filter @flowers/web deploy:cf",
+    "deploy:supplier": "pnpm --filter @flowers/supplier deploy:cf",
+    "deploy:admin": "pnpm --filter @flowers/admin deploy:cf"
+  },
+  "devDependencies": {
+    "turbo": "^2.10.9",
+    "typescript": "^6.0.2"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild",
+      "lightningcss"
+    ]
+  }
+}

@@ -1,0 +1,17 @@
+node_modules/
+dist/
+.output/
+.nitro/
+.tanstack/
+.turbo/
+.env
+.env.*
+!.env.example
+*.local
+.DS_Store
+routeTree.gen.ts
+.vercel/
+.wrangler/
+.dev.vars
+_to_delete_scaffold.tar.gz
+.superpowers/
