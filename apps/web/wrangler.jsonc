@@ -1,0 +1,13 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "flowers-web",
+  "compatibility_date": "2026-08-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "main": "@tanstack/react-start/server-entry",
+  "observability": { "enabled": true }
+  // Secrets (set with `wrangler secret put <NAME>` after deploy target exists):
+  //   DATABASE_URL           — Supabase transaction pooler (port 6543)
+  //   SUPABASE_URL, SUPABASE_ANON_KEY
+  //   SITE_URL               — canonical public origin, e.g. https://flowers.lk
+  //   PAYHERE_MERCHANT_ID, PAYHERE_MERCHANT_SECRET
+}

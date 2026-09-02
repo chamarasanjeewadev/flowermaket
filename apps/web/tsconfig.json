@@ -1,0 +1,13 @@
+{
+  "extends": "@flowers/config/tsconfig.base.json",
+  "include": ["src/**/*.ts", "src/**/*.tsx", "vite.config.ts"],
+  "compilerOptions": {
+    "types": ["vite/client"],
+    "paths": {
+      "@/*": ["./src/*"],
+      // sonner is a dependency of @flowers/ui (not hoisted by pnpm); alias it
+      // so apps/web can trigger the shared <Toaster /> via sonner's `toast`.
+      "sonner": ["../../packages/ui/node_modules/sonner/dist/index"]
+    }
+  }
+}

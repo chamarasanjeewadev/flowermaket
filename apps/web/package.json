@@ -1,0 +1,39 @@
+{
+  "name": "@flowers/web",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite dev --port 3000",
+    "build": "vite build",
+    "preview": "vite preview",
+    "deploy:cf": "vite build && wrangler deploy",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@flowers/api": "workspace:*",
+    "@flowers/auth": "workspace:*",
+    "@flowers/db": "workspace:*",
+    "@flowers/integrations": "workspace:*",
+    "@flowers/ui": "workspace:*",
+    "@tailwindcss/vite": "^4.1.18",
+    "@tanstack/react-form": "^1.33.5",
+    "@tanstack/react-query": "^5.101.4",
+    "@tanstack/react-router": "^1.170.27",
+    "@tanstack/react-start": "^1.168.44",
+    "lucide-react": "^0.560.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "tailwindcss": "^4.1.18"
+  },
+  "devDependencies": {
+    "@cloudflare/vite-plugin": "^1.52.0",
+    "@flowers/config": "workspace:*",
+    "@types/node": "^22.10.2",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "@vitejs/plugin-react": "^6.0.1",
+    "typescript": "^6.0.2",
+    "vite": "^8.0.0",
+    "wrangler": "^4.122.0"
+  }
+}
