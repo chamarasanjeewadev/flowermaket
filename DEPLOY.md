@@ -11,7 +11,9 @@ Checklist for going live. Order matters.
 3. Copy API credentials (Dashboard → Project Settings → API):
    - `VITE_SUPABASE_URL` — the project URL
    - `VITE_SUPABASE_ANON_KEY` — the `anon` public key
-4. In the repo root, create `.env` from `.env.example` and fill in all four values.
+4. In the repo root, create `.env` from `.env.example` and fill in the four Supabase/DB
+   values (`VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `DATABASE_URL`,
+   `DIRECT_DATABASE_URL`); the three PayHere values are Phase 2 and can stay empty.
 5. Run migrations and seed:
 
    ```sh
@@ -32,7 +34,21 @@ Checklist for going live. Order matters.
    - Dashboard → Authentication → Providers → Google → enable, paste OAuth client ID + secret.
    - The web app's "Continue with Google" button starts working immediately.
 
-## 2. Cloudflare (per app)
+## 2. Local development
+
+```sh
+cp .env.example .env   # fill in the Supabase/DB values from step 1
+pnpm install
+pnpm dev               # turbo starts all three apps:
+                       #   web      → http://localhost:3000
+                       #   supplier → http://localhost:3001
+                       #   admin    → http://localhost:3002
+```
+
+Without Supabase values the apps still run in auth-disabled dev mode (no accounts,
+auth redirects skipped) — fine for UI work.
+
+## 3. Cloudflare (per app)
 
 ```sh
 pnpm exec wrangler login          # or export CLOUDFLARE_API_TOKEN=…
@@ -88,7 +104,7 @@ for `SUPABASE_URL` / `SUPABASE_ANON_KEY`) in `apps/web/.dev.vars`, `apps/supplie
 and `apps/admin/.dev.vars` (create from wrangler's dev.vars convention; these files are
 `.gitignore`d).
 
-## 3. Post-deploy smoke test
+## 4. Post-deploy smoke test
 
 1. Open `https://flowers.lk` — should redirect to `/en/`.
 2. Open `https://flowers.lk/si` — heading and nav should appear in Sinhala.
