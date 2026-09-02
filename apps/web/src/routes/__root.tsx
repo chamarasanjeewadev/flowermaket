@@ -7,24 +7,22 @@ import {
   createRootRouteWithContext,
   useRouterState,
 } from "@tanstack/react-router";
-import { isLocale, type Locale } from "../i18n";
 import { Toaster } from "@flowers/ui/components/sonner";
 import { buttonVariants } from "@flowers/ui/components/button";
 import { SearchX } from "lucide-react";
 import { Footer } from "../components/Footer";
 import { Header } from "../components/Header";
-import { getDict } from "../i18n";
+import { getDict, isLocale, type Locale } from "../i18n";
 import { I18nProvider } from "../i18n/react";
+import { sessionQueryOptions } from "../lib/session";
+import { siteUrl } from "../lib/site";
+import appCss from "../styles.css?url";
 
 /** Extract locale from the current URL path (/en/..., /si/...) or fall back to "en". */
 function localeFromPath(pathname: string): Locale {
   const seg = pathname.split("/")[1];
   return isLocale(seg) ? seg : "en";
 }
-import { sessionQueryOptions } from "../lib/session";
-import { siteUrl } from "../lib/site";
-import { getLocale } from "../server/locale";
-import appCss from "../styles.css?url";
 
 interface RouterContext {
   queryClient: QueryClient;
@@ -32,12 +30,12 @@ interface RouterContext {
 
 export const Route = createRootRouteWithContext<RouterContext>()({
   beforeLoad: async ({ context }) => {
-    // Fetched once per navigation and exposed to the whole tree.
-    const [session, locale] = await Promise.all([
-      context.queryClient.ensureQueryData(sessionQueryOptions()),
-      getLocale(),
-    ]);
-    return { session, locale };
+    // Fetched once per navigation and exposed to the whole tree. The active
+    // locale is derived from the URL path (see localeFromPath), not context.
+    const session = await context.queryClient.ensureQueryData(
+      sessionQueryOptions(),
+    );
+    return { session };
   },
   head: () => ({
     meta: [
