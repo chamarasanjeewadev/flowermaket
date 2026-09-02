@@ -117,6 +117,22 @@ function LocaleToggle({ locale }: { locale: Locale }) {
   );
 }
 
+function SidebarNav() {
+  const { t } = useT();
+  return (
+    <nav className="mt-6 flex flex-col gap-1 text-sm">
+      <Link
+        to="/"
+        className="rounded-md px-3 py-2 hover:bg-accent"
+        activeProps={{ className: "bg-accent font-medium" }}
+        activeOptions={{ exact: true }}
+      >
+        {t.nav.dashboard}
+      </Link>
+    </nav>
+  );
+}
+
 function SessionFooter({ session }: { session: SupplierSession }) {
   const { t } = useT();
   const router = useRouter();
@@ -136,7 +152,7 @@ function SessionFooter({ session }: { session: SupplierSession }) {
   const email = session.kind === "supplier" ? session.email : null;
 
   return (
-    <div className="mt-auto border-t pt-3">
+    <div>
       {email && (
         <p className="truncate px-3 text-xs text-muted-foreground">{email}</p>
       )}
@@ -174,16 +190,7 @@ function RootLayout() {
         <div className="flex min-h-dvh">
           <aside className="sticky top-0 hidden h-dvh w-56 shrink-0 flex-col border-r bg-background p-4 sm:flex">
             <Logo />
-            <nav className="mt-6 flex flex-col gap-1 text-sm">
-              <Link
-                to="/"
-                className="rounded-md px-3 py-2 hover:bg-accent"
-                activeProps={{ className: "bg-accent font-medium" }}
-                activeOptions={{ exact: true }}
-              >
-                Dashboard
-              </Link>
-            </nav>
+            <SidebarNav />
             <div className="mt-auto flex flex-col gap-2 border-t pt-3">
               <LocaleToggle locale={locale} />
               <SessionFooter session={session} />
