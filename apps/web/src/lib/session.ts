@@ -1,9 +1,11 @@
 /** Client-side session plumbing: query options + post-auth refresh helper. */
 import { queryOptions, type QueryClient } from "@tanstack/react-query";
 import type { AnyRouter } from "@tanstack/react-router";
+import { safeRedirectPath } from "@flowers/api";
 import { getSessionUser, type SessionUser } from "../server/auth";
 
 export type { SessionUser };
+export { safeRedirectPath };
 
 export const SESSION_QUERY_KEY = ["session"] as const;
 
@@ -23,10 +25,4 @@ export async function refreshSession(
 ): Promise<void> {
   queryClient.removeQueries({ queryKey: SESSION_QUERY_KEY });
   await router.invalidate();
-}
-
-/** Only allow same-site path redirects ("/en/login"), never external URLs. */
-export function safeRedirectPath(raw: string | undefined): string {
-  if (raw && raw.startsWith("/") && !raw.startsWith("//")) return raw;
-  return "/";
 }

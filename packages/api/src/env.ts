@@ -17,6 +17,12 @@ export interface AppEnv {
   PAYHERE_MERCHANT_SECRET: string | undefined;
   /** Defaults to "sandbox" unless PAYHERE_MODE is exactly "live". */
   PAYHERE_MODE: "sandbox" | "live";
+  /**
+   * Set to "1" to enable auth-disabled dev mode (missing Supabase env is
+   * treated as intentional, not a misconfiguration). Must be an explicit
+   * opt-in — absent or any other value means auth is REQUIRED.
+   */
+  AUTH_DISABLED: boolean;
 }
 
 function read(name: string): string | undefined {
@@ -36,5 +42,6 @@ export function getEnv(): AppEnv {
     PAYHERE_MERCHANT_ID: read("PAYHERE_MERCHANT_ID"),
     PAYHERE_MERCHANT_SECRET: read("PAYHERE_MERCHANT_SECRET"),
     PAYHERE_MODE: read("PAYHERE_MODE") === "live" ? "live" : "sandbox",
+    AUTH_DISABLED: read("AUTH_DISABLED") === "1",
   };
 }

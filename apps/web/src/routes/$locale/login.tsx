@@ -46,7 +46,8 @@ function LoginPage() {
   const { t } = useT();
   const router = useRouter();
   const queryClient = useQueryClient();
-  const authDisabled = session.kind === "auth_disabled";
+  const authDisabled =
+    session.kind === "auth_disabled" || session.kind === "config_error";
 
   React.useEffect(() => {
     if (error) toast.error(error);

@@ -7,10 +7,10 @@ Sri Lanka's online flower marketplace — connecting buyers with local florists 
 - **TanStack Start** (React 19, Vite, file-based routes) for all three apps
 - **Turborepo + pnpm workspaces**
 - **Supabase** (Postgres + Auth + Storage) — ap-south-1 (Mumbai)
-- **Drizzle ORM** (`packages/db`) — schema is source of truth; hand-editing `migrations/` is forbidden
+- **Drizzle ORM** (`packages/db`) — schema is source of truth; generated migrations are not hand-edited; deliberate custom SQL migrations (like `0001_rls_policies.sql`) are journaled additions
 - **shadcn/ui + Tailwind v4** (`packages/ui` shared design system)
 - **Cloudflare Workers** deploy target for all three apps
-- **PayHere** primary payments (Phase 2); Stripe secondary
+- **PayHere** payments (Phase 2)
 
 ## Monorepo layout
 
@@ -60,7 +60,7 @@ pnpm deploy:admin     # vite build + wrangler deploy for apps/admin
 
 **Lazy env access on Workers.** Cloudflare Workers evaluate module scope once per isolate, before per-request env bindings are injected. Always call `getEnv()` from `packages/api/src/env.ts` inside a request handler or server function — never at module top level. Same rule for `createDb()` / `tryCreateDb()`.
 
-**Auth-disabled dev mode.** When `SUPABASE_URL` / `SUPABASE_ANON_KEY` are absent the session resolves to `{ kind: "auth_disabled" }` and auth redirects are skipped. This allows local UI development without a live Supabase project.
+**Auth-disabled dev mode.** Set `AUTH_DISABLED=1` to opt in to dev mode — the session resolves to `{ kind: "auth_disabled" }` and auth redirects are skipped. Without this flag, missing `SUPABASE_URL` / `SUPABASE_ANON_KEY` causes a `{ kind: "config_error" }` session that denies access (fail closed). Never set `AUTH_DISABLED=1` in production.
 
 **No `any`, no untyped SQL.** End-to-end type safety is a hard constraint. Use Drizzle for all DB access; no raw SQL strings except inside migrations.
 
@@ -90,4 +90,4 @@ locale routing on web, Drizzle schema + migrations, PayHere typed surface, seed 
 flow (shop profile, product CRUD), buyer account pages.
 
 **Phase 2 — later.** PayHere checkout + notify integration (MD5 hash helpers, order lifecycle),
-order management on supplier + admin portals, Stripe as secondary payment option.
+order management on supplier + admin portals.

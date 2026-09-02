@@ -9,10 +9,10 @@ Checklist for going live. Order matters.
    - Transaction pooler (port **6543**) → `DATABASE_URL` (app runtime)
    - Session pooler (port **5432**) → `DIRECT_DATABASE_URL` (migrations / seed only — never use the transaction pooler for drizzle-kit)
 3. Copy API credentials (Dashboard → Project Settings → API):
-   - `VITE_SUPABASE_URL` — the project URL
-   - `VITE_SUPABASE_ANON_KEY` — the `anon` public key
+   - `SUPABASE_URL` — the project URL
+   - `SUPABASE_ANON_KEY` — the `anon` public key
 4. In the repo root, create `.env` from `.env.example` and fill in the four Supabase/DB
-   values (`VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `DATABASE_URL`,
+   values (`SUPABASE_URL`, `SUPABASE_ANON_KEY`, `DATABASE_URL`,
    `DIRECT_DATABASE_URL`); the three PayHere values are Phase 2 and can stay empty.
 5. Run migrations and seed:
 
@@ -45,8 +45,10 @@ pnpm dev               # turbo starts all three apps:
                        #   admin    → http://localhost:3002
 ```
 
-Without Supabase values the apps still run in auth-disabled dev mode (no accounts,
-auth redirects skipped) — fine for UI work.
+For local dev without a live Supabase project, set `AUTH_DISABLED=1` in `.env`
+(see `.env.example`). This opts in to auth-disabled dev mode (no accounts, auth
+redirects skipped). Without either Supabase credentials OR `AUTH_DISABLED=1` the
+apps fail closed — portals show a configuration error and deny access.
 
 ## 3. Cloudflare (per app)
 
@@ -124,6 +126,6 @@ and `apps/admin/.dev.vars` (create from wrangler's dev.vars convention; these fi
   in Phase 2. `PAYHERE_MODE=sandbox` is the default; only flip to `live` after completing
   PayHere's merchant approval.
 - The seed is idempotent — re-running never duplicates rows.
-- `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` (with `VITE_` prefix) are used for the
-  Vite build-time client. The Workers runtime reads them without the `VITE_` prefix via
-  `SUPABASE_URL` / `SUPABASE_ANON_KEY` secrets.
+- The Workers runtime reads `SUPABASE_URL` and `SUPABASE_ANON_KEY` (no `VITE_` prefix) —
+  these are set as Wrangler secrets (see §3 above). The same names are used in `.env` for
+  local development.

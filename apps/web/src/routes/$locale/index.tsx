@@ -35,7 +35,7 @@ export const Route = createFileRoute("/$locale/")({
             {
               name: "description",
               content:
-                "ශ්‍රී ලංකාව පුරා ස්ථානීය ගොවීන් හා මල් සාප්පුවලින් නැතිතම මල්, මල් කළ, සහ පළා ලබා ගන්න.",
+                "ශ්‍රී ලංකාව පුරා ප්‍රාදේශීය ගොවීන් හා මල් සාප්පුවලින් නැවුම් මල්, මල් සැකසුම්, සහ මල් කළඹ ලබා ගන්න.",
             },
           ]
         : [
@@ -46,7 +46,7 @@ export const Route = createFileRoute("/$locale/")({
                 "Shop fresh flowers, arrangements and bouquets from local growers and florists across Sri Lanka.",
             },
           ],
-    links: hreflangLinks("/"),
+    links: hreflangLinks("/", (params.locale as import("../../i18n").Locale)),
   }),
   component: HomePage,
 });

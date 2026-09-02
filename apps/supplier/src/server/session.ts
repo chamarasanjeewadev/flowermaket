@@ -10,7 +10,8 @@ import { getEnv, tryCreateDb, getUserRole, getShopByOwner } from "@flowers/api";
 /**
  * The session union every route sees via router context.
  *
- * - `auth_disabled` — Supabase env vars unset; dev browsing without accounts.
+ * - `auth_disabled` — AUTH_DISABLED=1 set; dev browsing without accounts.
+ * - `config_error`  — Supabase env vars absent without AUTH_DISABLED=1 (fail closed).
  * - `anonymous`     — Supabase configured, no valid session cookie.
  * - `no_shop`       — authenticated, any role, but no shop row yet.
  *                     These users are redirected to /onboarding.
@@ -18,6 +19,7 @@ import { getEnv, tryCreateDb, getUserRole, getShopByOwner } from "@flowers/api";
  */
 export type SupplierSession =
   | { kind: "auth_disabled" }
+  | { kind: "config_error" }
   | { kind: "anonymous" }
   | { kind: "no_shop"; userId: string; email: string }
   | { kind: "supplier"; userId: string; email: string; role: "buyer" | "supplier" | "admin"; shopId: string; shopNameEn: string; verificationStatus: "unverified" | "pending" | "verified" | "rejected" };
@@ -43,7 +45,12 @@ export function getSupabase() {
 
 export async function resolveSupplierSession(): Promise<SupplierSession> {
   const supabase = getSupabase();
-  if (!supabase) return { kind: "auth_disabled" };
+  if (!supabase) {
+    // Only treat missing Supabase env as intentional when AUTH_DISABLED=1.
+    // Otherwise fail closed — the supplier portal must not grant access.
+    const { AUTH_DISABLED } = getEnv();
+    return AUTH_DISABLED ? { kind: "auth_disabled" } : { kind: "config_error" };
+  }
 
   const { data } = await supabase.auth.getUser();
   const user = data.user;

@@ -9,13 +9,15 @@ import { getEnv, tryCreateDb, getUserRole } from "@flowers/api";
 
 /**
  * The session union every route sees via router context.
- * - `auth_disabled` — Supabase env vars unset; dev browsing without accounts.
+ * - `auth_disabled` — AUTH_DISABLED=1 set; dev browsing without accounts.
+ * - `config_error`  — Supabase env vars absent without AUTH_DISABLED=1 (fail closed).
  * - `anonymous`     — Supabase configured, no valid session cookie.
  * - `forbidden`     — authenticated but not an admin (role unverifiable or wrong role).
  * - `admin`         — authenticated with admin role.
  */
 export type AdminSession =
   | { kind: "auth_disabled" }
+  | { kind: "config_error" }
   | { kind: "anonymous" }
   | { kind: "forbidden"; email: string }
   | { kind: "admin"; userId: string; email: string };
@@ -41,7 +43,12 @@ export function getSupabase() {
 
 export async function resolveAdminSession(): Promise<AdminSession> {
   const supabase = getSupabase();
-  if (!supabase) return { kind: "auth_disabled" };
+  if (!supabase) {
+    // Only treat missing Supabase env as intentional when AUTH_DISABLED=1.
+    // Otherwise fail closed — the admin portal must not grant access.
+    const { AUTH_DISABLED } = getEnv();
+    return AUTH_DISABLED ? { kind: "auth_disabled" } : { kind: "config_error" };
+  }
 
   const { data } = await supabase.auth.getUser();
   const user = data.user;

@@ -62,7 +62,15 @@ function LoginPage() {
           <CardDescription>{t.auth.signInSub}</CardDescription>
         </CardHeader>
         <CardContent>
-          {session.kind === "auth_disabled" ? (
+          {session.kind === "config_error" ? (
+            <Alert variant="destructive">
+              <AlertDescription>
+                Server configuration error: Supabase credentials are not set.
+                Set AUTH_DISABLED=1 for local dev, or configure SUPABASE_URL
+                and SUPABASE_ANON_KEY. Access is denied until this is resolved.
+              </AlertDescription>
+            </Alert>
+          ) : session.kind === "auth_disabled" ? (
             <div className="space-y-4">
               <Alert>
                 <AlertDescription>{t.auth.devMode}</AlertDescription>

@@ -36,7 +36,7 @@ const CATEGORIES: Array<{
   {
     slug: "poya-temple",
     nameEn: "Poya & Temple",
-    nameSi: "පොයා/පන්සල් මල්",
+    nameSi: "පෝය/පන්සල් මල්",
     sortOrder: 5,
   },
   {

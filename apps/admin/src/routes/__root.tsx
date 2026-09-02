@@ -33,6 +33,10 @@ export const Route = createRootRouteWithContext<RouterContext>()({
   beforeLoad: async ({ location }) => {
     const session = await getAdminSession();
 
+    // Misconfigured server (Supabase env absent, AUTH_DISABLED not set) — fail closed.
+    if (session.kind === "config_error" && location.pathname !== "/login") {
+      throw redirect({ to: "/login" });
+    }
     // Unauthenticated → /login
     if (session.kind === "anonymous" && location.pathname !== "/login") {
       throw redirect({ to: "/login" });
@@ -95,7 +99,7 @@ function SessionFooter({ session }: { session: AdminSession }) {
       <p className="truncate px-3 text-xs text-muted-foreground">
         {session.kind === "admin" ? session.email : "Dev mode — no auth"}
       </p>
-      {session.kind !== "auth_disabled" && (
+      {session.kind !== "auth_disabled" && session.kind !== "config_error" && (
         <Button
           variant="ghost"
           size="sm"

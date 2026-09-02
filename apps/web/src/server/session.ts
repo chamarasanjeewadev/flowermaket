@@ -9,12 +9,14 @@ import { getEnv } from "@flowers/api";
 
 /**
  * The session union every route sees via router context.
- * - `auth_disabled` — Supabase env vars unset; browsing works, accounts don't.
+ * - `auth_disabled` — AUTH_DISABLED=1 set; browsing works, accounts don't.
+ * - `config_error`  — Supabase env vars absent without AUTH_DISABLED=1 (fail closed).
  * - `anonymous` — Supabase configured, no valid session cookie.
  * - `authenticated` — a verified Supabase user.
  */
 export type SessionUser =
   | { kind: "auth_disabled" }
+  | { kind: "config_error" }
   | { kind: "anonymous" }
   | {
       kind: "authenticated";
@@ -67,7 +69,12 @@ export function trySupabaseServer() {
  */
 export async function resolveSessionUser(): Promise<SessionUser> {
   const supabase = trySupabaseServer();
-  if (!supabase) return { kind: "auth_disabled" };
+  if (!supabase) {
+    // Only treat missing Supabase env as intentional when AUTH_DISABLED=1.
+    // Otherwise fail closed — no access granted.
+    const { AUTH_DISABLED } = getEnv();
+    return AUTH_DISABLED ? { kind: "auth_disabled" } : { kind: "config_error" };
+  }
 
   const { data, error } = await supabase.auth.getUser();
   if (error || !data.user) return { kind: "anonymous" };

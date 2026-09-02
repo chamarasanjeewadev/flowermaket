@@ -47,7 +47,8 @@ function SignupPage() {
   const { t } = useT();
   const router = useRouter();
   const queryClient = useQueryClient();
-  const authDisabled = session.kind === "auth_disabled";
+  const authDisabled =
+    session.kind === "auth_disabled" || session.kind === "config_error";
   const [confirmEmailSent, setConfirmEmailSent] = React.useState(false);
 
   const form = useForm({

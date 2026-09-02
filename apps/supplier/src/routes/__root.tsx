@@ -46,6 +46,10 @@ export const Route = createRootRouteWithContext<RouterContext>()({
 
     const path = location.pathname;
 
+    // Misconfigured server (Supabase env absent, AUTH_DISABLED not set) — fail closed.
+    if (session.kind === "config_error" && path !== "/login") {
+      throw redirect({ to: "/login" });
+    }
     // Unauthenticated → /login
     if (session.kind === "anonymous" && path !== "/login") {
       throw redirect({ to: "/login" });
@@ -170,7 +174,7 @@ function SessionFooter({ session }: { session: SupplierSession }) {
       {email && (
         <p className="truncate px-3 text-xs text-muted-foreground">{email}</p>
       )}
-      {session.kind !== "auth_disabled" && (
+      {session.kind !== "auth_disabled" && session.kind !== "config_error" && (
         <Button
           variant="ghost"
           size="sm"

@@ -16,7 +16,7 @@ export const createShopFn = createServerFn({ method: "POST" })
   .validator((input: CreateShopInput) => input)
   .handler(async ({ data }): Promise<ActionResult<{ id: string; slug: string }>> => {
     const session = await resolveSupplierSession();
-    if (session.kind === "anonymous") {
+    if (session.kind === "anonymous" || session.kind === "config_error") {
       return { ok: false, code: "auth_required", message: "You must be signed in." };
     }
     if (session.kind === "auth_disabled") {
@@ -24,16 +24,15 @@ export const createShopFn = createServerFn({ method: "POST" })
       return { ok: true, data: { id: "dev-shop-id", slug: "dev-shop" } };
     }
 
-    const userId = session.kind === "no_shop" ? session.userId : session.userId;
     const db = requireDb();
-    return createShop(db, userId, data);
+    return createShop(db, session.userId, data);
   });
 
 export const updateShopFn = createServerFn({ method: "POST" })
   .validator((input: UpdateShopInput) => input)
   .handler(async ({ data }): Promise<ActionResult<{ id: string }>> => {
     const session = await resolveSupplierSession();
-    if (session.kind === "anonymous") {
+    if (session.kind === "anonymous" || session.kind === "config_error") {
       return { ok: false, code: "auth_required", message: "You must be signed in." };
     }
     if (session.kind === "auth_disabled") {

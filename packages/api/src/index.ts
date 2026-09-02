@@ -11,3 +11,4 @@ export * from "./constants";
 export * from "./slug";
 export * from "./users";
 export * from "./repos/shops";
+export * from "./redirect";

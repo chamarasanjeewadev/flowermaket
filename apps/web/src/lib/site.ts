@@ -21,8 +21,14 @@ export function absoluteUrl(path: string): string {
 /**
  * Returns canonical + per-locale + x-default hreflang link tags for a given
  * path (without locale prefix, e.g. "/" or "/categories/flowers").
+ *
+ * `locale` is the active locale for this page — canonical points to the
+ * current locale's own URL, not always /en.
  */
-export function hreflangLinks(path: string): Array<{
+export function hreflangLinks(
+  path: string,
+  locale: Locale,
+): Array<{
   rel: string;
   href: string;
   hreflang?: string;
@@ -34,15 +40,15 @@ export function hreflangLinks(path: string): Array<{
 
   const links: Array<{ rel: string; href: string; hreflang?: string }> = [];
 
-  // Canonical points to English (x-default locale)
-  links.push({ rel: "canonical", href: `${base}/en${suffix}` });
+  // Canonical points to the CURRENT locale's own URL
+  links.push({ rel: "canonical", href: `${base}/${locale}${suffix}` });
 
   // Per-locale alternates
-  for (const locale of LOCALES as readonly Locale[]) {
+  for (const loc of LOCALES as readonly Locale[]) {
     links.push({
       rel: "alternate",
-      href: `${base}/${locale}${suffix}`,
-      hreflang: locale,
+      href: `${base}/${loc}${suffix}`,
+      hreflang: loc,
     });
   }
 
