@@ -10,3 +10,4 @@ export * from "./db";
 export * from "./constants";
 export * from "./slug";
 export * from "./users";
+export * from "./repos/shops";

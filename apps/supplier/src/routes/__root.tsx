@@ -50,21 +50,25 @@ export const Route = createRootRouteWithContext<RouterContext>()({
     if (session.kind === "anonymous" && path !== "/login") {
       throw redirect({ to: "/login" });
     }
-    // Authenticated but wrong role → /onboarding-required
+
+    // Authenticated but no shop → /onboarding (unless already there or at /login)
     if (
-      session.kind === "unauthorized" &&
-      path !== "/login" &&
-      path !== "/onboarding-required"
+      session.kind === "no_shop" &&
+      path !== "/onboarding" &&
+      path !== "/login"
     ) {
-      throw redirect({ to: "/onboarding-required" });
+      throw redirect({ to: "/onboarding" });
     }
-    // Fully authenticated → skip login/onboarding-required
+
+    // Authenticated with shop (or admin) → skip login/onboarding
     if (
       session.kind === "supplier" &&
-      (path === "/login" || path === "/onboarding-required")
+      (path === "/login" || path === "/onboarding")
     ) {
       throw redirect({ to: "/" });
     }
+
+    // auth_disabled — let through to any page (dev mode)
 
     return { session, locale };
   },
@@ -129,6 +133,13 @@ function SidebarNav() {
       >
         {t.nav.dashboard}
       </Link>
+      <Link
+        to="/shop"
+        className="rounded-md px-3 py-2 hover:bg-accent"
+        activeProps={{ className: "bg-accent font-medium" }}
+      >
+        {t.nav.shopSettings}
+      </Link>
     </nav>
   );
 }
@@ -149,7 +160,10 @@ function SessionFooter({ session }: { session: SupplierSession }) {
     }
   }
 
-  const email = session.kind === "supplier" ? session.email : null;
+  const email =
+    session.kind === "supplier" || session.kind === "no_shop"
+      ? session.email
+      : null;
 
   return (
     <div>
@@ -177,7 +191,7 @@ function RootLayout() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
   const isFullBleed =
-    pathname === "/login" || pathname === "/onboarding-required";
+    pathname === "/login" || pathname === "/onboarding";
 
   return (
     <I18nProvider locale={locale}>

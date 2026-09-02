@@ -4,21 +4,23 @@
  * Start's request-scoped cookie APIs.
  */
 import { getCookies, setCookie } from "@tanstack/react-start/server";
-import { createSupabaseServerClient, hasRole } from "@flowers/auth";
-import { getEnv, tryCreateDb, getUserRole } from "@flowers/api";
+import { createSupabaseServerClient } from "@flowers/auth";
+import { getEnv, tryCreateDb, getUserRole, getShopByOwner } from "@flowers/api";
 
 /**
  * The session union every route sees via router context.
+ *
  * - `auth_disabled` — Supabase env vars unset; dev browsing without accounts.
  * - `anonymous`     — Supabase configured, no valid session cookie.
- * - `unauthorized`  — authenticated but role is not supplier or admin.
- * - `supplier`      — authenticated with supplier or admin role.
+ * - `no_shop`       — authenticated, any role, but no shop row yet.
+ *                     These users are redirected to /onboarding.
+ * - `supplier`      — authenticated with a shop (or admin, who skips onboarding).
  */
 export type SupplierSession =
   | { kind: "auth_disabled" }
   | { kind: "anonymous" }
-  | { kind: "unauthorized"; email: string }
-  | { kind: "supplier"; userId: string; email: string; role: "supplier" | "admin" };
+  | { kind: "no_shop"; userId: string; email: string }
+  | { kind: "supplier"; userId: string; email: string; role: "buyer" | "supplier" | "admin"; shopId: string; shopNameEn: string; verificationStatus: "unverified" | "pending" | "verified" | "rejected" };
 
 type SetCookieOptions = Parameters<typeof setCookie>[2];
 
@@ -48,21 +50,56 @@ export async function resolveSupplierSession(): Promise<SupplierSession> {
   if (!user) return { kind: "anonymous" };
 
   const email = user.email ?? "";
+  const userId = user.id;
 
-  // Look up the user's role in the DB. If the DB is unavailable treat as unauthorized.
   const db = tryCreateDb();
-  if (!db) return { kind: "unauthorized", email };
+  if (!db) {
+    // No DB — can't check shop; fall back to no_shop so they go to onboarding
+    return { kind: "no_shop", userId, email };
+  }
 
-  const role = await getUserRole(db, user.id);
+  const role = await getUserRole(db, userId);
 
-  if (!role || !hasRole(role, ["supplier", "admin"])) {
-    return { kind: "unauthorized", email };
+  // Admins skip the shop check — they always have full access.
+  if (role === "admin") {
+    // For admins without a shop we still allow access — return a synthetic session.
+    const shop = await getShopByOwner(db, userId);
+    if (!shop) {
+      // Admin with no personal shop: grant access anyway.
+      return {
+        kind: "supplier",
+        userId,
+        email,
+        role: "admin",
+        shopId: "",
+        shopNameEn: "",
+        verificationStatus: "verified",
+      };
+    }
+    return {
+      kind: "supplier",
+      userId,
+      email,
+      role: "admin",
+      shopId: shop.id,
+      shopNameEn: shop.nameEn,
+      verificationStatus: shop.verificationStatus,
+    };
+  }
+
+  // Buyers and suppliers: check if they have a shop.
+  const shop = await getShopByOwner(db, userId);
+  if (!shop) {
+    return { kind: "no_shop", userId, email };
   }
 
   return {
     kind: "supplier",
-    userId: user.id,
+    userId,
     email,
-    role: role as "supplier" | "admin",
+    role: role ?? "buyer",
+    shopId: shop.id,
+    shopNameEn: shop.nameEn,
+    verificationStatus: shop.verificationStatus,
   };
 }
