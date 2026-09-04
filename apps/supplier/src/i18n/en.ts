@@ -6,7 +6,7 @@
 export const en = {
   portal: {
     name: "Supplier Portal",
-    brand: "Flowers.lk",
+    brand: "FlowerMarket.lk",
   },
   auth: {
     signIn: "Sign in",
@@ -33,7 +33,7 @@ export const en = {
   },
   onboarding: {
     title: "Set up your shop",
-    subtitle: "Create your shop profile to start selling on Flowers.lk.",
+    subtitle: "Create your shop profile to start selling on FlowerMarket.lk.",
     nameEn: "Shop name (English)",
     nameEnPlaceholder: "e.g. Rose Garden Florist",
     nameSi: "Shop name (Sinhala)",

@@ -33,7 +33,7 @@ export const Route = createFileRoute("/$locale/login")({
   }),
   head: () => ({
     meta: [
-      { title: "Sign in | Flowers.lk" },
+      { title: "Sign in | FlowerMarket.lk" },
       { name: "robots", content: "noindex" },
     ],
   }),

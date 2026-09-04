@@ -14,7 +14,7 @@ import { Label } from "@flowers/ui/components/label";
 import { Textarea } from "@flowers/ui/components/textarea";
 import { Alert, AlertDescription } from "@flowers/ui/components/alert";
 import { Flower, Loader2 } from "lucide-react";
-import { DISTRICTS } from "@flowers/api";
+import { DISTRICTS } from "@flowers/api/constants";
 import { createShopFn } from "../server/shops";
 import { useT } from "../i18n/react";
 

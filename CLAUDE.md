@@ -1,4 +1,4 @@
-# Flowers.lk
+# FlowerMarket.lk
 
 Sri Lanka's online flower marketplace — connecting buyers with local florists and growers. Full product spec: `.superpowers/sdd/` — read it before large changes.
 

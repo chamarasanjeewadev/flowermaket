@@ -19,11 +19,11 @@ export const en = {
     openMenu: "Open menu",
     accountMenu: "Account menu",
     siteNavigation: "Site navigation",
-    homeAria: "Flowers.lk home",
+    homeAria: "FlowerMarket.lk home",
   },
   footer: {
     tagline: "Sri Lanka's flower marketplace.",
-    copyright: "© {year} Flowers.lk",
+    copyright: "© {year} FlowerMarket.lk",
     strip: "English · සිංහල",
   },
   home: {
@@ -54,7 +54,7 @@ export const en = {
     welcomeToast: "Welcome back!",
     continueWithGoogle: "Continue with Google",
     redirecting: "Redirecting…",
-    newHere: "New to Flowers.lk?",
+    newHere: "New to FlowerMarket.lk?",
     createFreeAccount: "Create a free account",
     createTitle: "Create your free account",
     createSub: "One account — buy, save favourites, and track orders.",

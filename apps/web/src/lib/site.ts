@@ -5,7 +5,7 @@
  */
 import { LOCALES, type Locale } from "../i18n";
 
-export const FALLBACK_SITE_URL = "https://flowers.lk";
+export const FALLBACK_SITE_URL = "https://flowermarket.lk";
 
 export function siteUrl(): string {
   if (typeof process !== "undefined" && process.env?.SITE_URL) {

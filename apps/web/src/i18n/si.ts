@@ -16,11 +16,11 @@ export const si: Dict = {
     openMenu: "මෙනුව විවෘත කරන්න",
     accountMenu: "ගිණුම් මෙනුව",
     siteNavigation: "අඩවි සංචාලනය",
-    homeAria: "Flowers.lk මුල් පිටුව",
+    homeAria: "FlowerMarket.lk මුල් පිටුව",
   },
   footer: {
     tagline: "ශ්‍රී ලංකාවේ මල් වෙළෙඳපොළ.",
-    copyright: "© {year} Flowers.lk",
+    copyright: "© {year} FlowerMarket.lk",
     strip: "English · සිංහල",
   },
   home: {
@@ -51,7 +51,7 @@ export const si: Dict = {
     welcomeToast: "නැවත සාදරයෙන් පිළිගනිමු!",
     continueWithGoogle: "Google සමඟ ඉදිරියට",
     redirecting: "යොමු කරමින්…",
-    newHere: "Flowers.lk ට අලුත්ද?",
+    newHere: "FlowerMarket.lk ට අලුත්ද?",
     createFreeAccount: "නොමිලේ ගිණුමක් සාදන්න",
     createTitle: "ඔබේ නොමිලේ ගිණුම සාදන්න",
     createSub: "එක් ගිණුමක් — ඇණවුම් කරන්න, ප්‍රියතම දේ සුරකින්න, ඇණවුම් නිරීක්ෂණය කරන්න.",

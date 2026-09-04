@@ -1,37 +1,16 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { tryCreateDb } from "@flowers/api";
 import { localizedCategoryName } from "../../i18n";
 import { useT } from "../../i18n/react";
 import { hreflangLinks } from "../../lib/site";
-
-interface CategoryRow {
-  id: string;
-  slug: string;
-  nameEn: string;
-  nameSi: string | null;
-}
+import { getActiveCategories } from "../../server/categories";
 
 export const Route = createFileRoute("/$locale/")({
-  loader: async (): Promise<{ categories: CategoryRow[] }> => {
-    const db = tryCreateDb();
-    if (!db) return { categories: [] };
-
-    try {
-      const rows = await db.query.categories.findMany({
-        where: (c, { eq }) => eq(c.isActive, true),
-        orderBy: (c, { asc }) => [asc(c.sortOrder), asc(c.nameEn)],
-        columns: { id: true, slug: true, nameEn: true, nameSi: true },
-      });
-      return { categories: rows };
-    } catch {
-      return { categories: [] };
-    }
-  },
+  loader: async () => ({ categories: await getActiveCategories() }),
   head: ({ params }) => ({
     meta:
       params.locale === "si"
         ? [
-            { title: "Flowers.lk — ශ්‍රී ලංකාවේ මල් වෙළෙඳපොළ" },
+            { title: "FlowerMarket.lk — ශ්‍රී ලංකාවේ මල් වෙළෙඳපොළ" },
             {
               name: "description",
               content:
@@ -39,7 +18,7 @@ export const Route = createFileRoute("/$locale/")({
             },
           ]
         : [
-            { title: "Flowers.lk — Sri Lanka's flower marketplace" },
+            { title: "FlowerMarket.lk — Sri Lanka's flower marketplace" },
             {
               name: "description",
               content:

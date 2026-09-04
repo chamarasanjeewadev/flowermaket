@@ -25,10 +25,15 @@ export const Route = createRootRouteWithContext<RouterContext>()({
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Admin — Flowers.lk" },
+      { title: "Admin — FlowerMarket.lk" },
       { name: "robots", content: "noindex,nofollow" },
     ],
-    links: [{ rel: "stylesheet", href: appCss }],
+    links: [
+      { rel: "stylesheet", href: appCss },
+      { rel: "icon", href: "/favicon.ico", sizes: "any" },
+      { rel: "icon", type: "image/png", href: "/icons/icon-32.png", sizes: "32x32" },
+      { rel: "apple-touch-icon", href: "/icons/apple-touch-icon.png", sizes: "180x180" },
+    ],
   }),
   beforeLoad: async ({ location }) => {
     const session = await getAdminSession();
@@ -69,9 +74,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 function Logo() {
   return (
     <p className="flex items-center gap-2 text-base font-bold">
-      <span>
-        <span className="text-primary">Flowers</span>.lk
-      </span>
+      <img src="/logo.png" alt="FlowerMarket.lk" className="h-7 w-auto" />
       <span className="rounded bg-destructive px-1.5 py-0.5 text-[10px] font-semibold text-destructive-foreground">
         ADMIN
       </span>

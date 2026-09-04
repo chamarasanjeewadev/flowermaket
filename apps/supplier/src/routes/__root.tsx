@@ -33,10 +33,15 @@ export const Route = createRootRouteWithContext<RouterContext>()({
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Supplier Portal — Flowers.lk" },
+      { title: "Supplier Portal — FlowerMarket.lk" },
       { name: "robots", content: "noindex" },
     ],
-    links: [{ rel: "stylesheet", href: appCss }],
+    links: [
+      { rel: "stylesheet", href: appCss },
+      { rel: "icon", href: "/favicon.ico", sizes: "any" },
+      { rel: "icon", type: "image/png", href: "/icons/icon-32.png", sizes: "32x32" },
+      { rel: "apple-touch-icon", href: "/icons/apple-touch-icon.png", sizes: "180x180" },
+    ],
   }),
   beforeLoad: async ({ location }) => {
     const [session, locale] = await Promise.all([
@@ -98,10 +103,8 @@ function Logo() {
   return (
     <Link to="/" className="block">
       <p className="flex flex-col">
-        <span className="text-base font-bold">
-          <span className="text-primary">Flowers</span>.lk
-        </span>
-        <span className="text-xs text-muted-foreground">Supplier Portal</span>
+        <img src="/logo.png" alt="FlowerMarket.lk" className="h-8 w-auto self-start" />
+        <span className="mt-1 text-xs text-muted-foreground">Supplier Portal</span>
       </p>
     </Link>
   );

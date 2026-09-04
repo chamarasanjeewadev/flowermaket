@@ -15,7 +15,7 @@ import { Header } from "../components/Header";
 import { getDict, isLocale, type Locale } from "../i18n";
 import { I18nProvider } from "../i18n/react";
 import { sessionQueryOptions } from "../lib/session";
-import { siteUrl } from "../lib/site";
+import { siteUrl, absoluteUrl } from "../lib/site";
 import appCss from "../styles.css?url";
 
 /** Extract locale from the current URL path (/en/..., /si/...) or fall back to "en". */
@@ -42,7 +42,7 @@ export const Route = createRootRouteWithContext<RouterContext>()({
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
       {
-        title: "Flowers.lk — Sri Lanka's flower marketplace",
+        title: "FlowerMarket.lk — Sri Lanka's flower marketplace",
       },
       {
         name: "description",
@@ -51,10 +51,10 @@ export const Route = createRootRouteWithContext<RouterContext>()({
       },
       { name: "theme-color", content: "#0f766e" },
       { property: "og:type", content: "website" },
-      { property: "og:site_name", content: "Flowers.lk" },
+      { property: "og:site_name", content: "FlowerMarket.lk" },
       {
         property: "og:title",
-        content: "Flowers.lk — Sri Lanka's flower marketplace",
+        content: "FlowerMarket.lk — Sri Lanka's flower marketplace",
       },
       {
         property: "og:description",
@@ -62,9 +62,17 @@ export const Route = createRootRouteWithContext<RouterContext>()({
           "Fresh flowers and arrangements from local growers and florists across Sri Lanka.",
       },
       { property: "og:url", content: siteUrl() },
-      { name: "twitter:card", content: "summary" },
+      { property: "og:image", content: absoluteUrl("/og-image.png") },
+      { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:image", content: absoluteUrl("/og-image.png") },
     ],
-    links: [{ rel: "stylesheet", href: appCss }],
+    links: [
+      { rel: "stylesheet", href: appCss },
+      { rel: "icon", href: "/favicon.ico", sizes: "any" },
+      { rel: "icon", type: "image/png", href: "/icons/icon-32.png", sizes: "32x32" },
+      { rel: "apple-touch-icon", href: "/icons/apple-touch-icon.png", sizes: "180x180" },
+      { rel: "manifest", href: "/site.webmanifest" },
+    ],
   }),
   shellComponent: RootDocument,
   component: RootLayout,

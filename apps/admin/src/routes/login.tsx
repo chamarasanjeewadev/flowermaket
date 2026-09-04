@@ -11,7 +11,7 @@ import {
 } from "@flowers/ui/components/card";
 import { Input } from "@flowers/ui/components/input";
 import { Label } from "@flowers/ui/components/label";
-import { Loader2, ShieldCheck } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { signIn } from "../server/auth";
 
 export const Route = createFileRoute("/login")({
@@ -51,12 +51,12 @@ function LoginPage() {
     <div className="flex min-h-dvh items-center justify-center bg-muted/30 p-6">
       <Card className="w-full max-w-sm">
         <CardHeader className="text-center">
-          <div className="mx-auto mb-2 flex size-12 items-center justify-center rounded-full bg-primary/10">
-            <ShieldCheck className="size-6 text-primary" />
-          </div>
-          <CardTitle className="text-xl">
-            <span className="text-primary">Flowers</span>.lk admin
-          </CardTitle>
+          <img
+            src="/logo.png"
+            alt="FlowerMarket.lk"
+            className="mx-auto mb-3 h-12 w-auto"
+          />
+          <CardTitle className="sr-only">FlowerMarket.lk — Admin sign in</CardTitle>
           <CardDescription>Internal portal — admin accounts only.</CardDescription>
         </CardHeader>
         <CardContent>

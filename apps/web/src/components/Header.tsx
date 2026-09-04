@@ -107,11 +107,10 @@ function Wordmark({ ariaLabel }: { ariaLabel: string }) {
     <Link
       to="/$locale"
       params={{ locale }}
-      className="rounded-md text-lg font-bold tracking-tight focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      className="inline-flex rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
       aria-label={ariaLabel}
     >
-      <span className="text-primary">Flowers</span>
-      <span className="text-muted-foreground">.lk</span>
+      <img src="/logo.png" alt={ariaLabel} className="h-9 w-auto" />
     </Link>
   );
 }
@@ -248,8 +247,7 @@ export function Header({ session }: { session: SessionUser }) {
             </SheetTrigger>
             <SheetContent side="right" className="w-72">
               <SheetTitle className="text-left">
-                <span className="text-primary">Flowers</span>
-                <span className="text-muted-foreground">.lk</span>
+                <img src="/logo.png" alt="FlowerMarket.lk" className="h-8 w-auto" />
               </SheetTitle>
               <SheetDescription className="sr-only">
                 {t.nav.siteNavigation}

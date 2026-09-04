@@ -4,7 +4,7 @@ import type { Dict } from "./en";
 export const si: Dict = {
   portal: {
     name: "සැපයුම්කරු ද්වාරය",
-    brand: "Flowers.lk",
+    brand: "FlowerMarket.lk",
   },
   auth: {
     signIn: "පිවිසෙන්න",
@@ -31,7 +31,7 @@ export const si: Dict = {
   },
   onboarding: {
     title: "ඔබේ සාප්පුව සකසන්න",
-    subtitle: "Flowers.lk හි විකිණීම ආරම්භ කිරීමට ඔබේ සාප්පු ගිණුම සාදන්න.",
+    subtitle: "FlowerMarket.lk හි විකිණීම ආරම්භ කිරීමට ඔබේ සාප්පු ගිණුම සාදන්න.",
     nameEn: "සාප්පු නම (ඉංග්‍රීසි)",
     nameEnPlaceholder: "උදා: Rose Garden Florist",
     nameSi: "සාප්පු නම (සිංහල)",

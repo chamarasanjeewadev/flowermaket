@@ -8,6 +8,6 @@
   // Secrets (set with `wrangler secret put <NAME>` after deploy target exists):
   //   DATABASE_URL           — Supabase transaction pooler (port 6543)
   //   SUPABASE_URL, SUPABASE_ANON_KEY
-  //   SITE_URL               — canonical public origin, e.g. https://flowers.lk
+  //   SITE_URL               — canonical public origin, e.g. https://flowermarket.lk
   //   PAYHERE_MERCHANT_ID, PAYHERE_MERCHANT_SECRET
 }

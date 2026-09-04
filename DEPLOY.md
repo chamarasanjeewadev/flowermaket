@@ -1,4 +1,4 @@
-# Deploying Flowers.lk
+# Deploying FlowerMarket.lk
 
 Checklist for going live. Order matters.
 
@@ -60,7 +60,7 @@ cd apps/web
 pnpm exec wrangler secret put DATABASE_URL        # transaction pooler URL (port 6543)
 pnpm exec wrangler secret put SUPABASE_URL        # VITE_SUPABASE_URL value (without VITE_ prefix)
 pnpm exec wrangler secret put SUPABASE_ANON_KEY   # VITE_SUPABASE_ANON_KEY value
-pnpm exec wrangler secret put SITE_URL            # e.g. https://flowers.lk
+pnpm exec wrangler secret put SITE_URL            # e.g. https://flowermarket.lk
 # Phase 2 (payments) — set now or later:
 pnpm exec wrangler secret put PAYHERE_MERCHANT_ID
 pnpm exec wrangler secret put PAYHERE_MERCHANT_SECRET
@@ -71,14 +71,14 @@ cd ../supplier
 pnpm exec wrangler secret put DATABASE_URL
 pnpm exec wrangler secret put SUPABASE_URL
 pnpm exec wrangler secret put SUPABASE_ANON_KEY
-pnpm exec wrangler secret put SITE_URL            # e.g. https://supplier.flowers.lk
+pnpm exec wrangler secret put SITE_URL            # e.g. https://supplier.flowermarket.lk
 
 # apps/admin
 cd ../admin
 pnpm exec wrangler secret put DATABASE_URL
 pnpm exec wrangler secret put SUPABASE_URL
 pnpm exec wrangler secret put SUPABASE_ANON_KEY
-pnpm exec wrangler secret put SITE_URL            # e.g. https://admin.flowers.lk
+pnpm exec wrangler secret put SITE_URL            # e.g. https://admin.flowermarket.lk
 ```
 
 Deploy (from repo root):
@@ -94,9 +94,9 @@ Workers & Pages → the worker → Settings → Domains & Routes. Suggested mapp
 
 | App      | Domain                    |
 |----------|---------------------------|
-| web      | flowers.lk (+ www)        |
-| supplier | supplier.flowers.lk       |
-| admin    | admin.flowers.lk          |
+| web      | flowermarket.lk (+ www)        |
+| supplier | supplier.flowermarket.lk       |
+| admin    | admin.flowermarket.lk          |
 
 The supplier and admin apps already serve `noindex` / `noindex,nofollow` — keep them off
 public DNS or behind Cloudflare Access for extra security.
@@ -108,10 +108,10 @@ and `apps/admin/.dev.vars` (create from wrangler's dev.vars convention; these fi
 
 ## 4. Post-deploy smoke test
 
-1. Open `https://flowers.lk` — should redirect to `/en/`.
-2. Open `https://flowers.lk/si` — heading and nav should appear in Sinhala.
-3. Open `https://supplier.flowers.lk` — unauthenticated → redirects to `/login`.
-4. Open `https://admin.flowers.lk` — unauthenticated → redirects to `/login`.
+1. Open `https://flowermarket.lk` — should redirect to `/en/`.
+2. Open `https://flowermarket.lk/si` — heading and nav should appear in Sinhala.
+3. Open `https://supplier.flowermarket.lk` — unauthenticated → redirects to `/login`.
+4. Open `https://admin.flowermarket.lk` — unauthenticated → redirects to `/login`.
 5. Sign in on the supplier portal as the promoted admin account, confirm dashboard loads.
 
 ## Notes / gotchas

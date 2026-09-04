@@ -26,7 +26,7 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 export const Route = createFileRoute("/$locale/signup")({
   head: () => ({
     meta: [
-      { title: "Create your free account | Flowers.lk" },
+      { title: "Create your free account | FlowerMarket.lk" },
       { name: "robots", content: "noindex" },
     ],
   }),
