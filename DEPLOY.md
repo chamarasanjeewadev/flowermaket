@@ -89,17 +89,35 @@ pnpm deploy:supplier
 pnpm deploy:admin
 ```
 
-First deploy prints a `*.workers.dev` URL per app. Custom domains: Cloudflare Dashboard →
-Workers & Pages → the worker → Settings → Domains & Routes. Suggested mapping:
+### Custom domains & DNS
 
-| App      | Domain                    |
-|----------|---------------------------|
-| web      | flowermarket.lk (+ www)        |
-| supplier | supplier.flowermarket.lk       |
-| admin    | admin.flowermarket.lk          |
+Custom domains are declared **in each app's `wrangler.jsonc`** (`routes` with
+`custom_domain: true`), so `wrangler deploy` provisions the DNS record + TLS cert
+automatically — no dashboard clicking. Each config also sets `workers_dev: false`, which
+turns off the `*.workers.dev` URL so the custom hostname is the only public entry point.
 
-The supplier and admin apps already serve `noindex` / `noindex,nofollow` — keep them off
-public DNS or behind Cloudflare Access for extra security.
+| App      | Domain                    | Managed by                          |
+|----------|---------------------------|-------------------------------------|
+| web      | flowermarket.lk           | `apps/web/wrangler.jsonc`           |
+| web      | www.flowermarket.lk       | zone Single Redirect (301 → apex)   |
+| supplier | supplier.flowermarket.lk  | `apps/supplier/wrangler.jsonc`      |
+| admin    | admin.flowermarket.lk     | `apps/admin/wrangler.jsonc`         |
+
+Prerequisites & remaining zone-level steps (once, on the `flowermarket.lk` zone):
+
+- The `flowermarket.lk` zone must already be in the deploy Cloudflare account with its
+  nameservers delegated. If the apex has a pre-existing A/AAAA/CNAME record, delete it
+  first — otherwise wrangler's custom-domain attach errors. Cert issuance takes a few
+  minutes after the first deploy.
+- **www → apex:** add a **proxied** (orange-cloud) DNS record `CNAME www → flowermarket.lk`,
+  then a **Single Redirect rule** — when hostname equals `www.flowermarket.lk`, 301 to
+  `https://flowermarket.lk/${http.request.uri.path}` (preserve query string).
+- **Cloudflare Access** (Zero Trust → Access → Applications) — the supplier and admin apps
+  serve `noindex` / `noindex,nofollow`; gate them at the edge in addition to app auth:
+  - self-hosted app `supplier.flowermarket.lk` → policy for supplier/admin operator emails.
+  - self-hosted app `admin.flowermarket.lk` → policy restricted to admin emails only.
+  (Because `workers_dev: false` closes the `*.workers.dev` bypass, Access on the custom
+  hostname fully covers each portal.)
 
 For local dev against the live database, put the same variables (without `VITE_` prefix
 for `SUPABASE_URL` / `SUPABASE_ANON_KEY`) in `apps/web/.dev.vars`, `apps/supplier/.dev.vars`,

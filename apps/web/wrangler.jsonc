@@ -4,7 +4,13 @@
   "compatibility_date": "2026-08-01",
   "compatibility_flags": ["nodejs_compat"],
   "main": "@tanstack/react-start/server-entry",
-  "observability": { "enabled": true }
+  "observability": { "enabled": true },
+  // Disable the *.workers.dev URL so flowermarket.lk is the only public origin.
+  "workers_dev": false,
+  // Apex custom domain — wrangler provisions the DNS record + TLS cert on deploy.
+  // www.flowermarket.lk is handled by a zone-level Single Redirect rule (301 → apex),
+  // not attached here, so it never serves duplicate content.
+  "routes": [{ "pattern": "flowermarket.lk", "custom_domain": true }]
   // Secrets (set with `wrangler secret put <NAME>` after deploy target exists):
   //   DATABASE_URL           — Supabase transaction pooler (port 6543)
   //   SUPABASE_URL, SUPABASE_ANON_KEY

@@ -4,7 +4,11 @@
   "compatibility_date": "2026-08-01",
   "compatibility_flags": ["nodejs_compat"],
   "main": "@tanstack/react-start/server-entry",
-  "observability": { "enabled": true }
+  "observability": { "enabled": true },
+  // workers_dev:false is required: Cloudflare Access only protects the custom
+  // hostname, so leaving the *.workers.dev URL live would bypass Access.
+  "workers_dev": false,
+  "routes": [{ "pattern": "supplier.flowermarket.lk", "custom_domain": true }]
   // Secrets (set with `wrangler secret put <NAME>` after deploy target exists):
   //   DATABASE_URL           — Supabase transaction pooler (port 6543)
   //   SUPABASE_URL, SUPABASE_ANON_KEY
