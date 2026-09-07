@@ -22,6 +22,9 @@ export const en = {
     signInFailed: "Sign-in failed.",
     enterCredentials: "Enter your email and password.",
     signOut: "Sign out",
+    continueWithGoogle: "Continue with Google",
+    redirecting: "Redirecting…",
+    or: "or",
   },
   dashboard: {
     title: "Supplier dashboard",

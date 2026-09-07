@@ -13,17 +13,24 @@ import { Input } from "@flowers/ui/components/input";
 import { Label } from "@flowers/ui/components/label";
 import { Loader2 } from "lucide-react";
 import { signIn } from "../server/auth";
+import { GoogleButton } from "../components/GoogleButton";
 
 export const Route = createFileRoute("/login")({
+  validateSearch: (
+    search: Record<string, unknown>,
+  ): { error?: string } => ({
+    error: typeof search.error === "string" ? search.error : undefined,
+  }),
   component: LoginPage,
 });
 
 function LoginPage() {
   const { session } = Route.useRouteContext();
+  const { error: searchError } = Route.useSearch();
   const router = useRouter();
   const [email, setEmail] = React.useState("");
   const [password, setPassword] = React.useState("");
-  const [error, setError] = React.useState<string | null>(null);
+  const [error, setError] = React.useState<string | null>(searchError ?? null);
   const [busy, setBusy] = React.useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
@@ -81,39 +88,50 @@ function LoginPage() {
               </Button>
             </div>
           ) : (
-            <form className="space-y-4" onSubmit={(e) => void handleSubmit(e)}>
+            <div className="space-y-4">
               {error && (
                 <Alert variant="destructive">
                   <AlertDescription>{error}</AlertDescription>
                 </Alert>
               )}
-              <div>
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  autoComplete="email"
-                  className="mt-1.5"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                />
+              <GoogleButton />
+              <div className="flex items-center gap-3">
+                <span className="h-px flex-1 bg-border" />
+                <span className="text-xs text-muted-foreground">or</span>
+                <span className="h-px flex-1 bg-border" />
               </div>
-              <div>
-                <Label htmlFor="password">Password</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  autoComplete="current-password"
-                  className="mt-1.5"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                />
-              </div>
-              <Button type="submit" className="w-full" disabled={busy}>
-                {busy ? <Loader2 className="animate-spin" /> : null}
-                Sign in
-              </Button>
-            </form>
+              <form
+                className="space-y-4"
+                onSubmit={(e) => void handleSubmit(e)}
+              >
+                <div>
+                  <Label htmlFor="email">Email</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    autoComplete="email"
+                    className="mt-1.5"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="password">Password</Label>
+                  <Input
+                    id="password"
+                    type="password"
+                    autoComplete="current-password"
+                    className="mt-1.5"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                  />
+                </div>
+                <Button type="submit" className="w-full" disabled={busy}>
+                  {busy ? <Loader2 className="animate-spin" /> : null}
+                  Sign in
+                </Button>
+              </form>
+            </div>
           )}
         </CardContent>
       </Card>

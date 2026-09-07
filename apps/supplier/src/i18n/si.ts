@@ -20,6 +20,9 @@ export const si: Dict = {
     signInFailed: "පිවිසීම අසාර්ථකයි.",
     enterCredentials: "ඔබේ විද්‍යුත් තැපෑල සහ මුරපදය ඇතුළත් කරන්න.",
     signOut: "පිටවන්න",
+    continueWithGoogle: "Google සමඟ ඉදිරියට",
+    redirecting: "යළි-යොමු කරමින්…",
+    or: "හෝ",
   },
   dashboard: {
     title: "සැපයුම්කරු උපකරණ පුවරුව",
