@@ -13,4 +13,5 @@ export * from "./slug";
 export * from "./users";
 export * from "./repos/shops";
 export * from "./repos/catalog";
+export * from "./repos/products";
 export * from "./redirect";

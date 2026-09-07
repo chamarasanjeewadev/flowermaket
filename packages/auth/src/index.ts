@@ -1,10 +1,28 @@
 import { createBrowserClient, createServerClient } from "@supabase/ssr";
+import { createClient } from "@supabase/supabase-js";
 
 export type AppRole = "buyer" | "supplier" | "admin";
 
 export interface SupabaseEnv {
   url: string;
   anonKey: string;
+}
+
+export interface SupabaseAdminEnv {
+  url: string;
+  serviceRoleKey: string;
+}
+
+/**
+ * Service-role Supabase client for privileged server-side work (e.g. Storage
+ * uploads). Bypasses RLS — NEVER expose this to the browser or use it with
+ * user-supplied identities without an explicit app-layer ownership check.
+ * Session persistence is disabled: it is stateless per request on Workers.
+ */
+export function createSupabaseAdminClient(env: SupabaseAdminEnv) {
+  return createClient(env.url, env.serviceRoleKey, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
 }
 
 /** Browser-side Supabase client (one per app, created once). */

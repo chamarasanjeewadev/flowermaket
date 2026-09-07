@@ -18,6 +18,8 @@ import { DISTRICTS } from "../constants";
 // Types
 // ---------------------------------------------------------------------------
 
+export type ShopType = "florist" | "grower";
+
 export interface CreateShopInput {
   nameEn: string;
   nameSi?: string | null;
@@ -25,6 +27,7 @@ export interface CreateShopInput {
   descriptionSi?: string | null;
   district: string;
   city?: string | null;
+  shopType?: ShopType | null;
 }
 
 export interface UpdateShopInput {
@@ -39,6 +42,7 @@ export interface ShopRow {
   id: string;
   ownerUserId: string;
   slug: string;
+  shopType: ShopType;
   nameEn: string;
   nameSi: string | null;
   descriptionEn: string | null;
@@ -56,6 +60,7 @@ export interface ShopRow {
 // ---------------------------------------------------------------------------
 
 const DISTRICT_SLUGS = new Set(DISTRICTS.map((d) => d.slug));
+const SHOP_TYPES = new Set<ShopType>(["florist", "grower"]);
 
 export interface ValidationError {
   field: string;
@@ -80,6 +85,10 @@ export function validateCreateShopInput(input: CreateShopInput): ValidationError
 
   if (!input.district || !DISTRICT_SLUGS.has(input.district)) {
     errors.push({ field: "district", message: "District must be a valid Sri Lanka district slug." });
+  }
+
+  if (input.shopType != null && !SHOP_TYPES.has(input.shopType)) {
+    errors.push({ field: "shopType", message: "Shop type must be either florist or grower." });
   }
 
   return errors;
@@ -189,6 +198,7 @@ export async function createShop(
           descriptionSi: input.descriptionSi ?? null,
           district: input.district,
           city: input.city ?? null,
+          shopType: input.shopType ?? "florist",
           verificationStatus: "pending",
         })
         .returning({ id: schema.shops.id, slug: schema.shops.slug });

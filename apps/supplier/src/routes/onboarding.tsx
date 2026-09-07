@@ -33,6 +33,7 @@ function OnboardingPage() {
       nameSi: "",
       descriptionEn: "",
       descriptionSi: "",
+      shopType: "" as "" | "florist" | "grower",
       district: "",
       city: "",
     },
@@ -44,6 +45,7 @@ function OnboardingPage() {
           nameSi: value.nameSi || null,
           descriptionEn: value.descriptionEn || null,
           descriptionSi: value.descriptionSi || null,
+          shopType: value.shopType || "florist",
           district: value.district,
           city: value.city || null,
         },
@@ -138,6 +140,48 @@ function OnboardingPage() {
                     onBlur={field.handleBlur}
                     onChange={(e) => field.handleChange(e.target.value)}
                   />
+                </div>
+              )}
+            </form.Field>
+
+            {/* Shop type — required */}
+            <form.Field
+              name="shopType"
+              validators={{
+                onBlur: ({ value }) =>
+                  !value ? t.onboarding.shopTypeRequired : undefined,
+              }}
+            >
+              {(field) => (
+                <div className="space-y-1.5">
+                  <Label htmlFor={field.name}>
+                    {t.onboarding.shopType}{" "}
+                    <span className="text-destructive">*</span>
+                  </Label>
+                  <select
+                    id={field.name}
+                    name={field.name}
+                    value={field.state.value}
+                    onBlur={field.handleBlur}
+                    onChange={(e) =>
+                      field.handleChange(
+                        e.target.value as "" | "florist" | "grower",
+                      )
+                    }
+                    className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <option value="">{t.onboarding.shopTypePlaceholder}</option>
+                    <option value="florist">
+                      {t.onboarding.shopTypeFlorist}
+                    </option>
+                    <option value="grower">{t.onboarding.shopTypeGrower}</option>
+                  </select>
+                  {field.state.meta.isTouched &&
+                    field.state.meta.errors.length > 0 && (
+                      <p className="text-xs text-destructive">
+                        {field.state.meta.errors[0]}
+                      </p>
+                    )}
                 </div>
               )}
             </form.Field>
