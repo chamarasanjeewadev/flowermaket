@@ -91,7 +91,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       <head>
         <HeadContent />
       </head>
-      <body className="min-h-dvh bg-muted/30 font-sans antialiased">
+      <body className="min-h-dvh bg-background font-sans text-foreground antialiased">
         {children}
         <Scripts />
       </body>
@@ -101,11 +101,13 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 
 function Logo() {
   return (
-    <Link to="/" className="block">
-      <p className="flex flex-col">
+    <Link to="/" className="block rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+      <span className="flex flex-col">
         <img src="/logo.png" alt="FlowerMarket.lk" className="h-8 w-auto self-start" />
-        <span className="mt-1 text-xs text-muted-foreground">Supplier Portal</span>
-      </p>
+        <span className="mt-1 font-display text-sm text-muted-foreground">
+          Supplier Portal
+        </span>
+      </span>
     </Link>
   );
 }
@@ -120,7 +122,7 @@ function LocaleToggle({ locale }: { locale: Locale }) {
   return (
     <button
       type="button"
-      className="rounded px-2 py-1 text-xs text-muted-foreground hover:bg-accent hover:text-foreground"
+      className="rounded-md px-2 py-1 text-left text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
       onClick={() => void handleToggle()}
     >
       {locale === "en" ? "සිංහල" : "English"}
@@ -134,16 +136,20 @@ function SidebarNav() {
     <nav className="mt-6 flex flex-col gap-1 text-sm">
       <Link
         to="/"
-        className="rounded-md px-3 py-2 hover:bg-accent"
-        activeProps={{ className: "bg-accent font-medium" }}
+        className="rounded-md border-l-2 border-transparent px-3 py-2 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        activeProps={{
+          className: "border-brand bg-accent font-medium text-brand",
+        }}
         activeOptions={{ exact: true }}
       >
         {t.nav.dashboard}
       </Link>
       <Link
         to="/shop"
-        className="rounded-md px-3 py-2 hover:bg-accent"
-        activeProps={{ className: "bg-accent font-medium" }}
+        className="rounded-md border-l-2 border-transparent px-3 py-2 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        activeProps={{
+          className: "border-brand bg-accent font-medium text-brand",
+        }}
       >
         {t.nav.shopSettings}
       </Link>
@@ -209,16 +215,18 @@ function RootLayout() {
         </>
       ) : (
         <div className="flex min-h-dvh">
-          <aside className="sticky top-0 hidden h-dvh w-56 shrink-0 flex-col border-r bg-background p-4 sm:flex">
+          <aside className="sticky top-0 hidden h-dvh w-56 shrink-0 flex-col border-r border-border bg-card p-4 sm:flex">
             <Logo />
             <SidebarNav />
-            <div className="mt-auto flex flex-col gap-2 border-t pt-3">
+            <div className="mt-auto flex flex-col gap-2 border-t border-border pt-3">
               <LocaleToggle locale={locale} />
               <SessionFooter session={session} />
             </div>
           </aside>
-          <main className="flex-1 p-6">
-            <Outlet />
+          <main className="flex-1 p-6 sm:p-8">
+            <div className="mx-auto max-w-4xl">
+              <Outlet />
+            </div>
           </main>
           <Toaster />
         </div>

@@ -25,7 +25,7 @@ import {
   SheetTrigger,
 } from "@flowers/ui/components/sheet";
 import { cn } from "@flowers/ui/lib/utils";
-import { Check, Globe, Menu } from "lucide-react";
+import { Check, Globe, Menu, Search, ShoppingBag } from "lucide-react";
 import { LOCALES, type Locale } from "../i18n";
 import { useT } from "../i18n/react";
 import { signOut } from "../server/auth";
@@ -199,23 +199,43 @@ export function Header({ session }: { session: SessionUser }) {
   const { t, locale } = useT();
   const [mobileOpen, setMobileOpen] = React.useState(false);
 
-  return (
-    <header className="sticky top-0 z-40 border-b bg-background/85 backdrop-blur supports-[backdrop-filter]:bg-background/70">
-      <div className="mx-auto flex h-14 max-w-6xl items-center justify-between gap-3 px-4 sm:h-16">
-        <div className="flex items-center gap-6">
-          <Wordmark ariaLabel={t.nav.homeAria} />
-          <nav aria-label={t.nav.siteNavigation} className="hidden items-center gap-1 md:flex">
-            <Link
-              to="/$locale"
-              params={{ locale }}
-              className="rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring [&.active]:text-foreground"
-            >
-              {t.nav.browse}
-            </Link>
-          </nav>
-        </div>
+  const navLink =
+    "rounded-full px-3 py-1.5 text-sm font-medium text-foreground/70 transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring [&.active]:text-foreground [&.active]:bg-accent";
 
-        <div className="flex items-center gap-1.5">
+  return (
+    <header className="sticky top-0 z-40 border-b border-border bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/65">
+      <div className="mx-auto flex h-16 max-w-6xl items-center gap-3 px-4 sm:h-[72px]">
+        <Wordmark ariaLabel={t.nav.homeAria} />
+
+        <nav
+          aria-label={t.nav.siteNavigation}
+          className="mx-auto hidden items-center gap-1 md:flex"
+        >
+          <Link to="/$locale" params={{ locale }} className={navLink}>
+            {t.nav.home}
+          </Link>
+          <Link to="/$locale/products" params={{ locale }} className={navLink}>
+            {t.nav.browse}
+          </Link>
+          <Link
+            to="/$locale/products"
+            params={{ locale }}
+            search={{ type: "wholesale" }}
+            className={navLink}
+          >
+            {t.nav.wholesale}
+          </Link>
+        </nav>
+
+        <div className="flex items-center gap-1.5 md:ml-0">
+          <Link
+            to="/$locale/products"
+            params={{ locale }}
+            aria-label={t.nav.browse}
+            className="hidden size-10 items-center justify-center rounded-full text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:inline-flex"
+          >
+            <Search className="size-[18px]" aria-hidden="true" />
+          </Link>
           <LanguageSwitcher />
           {session.kind === "authenticated" ? (
             <UserMenu session={session} />
@@ -233,6 +253,16 @@ export function Header({ session }: { session: SessionUser }) {
               {t.nav.login}
             </Link>
           )}
+
+          <Link
+            to="/$locale/products"
+            params={{ locale }}
+            search={{ type: "retail" }}
+            aria-label={t.nav.cart}
+            className="inline-flex size-10 items-center justify-center rounded-full bg-brand text-brand-foreground transition-colors hover:bg-brand/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+          >
+            <ShoppingBag className="size-[18px]" aria-hidden="true" />
+          </Link>
 
           <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
             <SheetTrigger asChild>
@@ -254,12 +284,21 @@ export function Header({ session }: { session: SessionUser }) {
               </SheetDescription>
               <nav aria-label="Mobile" className="mt-6 flex flex-col gap-1">
                 <Link
-                  to="/$locale"
+                  to="/$locale/products"
                   params={{ locale }}
                   onClick={() => setMobileOpen(false)}
                   className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-accent"
                 >
                   {t.nav.browse}
+                </Link>
+                <Link
+                  to="/$locale/products"
+                  params={{ locale }}
+                  search={{ type: "wholesale" }}
+                  onClick={() => setMobileOpen(false)}
+                  className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-accent"
+                >
+                  {t.nav.wholesale}
                 </Link>
               </nav>
               <div className="mt-6 space-y-2 border-t pt-6">

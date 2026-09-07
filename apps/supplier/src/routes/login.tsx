@@ -50,7 +50,7 @@ function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-dvh items-center justify-center bg-muted/30 p-6">
+    <div className="flex min-h-dvh items-center justify-center bg-background p-6">
       <Card className="w-full max-w-sm">
         <CardHeader className="text-center">
           <img
@@ -75,7 +75,7 @@ function LoginPage() {
               <Alert>
                 <AlertDescription>{t.auth.devMode}</AlertDescription>
               </Alert>
-              <Button asChild className="w-full">
+              <Button asChild variant="brand" className="w-full">
                 <Link to="/">{t.auth.continueToDashboard}</Link>
               </Button>
             </div>
@@ -110,7 +110,12 @@ function LoginPage() {
                   onChange={(e) => setPassword(e.target.value)}
                 />
               </div>
-              <Button type="submit" className="w-full" disabled={busy}>
+              <Button
+                type="submit"
+                variant="brand"
+                className="w-full"
+                disabled={busy}
+              >
                 {busy ? <Loader2 className="animate-spin" /> : null}
                 {busy ? t.auth.signingIn : t.auth.signIn}
               </Button>

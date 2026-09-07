@@ -58,13 +58,15 @@ function OnboardingPage() {
   });
 
   return (
-    <div className="flex min-h-dvh items-start justify-center bg-muted/30 p-6 pt-16">
+    <div className="flex min-h-dvh items-start justify-center bg-background p-6 pt-16">
       <Card className="w-full max-w-lg">
         <CardHeader className="text-center">
-          <div className="mx-auto mb-2 flex size-12 items-center justify-center rounded-full bg-primary/10">
-            <Flower className="size-6 text-primary" />
+          <div className="mx-auto mb-3 flex size-12 items-center justify-center rounded-full bg-brand/10">
+            <Flower className="size-6 text-brand" />
           </div>
-          <CardTitle className="text-xl">{t.onboarding.title}</CardTitle>
+          <CardTitle className="font-display text-2xl sm:text-3xl">
+            {t.onboarding.title}
+          </CardTitle>
           <CardDescription>{t.onboarding.subtitle}</CardDescription>
         </CardHeader>
 
@@ -243,6 +245,7 @@ function OnboardingPage() {
               {([canSubmit, isSubmitting]) => (
                 <Button
                   type="submit"
+                  variant="brand"
                   className="w-full"
                   disabled={!canSubmit || isSubmitting}
                 >

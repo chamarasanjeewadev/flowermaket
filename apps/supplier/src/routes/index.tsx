@@ -20,11 +20,11 @@ function VerificationBadge({ status }: { status: VerificationStatus }) {
   };
   const variants: Record<
     VerificationStatus,
-    "default" | "secondary" | "outline" | "destructive"
+    "secondary" | "warning" | "success" | "destructive"
   > = {
     unverified: "secondary",
-    pending: "outline",
-    verified: "default",
+    pending: "warning",
+    verified: "success",
     rejected: "destructive",
   };
   return <Badge variant={variants[status]}>{labels[status]}</Badge>;
@@ -37,7 +37,7 @@ function DashboardPage() {
   if (session.kind !== "supplier" && session.kind !== "auth_disabled") {
     return (
       <div className="space-y-4">
-        <h1 className="text-2xl font-bold">{t.dashboard.title}</h1>
+        <h1 className="font-display text-3xl sm:text-4xl">{t.dashboard.title}</h1>
       </div>
     );
   }
@@ -49,12 +49,13 @@ function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <div className="space-y-1">
-        <h1 className="text-2xl font-bold">{t.dashboard.title}</h1>
+      <div className="space-y-2">
+        <h1 className="font-display text-3xl sm:text-4xl">{t.dashboard.title}</h1>
         {shopName && (
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             <span className="text-muted-foreground">
-              {t.dashboard.shopName}: <strong>{shopName}</strong>
+              {t.dashboard.shopName}:{" "}
+              <strong className="text-foreground">{shopName}</strong>
             </span>
             {status && (
               <>

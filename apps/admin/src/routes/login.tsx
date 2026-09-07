@@ -48,7 +48,7 @@ function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-dvh items-center justify-center bg-muted/30 p-6">
+    <div className="flex min-h-dvh items-center justify-center bg-background p-6">
       <Card className="w-full max-w-sm">
         <CardHeader className="text-center">
           <img
@@ -56,7 +56,7 @@ function LoginPage() {
             alt="FlowerMarket.lk"
             className="mx-auto mb-3 h-12 w-auto"
           />
-          <CardTitle className="sr-only">FlowerMarket.lk — Admin sign in</CardTitle>
+          <CardTitle className="font-display text-2xl">Admin sign in</CardTitle>
           <CardDescription>Internal portal — admin accounts only.</CardDescription>
         </CardHeader>
         <CardContent>

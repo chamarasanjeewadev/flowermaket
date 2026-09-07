@@ -34,11 +34,11 @@ function VerificationBadge({ status }: { status: VerificationStatus }) {
   };
   const variants: Record<
     VerificationStatus,
-    "default" | "secondary" | "outline" | "destructive"
+    "secondary" | "warning" | "success" | "destructive"
   > = {
     unverified: "secondary",
-    pending: "outline",
-    verified: "default",
+    pending: "warning",
+    verified: "success",
     rejected: "destructive",
   };
   return <Badge variant={variants[status]}>{labels[status]}</Badge>;
@@ -56,7 +56,7 @@ function ShopSettingsPage() {
   if (session.kind !== "supplier") {
     return (
       <div className="space-y-4">
-        <h1 className="text-2xl font-bold">{t.shop.title}</h1>
+        <h1 className="font-display text-3xl sm:text-4xl">{t.shop.title}</h1>
         <p className="text-muted-foreground">{t.common.loading}</p>
       </div>
     );
@@ -96,8 +96,8 @@ function ShopSettingsPage() {
   return (
     <div className="mx-auto max-w-xl space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">{t.shop.title}</h1>
-        <div className="mt-2 flex items-center gap-3">
+        <h1 className="font-display text-3xl sm:text-4xl">{t.shop.title}</h1>
+        <div className="mt-3 flex flex-wrap items-center gap-3">
           <span className="text-sm text-muted-foreground">
             {t.shop.verificationStatus}:
           </span>
@@ -248,6 +248,7 @@ function ShopSettingsPage() {
               {([canSubmit, isSubmitting]) => (
                 <Button
                   type="submit"
+                  variant="brand"
                   disabled={!canSubmit || isSubmitting}
                 >
                   {isSubmitting ? (

@@ -49,7 +49,7 @@ export const Route = createRootRouteWithContext<RouterContext>()({
         content:
           "Shop fresh flowers, arrangements and bouquets from local growers and florists across Sri Lanka — in English and සිංහල.",
       },
-      { name: "theme-color", content: "#0f766e" },
+      { name: "theme-color", content: "#f5f3ee" },
       { property: "og:type", content: "website" },
       { property: "og:site_name", content: "FlowerMarket.lk" },
       {
@@ -122,7 +122,7 @@ function NotFoundPage() {
       <span className="flex size-14 items-center justify-center rounded-full bg-muted text-muted-foreground">
         <SearchX className="size-7" aria-hidden="true" />
       </span>
-      <h1 className="text-2xl font-bold">{t.common.notFoundTitle}</h1>
+      <h1 className="font-display text-4xl">{t.common.notFoundTitle}</h1>
       <p className="text-muted-foreground">{t.common.notFoundBody}</p>
       <div className="mt-2 flex gap-3">
         <Link to="/" className={buttonVariants({ variant: "outline" })}>

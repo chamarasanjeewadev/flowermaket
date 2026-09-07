@@ -76,10 +76,24 @@ function SignupPage() {
   });
 
   return (
-    <div className="mx-auto flex max-w-md flex-col px-4 py-12 sm:py-16">
-      <Card>
-        <CardHeader className="text-center">
-          <CardTitle className="text-xl">{t.auth.createTitle}</CardTitle>
+    <div className="mx-auto grid max-w-6xl items-center gap-10 px-4 py-12 sm:py-16 lg:grid-cols-2">
+      <aside className="hidden overflow-hidden rounded-lg bg-sage-deep px-10 py-14 text-background lg:block">
+        <p className="font-display text-3xl">
+          FlowerMarket<span className="text-butter">.lk</span>
+        </p>
+        <p className="mt-4 max-w-sm font-display text-4xl leading-tight">
+          {t.auth.createSub}
+        </p>
+        <p className="mt-6 max-w-sm text-sm leading-relaxed text-background/70">
+          {t.home.heroSubtitle}
+        </p>
+      </aside>
+
+      <Card className="mx-auto w-full max-w-md">
+        <CardHeader>
+          <CardTitle className="font-display text-3xl">
+            {t.auth.createTitle}
+          </CardTitle>
           <CardDescription>{t.auth.createSub}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -248,7 +262,7 @@ function SignupPage() {
             <>
               <div className="flex items-center gap-3">
                 <Separator className="flex-1" />
-                <span className="text-xs uppercase text-muted-foreground">
+                <span className="text-xs text-muted-foreground">
                   {t.common.or}
                 </span>
                 <Separator className="flex-1" />
@@ -265,7 +279,7 @@ function SignupPage() {
             <Link
               to="/$locale/login"
               params={{ locale }}
-              className="font-medium text-primary hover:underline"
+              className="font-medium text-brand hover:underline"
             >
               {t.nav.login}
             </Link>

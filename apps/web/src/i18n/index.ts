@@ -41,3 +41,21 @@ export function localizedCategoryName(
   if (locale === "si" && cat.nameSi) return cat.nameSi;
   return cat.nameEn;
 }
+
+/** Localized name with English fallback (nameSi nullable). */
+export function localizedName(
+  row: { nameEn: string; nameSi: string | null },
+  locale: Locale,
+): string {
+  if (locale === "si" && row.nameSi) return row.nameSi;
+  return row.nameEn;
+}
+
+/** Localized description with English fallback; null when neither is set. */
+export function localizedDescription(
+  row: { descriptionEn: string | null; descriptionSi: string | null },
+  locale: Locale,
+): string | null {
+  if (locale === "si" && row.descriptionSi) return row.descriptionSi;
+  return row.descriptionEn;
+}

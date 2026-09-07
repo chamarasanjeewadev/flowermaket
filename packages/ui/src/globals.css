@@ -1,3 +1,6 @@
+/* Fraunces "full" build ships all axes (opsz + wght + SOFT + WONK). */
+@import "@fontsource-variable/fraunces/full.css";
+@import "@fontsource-variable/inter";
 @import "@fontsource/noto-sans-sinhala/400.css";
 @import "@fontsource/noto-sans-sinhala/500.css";
 @import "@fontsource/noto-sans-sinhala/700.css";
@@ -5,67 +8,94 @@
 
 @custom-variant dark (&:is(.dark *));
 
-/* shadcn/ui theme tokens (Tailwind v4 style) */
+/*
+ * FlowerMarket.lk design system — "playful editorial boutique".
+ * Warm cream canvas, near-black ink, a tangerine signature accent, and a
+ * spread of pastel surfaces (butter / blush / sage / peach / lilac / coral)
+ * used as stages behind product photography and as category-card tints.
+ * Light theme only for now (see the note on .dark below).
+ */
 :root {
-  --radius: 0.625rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  /* Brand: deep teal-green, a nod to Sri Lanka without being a flag cliché */
-  --primary: oklch(0.48 0.11 180);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.95 0.03 180);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --destructive-foreground: oklch(0.985 0 0);
-  --success: oklch(0.52 0.13 165);
-  --success-foreground: oklch(0.985 0 0);
-  --warning: oklch(0.55 0.14 75);
-  --warning-foreground: oklch(0.985 0 0);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.48 0.11 180);
+  --radius: 0.5rem;
+
+  /* Core surfaces */
+  --background: #f5f3ee; /* warm cream canvas */
+  --foreground: #16162a; /* near-black ink */
+  --card: #ffffff;
+  --card-foreground: #16162a;
+  --popover: #ffffff;
+  --popover-foreground: #16162a;
+
+  /* Primary = ink (the reference's dark CTAs) */
+  --primary: #16162a;
+  --primary-foreground: #f5f3ee;
+
+  --secondary: #ece8e0;
+  --secondary-foreground: #16162a;
+  --muted: #ece8e0;
+  --muted-foreground: #6c6b63;
+
+  /* Subtle warm hover/active surface (shadcn "accent") */
+  --accent: #ece7de;
+  --accent-foreground: #16162a;
+
+  --destructive: #d1442c;
+  --destructive-foreground: #ffffff;
+  --success: #2e5b42; /* deep sage-green */
+  --success-foreground: #ffffff;
+  --warning: #b8862a; /* readable amber on cream */
+  --warning-foreground: #ffffff;
+
+  --border: #e5e1d8;
+  --input: #e5e1d8;
+  --ring: #f26b3a; /* tangerine focus ring */
+
+  /* Signature accent + pastel surfaces (see @theme inline for utilities) */
+  --brand: #f26b3a; /* tangerine */
+  --brand-foreground: #ffffff;
+  --butter: #f4de73;
+  --blush: #f1c7dd;
+  --sage: #d6e4d0;
+  --sage-deep: #2e5b42;
+  --peach: #f0dcc1;
+  --lilac: #b98be0;
+  --coral: #e8654a;
 }
 
+/*
+ * Dark mode is intentionally NOT themed for launch — the product is a
+ * light-only editorial theme. The variant + this stub are kept so any
+ * residual `dark:` utilities in shadcn primitives resolve harmlessly; no
+ * toggle activates `.dark`.
+ */
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.7 0.1 180);
-  --primary-foreground: oklch(0.145 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.3 0.03 180);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --destructive-foreground: oklch(0.985 0 0);
-  --success: oklch(0.75 0.14 165);
-  --success-foreground: oklch(0.145 0 0);
-  --warning: oklch(0.8 0.14 80);
-  --warning-foreground: oklch(0.145 0 0);
-  --border: oklch(1 0 0 / 10%);
+  --background: #16162a;
+  --foreground: #f5f3ee;
+  --card: #1e1e33;
+  --card-foreground: #f5f3ee;
+  --popover: #1e1e33;
+  --popover-foreground: #f5f3ee;
+  --primary: #f5f3ee;
+  --primary-foreground: #16162a;
+  --secondary: #262640;
+  --secondary-foreground: #f5f3ee;
+  --muted: #262640;
+  --muted-foreground: #a8a79c;
+  --accent: #262640;
+  --accent-foreground: #f5f3ee;
+  --border: oklch(1 0 0 / 12%);
   --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.7 0.1 180);
+  --ring: #f26b3a;
 }
 
 @theme {
-  /* System-first sans stack; "Noto Sans Sinhala" sits after the Latin face
-     and before the generic sans fallback for Sinhala glyph coverage. */
+  /* Display serif (headlines) — Fraunces variable, high optical contrast. */
+  --font-display: "Fraunces Variable", ui-serif, Georgia, "Times New Roman",
+    serif;
+  /* Body/UI sans — Inter variable first; Noto Sans Sinhala for si glyphs. */
   --font-sans:
-    "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
-    "Helvetica Neue", Arial, "Noto Sans", "Noto Sans Sinhala",
+    "Inter Variable", ui-sans-serif, system-ui, -apple-system, "Segoe UI",
+    Roboto, "Helvetica Neue", Arial, "Noto Sans", "Noto Sans Sinhala",
     sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
 }
 
@@ -74,6 +104,7 @@
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
+
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -97,6 +128,17 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
+
+  /* Brand + pastel surfaces → bg-brand, text-brand, bg-butter, bg-sage, … */
+  --color-brand: var(--brand);
+  --color-brand-foreground: var(--brand-foreground);
+  --color-butter: var(--butter);
+  --color-blush: var(--blush);
+  --color-sage: var(--sage);
+  --color-sage-deep: var(--sage-deep);
+  --color-peach: var(--peach);
+  --color-lilac: var(--lilac);
+  --color-coral: var(--coral);
 }
 
 @layer base {
@@ -111,32 +153,45 @@
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
   }
-  /* Refined default focus ring for keyboard navigation */
   :focus-visible {
-    outline: 2px solid
-      color-mix(in oklab, var(--color-ring) 60%, transparent);
+    outline: 2px solid color-mix(in oklab, var(--color-ring) 65%, transparent);
     outline-offset: 2px;
   }
-  /* Sinhala ascenders/descenders clip at tight leading — use looser line-height */
+  /* Sinhala ascenders/descenders clip at tight leading — looser line-height */
   :lang(si) {
     line-height: 1.7;
   }
 }
 
-/* Subtle teal hero gradient for landing/section backgrounds */
-@utility hero-gradient {
-  background-image:
-    radial-gradient(
-      60rem 30rem at 85% -10%,
-      color-mix(in oklab, var(--color-primary) 14%, transparent),
-      transparent 70%
+/*
+ * Display headline treatment. Fraunces carries the personality of the page;
+ * SOFT + WONK give the reference's rounded, slightly playful letterforms.
+ * Apply deliberately (hero + page titles), not to every heading.
+ */
+@utility font-display {
+  font-family: var(--font-display);
+  font-optical-sizing: auto;
+  font-variation-settings:
+    "SOFT" 30,
+    "WONK" 1;
+  letter-spacing: -0.015em;
+  font-weight: 500;
+}
+
+/* Faint ruled-grid canvas, echoing the reference's paper texture. */
+@utility grid-paper {
+  background-color: var(--color-background);
+  background-image: linear-gradient(
+      to right,
+      color-mix(in oklab, var(--color-foreground) 5%, transparent) 1px,
+      transparent 1px
     ),
     linear-gradient(
-      160deg,
-      color-mix(in oklab, var(--color-primary) 8%, var(--color-background)) 0%,
-      var(--color-background) 55%,
-      color-mix(in oklab, var(--color-accent) 45%, var(--color-background)) 100%
+      to bottom,
+      color-mix(in oklab, var(--color-foreground) 5%, transparent) 1px,
+      transparent 1px
     );
+  background-size: 3.5rem 3.5rem;
 }
 
 /*

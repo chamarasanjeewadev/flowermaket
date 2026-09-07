@@ -1,15 +1,18 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { listCatalogSitemap, tryCreateDb } from "@flowers/api";
+import { LOCALES } from "../i18n";
 import { siteUrl } from "../lib/site";
 
 /**
- * Server-only route — lists /en/ and /si/ home URLs.
- * Structure is extensible per-entity in later phases.
+ * Server-only route — enumerates home, browse, category, shop and product URLs
+ * across both locales. DB access is server-only (safe to import @flowers/api).
  */
 
 interface SitemapUrl {
   loc: string;
   changefreq?: string;
   priority?: string;
+  lastmod?: string;
 }
 
 function xmlEscape(s: string): string {
@@ -25,6 +28,7 @@ function renderUrl(u: SitemapUrl): string {
   return [
     "  <url>",
     `    <loc>${xmlEscape(u.loc)}</loc>`,
+    u.lastmod ? `    <lastmod>${u.lastmod}</lastmod>` : null,
     u.changefreq ? `    <changefreq>${u.changefreq}</changefreq>` : null,
     u.priority ? `    <priority>${u.priority}</priority>` : null,
     "  </url>",
@@ -36,13 +40,55 @@ function renderUrl(u: SitemapUrl): string {
 export const Route = createFileRoute("/sitemap.xml")({
   server: {
     handlers: {
-      GET: () => {
+      GET: async () => {
         const base = siteUrl();
 
-        const urls: SitemapUrl[] = [
-          { loc: `${base}/en/`, changefreq: "daily", priority: "1.0" },
-          { loc: `${base}/si/`, changefreq: "daily", priority: "1.0" },
-        ];
+        const urls: SitemapUrl[] = [];
+        for (const loc of LOCALES) {
+          urls.push({
+            loc: `${base}/${loc}/`,
+            changefreq: "daily",
+            priority: "1.0",
+          });
+          urls.push({
+            loc: `${base}/${loc}/products`,
+            changefreq: "daily",
+            priority: "0.9",
+          });
+        }
+
+        const db = tryCreateDb();
+        if (db) {
+          try {
+            const data = await listCatalogSitemap(db);
+            for (const loc of LOCALES) {
+              for (const c of data.categories) {
+                urls.push({
+                  loc: `${base}/${loc}/c/${c.slug}`,
+                  changefreq: "weekly",
+                  priority: "0.7",
+                });
+              }
+              for (const s of data.shops) {
+                urls.push({
+                  loc: `${base}/${loc}/shops/${s.slug}`,
+                  changefreq: "weekly",
+                  priority: "0.6",
+                });
+              }
+              for (const p of data.products) {
+                urls.push({
+                  loc: `${base}/${loc}/products/${p.slug}`,
+                  changefreq: "weekly",
+                  priority: "0.8",
+                  lastmod: p.updatedAt.toISOString(),
+                });
+              }
+            }
+          } catch {
+            // Degrade to the static entries if the catalog query fails.
+          }
+        }
 
         const xml = [
           '<?xml version="1.0" encoding="UTF-8"?>',

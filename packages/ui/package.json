@@ -13,6 +13,8 @@
     "build": "echo 'source package - nothing to build'"
   },
   "dependencies": {
+    "@fontsource-variable/fraunces": "^5.2.5",
+    "@fontsource-variable/inter": "^5.2.5",
     "@fontsource/noto-sans-sinhala": "^5.3.0",
     "@radix-ui/react-alert-dialog": "^1.1.23",
     "@radix-ui/react-avatar": "^1.2.6",

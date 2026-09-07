@@ -17,6 +17,9 @@ const badgeVariants = cva(
         warning:
           "border-transparent bg-warning/15 text-warning dark:bg-warning/20",
         info: "border-transparent bg-primary/10 text-primary dark:bg-primary/20",
+        brand: "border-transparent bg-brand text-brand-foreground",
+        sticker:
+          "gap-1.5 rounded-full border-transparent bg-card px-3 py-1.5 text-foreground shadow-[0_6px_20px_-8px_rgba(22,22,42,0.35)] [&_svg]:size-4 [&_svg]:text-brand",
       },
     },
     defaultVariants: {

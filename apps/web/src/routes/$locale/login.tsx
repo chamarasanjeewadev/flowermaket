@@ -68,10 +68,24 @@ function LoginPage() {
   });
 
   return (
-    <div className="mx-auto flex max-w-md flex-col px-4 py-12 sm:py-16">
-      <Card>
-        <CardHeader className="text-center">
-          <CardTitle className="text-xl">{t.auth.welcomeBack}</CardTitle>
+    <div className="mx-auto grid max-w-6xl items-center gap-10 px-4 py-12 sm:py-16 lg:grid-cols-2">
+      <aside className="hidden overflow-hidden rounded-lg bg-sage-deep px-10 py-14 text-background lg:block">
+        <p className="font-display text-3xl">
+          FlowerMarket<span className="text-butter">.lk</span>
+        </p>
+        <p className="mt-4 max-w-sm font-display text-4xl leading-tight">
+          {t.footer.tagline}
+        </p>
+        <p className="mt-6 max-w-sm text-sm leading-relaxed text-background/70">
+          {t.auth.signInSub}
+        </p>
+      </aside>
+
+      <Card className="mx-auto w-full max-w-md">
+        <CardHeader>
+          <CardTitle className="font-display text-3xl">
+            {t.auth.welcomeBack}
+          </CardTitle>
           <CardDescription>{t.auth.signInSub}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -176,9 +190,7 @@ function LoginPage() {
 
           <div className="flex items-center gap-3">
             <Separator className="flex-1" />
-            <span className="text-xs uppercase text-muted-foreground">
-              {t.common.or}
-            </span>
+            <span className="text-xs text-muted-foreground">{t.common.or}</span>
             <Separator className="flex-1" />
           </div>
 
@@ -192,7 +204,7 @@ function LoginPage() {
             <Link
               to="/$locale/signup"
               params={{ locale }}
-              className="font-medium text-primary hover:underline"
+              className="font-medium text-brand hover:underline"
             >
               {t.auth.createFreeAccount}
             </Link>

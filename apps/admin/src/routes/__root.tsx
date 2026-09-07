@@ -63,7 +63,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       <head>
         <HeadContent />
       </head>
-      <body className="min-h-dvh bg-muted/30 font-sans antialiased">
+      <body className="min-h-dvh bg-background font-sans text-foreground antialiased">
         {children}
         <Scripts />
       </body>
@@ -73,10 +73,11 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 
 function Logo() {
   return (
-    <p className="flex items-center gap-2 text-base font-bold">
+    <p className="flex items-center gap-2">
       <img src="/logo.png" alt="FlowerMarket.lk" className="h-7 w-auto" />
-      <span className="rounded bg-destructive px-1.5 py-0.5 text-[10px] font-semibold text-destructive-foreground">
-        ADMIN
+      <span className="font-display text-base">FlowerMarket.lk</span>
+      <span className="rounded bg-destructive px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-destructive-foreground">
+        Admin
       </span>
     </p>
   );
@@ -98,7 +99,7 @@ function SessionFooter({ session }: { session: AdminSession }) {
   }
 
   return (
-    <div className="mt-auto border-t pt-3">
+    <div className="mt-auto border-t border-border pt-3">
       <p className="truncate px-3 text-xs text-muted-foreground">
         {session.kind === "admin" ? session.email : "Dev mode — no auth"}
       </p>
@@ -132,12 +133,12 @@ function NotAuthorized({
   }
 
   return (
-    <div className="flex min-h-dvh items-center justify-center p-6">
-      <div className="w-full max-w-sm rounded-xl border bg-background p-8 text-center shadow-sm">
+    <div className="flex min-h-dvh items-center justify-center bg-background p-6">
+      <div className="w-full max-w-sm rounded-xl border border-border bg-card p-8 text-center shadow-sm">
         <div className="mx-auto flex size-12 items-center justify-center rounded-full bg-destructive/10">
           <ShieldAlert className="size-6 text-destructive" />
         </div>
-        <h1 className="mt-4 text-lg font-semibold">Not authorized</h1>
+        <h1 className="mt-4 font-display text-2xl">Not authorized</h1>
         <p className="mt-2 text-sm text-muted-foreground">
           <span className="font-medium text-foreground">{session.email}</span>{" "}
           is signed in but does not have the admin role.
@@ -174,13 +175,13 @@ function RootLayout() {
 
   return (
     <div className="flex min-h-dvh">
-      <aside className="sticky top-0 hidden h-dvh w-56 shrink-0 flex-col border-r bg-background p-4 sm:flex">
+      <aside className="sticky top-0 hidden h-dvh w-56 shrink-0 flex-col border-r border-border bg-card p-4 sm:flex">
         <Logo />
         <nav className="mt-6 flex flex-col gap-1 text-sm">
           <Link
             to="/"
-            className="rounded-md px-3 py-2 hover:bg-accent"
-            activeProps={{ className: "bg-accent font-medium" }}
+            className="rounded-md px-3 py-2 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+            activeProps={{ className: "bg-accent font-medium text-brand" }}
             activeOptions={{ exact: true }}
           >
             Dashboard
