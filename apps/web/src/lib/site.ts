@@ -31,14 +31,15 @@ export function hreflangLinks(
 ): Array<{
   rel: string;
   href: string;
-  hreflang?: string;
+  // React prop name; renders to the lowercase `hreflang` HTML attribute.
+  hrefLang?: string;
 }> {
   const base = siteUrl();
   // Normalise: strip leading slash so we can re-add it cleanly
   const stripped = path.replace(/^\//, "");
   const suffix = stripped ? `/${stripped}` : "";
 
-  const links: Array<{ rel: string; href: string; hreflang?: string }> = [];
+  const links: Array<{ rel: string; href: string; hrefLang?: string }> = [];
 
   // Canonical points to the CURRENT locale's own URL
   links.push({ rel: "canonical", href: `${base}/${locale}${suffix}` });
@@ -48,7 +49,7 @@ export function hreflangLinks(
     links.push({
       rel: "alternate",
       href: `${base}/${loc}${suffix}`,
-      hreflang: loc,
+      hrefLang: loc,
     });
   }
 
@@ -56,7 +57,7 @@ export function hreflangLinks(
   links.push({
     rel: "alternate",
     href: `${base}/en${suffix}`,
-    hreflang: "x-default",
+    hrefLang: "x-default",
   });
 
   return links;

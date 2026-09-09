@@ -1,13 +1,25 @@
 import { createFileRoute, notFound } from "@tanstack/react-router";
 import { ProductGrid } from "../../components/catalog/ProductGrid";
-import { localizedName, type Locale } from "../../i18n";
+import { getDict, localizedName, type Locale } from "../../i18n";
 import { useT } from "../../i18n/react";
 import { absoluteUrl, hreflangLinks } from "../../lib/site";
+import {
+  breadcrumbJsonLd,
+  jsonLdScript,
+  localePath,
+} from "../../lib/seo";
 import { getCategoriesWithCounts, listProducts } from "../../server/catalog";
 
 function categoryIntro(t: ReturnType<typeof useT>["t"], slug: string): string {
   const map = t.catalog.categoryIntro as Record<string, string | undefined>;
   return map[slug] ?? t.catalog.browseSub;
+}
+
+/** Keyword-rich meta description for a category, reusing the intro copy. */
+function categoryMetaDescription(locale: Locale, slug: string): string {
+  const dict = getDict(locale);
+  const map = dict.catalog.categoryIntro as Record<string, string | undefined>;
+  return map[slug] ?? dict.catalog.browseSub;
 }
 
 export const Route = createFileRoute("/$locale/c/$slug")({
@@ -26,8 +38,13 @@ export const Route = createFileRoute("/$locale/c/$slug")({
     }
     const name =
       locale === "si" && category.nameSi ? category.nameSi : category.nameEn;
+    const description = categoryMetaDescription(locale, category.slug);
     const items = loaderData?.result.items ?? [];
-    const jsonLd = {
+    const title =
+      locale === "si"
+        ? `${name} — ශ්‍රී ලංකාව | FlowerMarket.lk`
+        : `${name} in Sri Lanka — Grower-Direct | FlowerMarket.lk`;
+    const itemList = {
       "@context": "https://schema.org",
       "@type": "ItemList",
       name,
@@ -38,18 +55,20 @@ export const Route = createFileRoute("/$locale/c/$slug")({
         name: p.nameEn,
       })),
     };
+    const breadcrumbs = breadcrumbJsonLd([
+      { name: "Home", path: localePath(locale, "/") },
+      { name: "Browse", path: localePath(locale, "/products") },
+      { name: category.nameEn, path: localePath(locale, `/c/${category.slug}`) },
+    ]);
     return {
       meta: [
-        { title: `${name} | FlowerMarket.lk` },
-        {
-          name: "description",
-          content: `${name} — FlowerMarket.lk`,
-        },
+        { title },
+        { name: "description", content: description },
+        { property: "og:title", content: name },
+        { property: "og:description", content: description },
       ],
       links: hreflangLinks(`/c/${category.slug}`, locale),
-      scripts: [
-        { type: "application/ld+json", children: JSON.stringify(jsonLd) },
-      ],
+      scripts: [jsonLdScript(itemList), jsonLdScript(breadcrumbs)],
     };
   },
   component: CategoryPage,

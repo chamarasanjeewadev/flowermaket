@@ -68,25 +68,21 @@ export const Route = createFileRoute("/$locale/products/")({
   }),
   head: ({ params }) => {
     const locale = params.locale as Locale;
+    const title =
+      locale === "si"
+        ? "මල් මිලදී ගන්න — සිල්ලර සහ තොග | FlowerMarket.lk"
+        : "Buy Flowers Online in Sri Lanka — Retail & Wholesale | FlowerMarket.lk";
+    const description =
+      locale === "si"
+        ? "සිල්ලර මල් කළඹ හා තොග මල් කඳ, ප්‍රාදේශීය ගොවීන් හා මල් සාප්පුවලින් කෙලින්ම. දිස්ත්‍රික්කය හා වර්ගය අනුව පෙරහන් කරන්න."
+        : "Browse and buy fresh flowers online in Sri Lanka — retail bouquets and wholesale stems direct from local growers and florists. Filter by category, district and type.";
     return {
-      meta:
-        locale === "si"
-          ? [
-              { title: "මල් බ්‍රවුස් කරන්න | FlowerMarket.lk" },
-              {
-                name: "description",
-                content:
-                  "සිල්ලර මල් කළඹ හා තොග මල් කඳ, ප්‍රාදේශීය ගොවීන් හා මල් සාප්පුවලින් කෙලින්ම.",
-              },
-            ]
-          : [
-              { title: "Browse flowers — retail & wholesale | FlowerMarket.lk" },
-              {
-                name: "description",
-                content:
-                  "Browse retail bouquets and wholesale flower stems direct from local Sri Lankan growers and florists.",
-              },
-            ],
+      meta: [
+        { title },
+        { name: "description", content: description },
+        { property: "og:title", content: title },
+        { property: "og:description", content: description },
+      ],
       links: hreflangLinks("/products", locale),
     };
   },

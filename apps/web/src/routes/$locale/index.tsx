@@ -15,6 +15,11 @@ import { localizedCategoryName } from "../../i18n";
 import { useT } from "../../i18n/react";
 import { hreflangLinks } from "../../lib/site";
 import {
+  jsonLdScript,
+  organizationJsonLd,
+  webSiteJsonLd,
+} from "../../lib/seo";
+import {
   getCategoriesWithCounts,
   getFeaturedProducts,
 } from "../../server/catalog";
@@ -28,22 +33,26 @@ export const Route = createFileRoute("/$locale/")({
     meta:
       params.locale === "si"
         ? [
-            { title: "FlowerMarket.lk — ශ්‍රී ලංකාවේ මල් වෙළෙඳපොළ" },
+            { title: "ශ්‍රී ලංකාවේ මල් වෙළෙඳපොළ | FlowerMarket.lk" },
             {
               name: "description",
               content:
-                "ප්‍රාදේශීය ගොවීන් හා මල් සාප්පුවලින් කෙලින්ම නැවුම් මල් — සිල්ලර හා තොග. මැදිහත්කරුවන් නැත.",
+                "ප්‍රාදේශීය ගොවීන් හා මල් සාප්පුවලින් කෙලින්ම නැවුම් මල් — සිල්ලර මල් කළඹ හා තොග මල් කඳ. මැදිහත්කරුවන් නැත, ශ්‍රී ලංකාව පුරා බෙදාහැරීම.",
             },
           ]
         : [
-            { title: "FlowerMarket.lk — Sri Lanka's flower marketplace" },
+            {
+              title:
+                "Online Flower Shop & Delivery in Sri Lanka | FlowerMarket.lk",
+            },
             {
               name: "description",
               content:
-                "Buy fresh flowers direct from local Sri Lankan growers and florists — retail bouquets and wholesale stems. No Manning Market run, no middleman.",
+                "Buy fresh flowers online in Sri Lanka — retail bouquets and wholesale stems direct from local growers and florists. Grower-direct prices, island-wide delivery, no middleman.",
             },
           ],
     links: hreflangLinks("/", params.locale as import("../../i18n").Locale),
+    scripts: [jsonLdScript(organizationJsonLd()), jsonLdScript(webSiteJsonLd())],
   }),
   component: HomePage,
 });

@@ -12,6 +12,8 @@ import { buttonVariants } from "@flowers/ui/components/button";
 import { SearchX } from "lucide-react";
 import { Footer } from "../components/Footer";
 import { Header } from "../components/Header";
+import { FloatingWhatsApp } from "../components/FloatingWhatsApp";
+import { EnquiryProvider } from "../lib/enquiry";
 import { getDict, isLocale, type Locale } from "../i18n";
 import { I18nProvider } from "../i18n/react";
 import { sessionQueryOptions } from "../lib/session";
@@ -101,14 +103,17 @@ function RootLayout() {
   const locale = localeFromPath(routerState.location.pathname);
   return (
     <I18nProvider locale={locale}>
-      <div className="flex min-h-dvh flex-col">
-        <Header session={session} />
-        <main className="flex-1">
-          <Outlet />
-        </main>
-        <Footer />
-        <Toaster position="top-center" />
-      </div>
+      <EnquiryProvider>
+        <div className="flex min-h-dvh flex-col">
+          <Header session={session} />
+          <main className="flex-1">
+            <Outlet />
+          </main>
+          <Footer />
+          <FloatingWhatsApp />
+          <Toaster position="top-center" />
+        </div>
+      </EnquiryProvider>
     </I18nProvider>
   );
 }

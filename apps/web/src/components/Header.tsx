@@ -31,6 +31,7 @@ import { useT } from "../i18n/react";
 import { signOut } from "../server/auth";
 import { setLocale } from "../server/locale";
 import { refreshSession, type SessionUser } from "../lib/session";
+import { useEnquiry } from "../lib/enquiry";
 
 const LANGUAGES: ReadonlyArray<{
   code: Locale;
@@ -197,6 +198,7 @@ function UserMenu({
 
 export function Header({ session }: { session: SessionUser }) {
   const { t, locale } = useT();
+  const { count, hydrated } = useEnquiry();
   const [mobileOpen, setMobileOpen] = React.useState(false);
 
   const navLink =
@@ -224,6 +226,9 @@ export function Header({ session }: { session: SessionUser }) {
             className={navLink}
           >
             {t.nav.wholesale}
+          </Link>
+          <Link to="/$locale/blog" params={{ locale }} className={navLink}>
+            {t.nav.guides}
           </Link>
         </nav>
 
@@ -255,13 +260,17 @@ export function Header({ session }: { session: SessionUser }) {
           )}
 
           <Link
-            to="/$locale/products"
+            to="/$locale/enquiry"
             params={{ locale }}
-            search={{ type: "retail" }}
-            aria-label={t.nav.cart}
-            className="inline-flex size-10 items-center justify-center rounded-full bg-brand text-brand-foreground transition-colors hover:bg-brand/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+            aria-label={t.nav.enquiry}
+            className="relative inline-flex size-10 items-center justify-center rounded-full bg-brand text-brand-foreground transition-colors hover:bg-brand/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
           >
             <ShoppingBag className="size-[18px]" aria-hidden="true" />
+            {hydrated && count > 0 && (
+              <span className="absolute -right-1 -top-1 flex min-w-5 items-center justify-center rounded-full bg-foreground px-1.5 text-xs font-semibold text-background">
+                {count}
+              </span>
+            )}
           </Link>
 
           <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
@@ -299,6 +308,14 @@ export function Header({ session }: { session: SessionUser }) {
                   className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-accent"
                 >
                   {t.nav.wholesale}
+                </Link>
+                <Link
+                  to="/$locale/blog"
+                  params={{ locale }}
+                  onClick={() => setMobileOpen(false)}
+                  className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-accent"
+                >
+                  {t.nav.guides}
                 </Link>
               </nav>
               <div className="mt-6 space-y-2 border-t pt-6">

@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { listCatalogSitemap, tryCreateDb } from "@flowers/api";
 import { LOCALES } from "../i18n";
 import { siteUrl } from "../lib/site";
+import { listPosts } from "../content/posts";
 
 /**
  * Server-only route — enumerates home, browse, category, shop and product URLs
@@ -55,6 +56,19 @@ export const Route = createFileRoute("/sitemap.xml")({
             changefreq: "daily",
             priority: "0.9",
           });
+          urls.push({
+            loc: `${base}/${loc}/blog`,
+            changefreq: "weekly",
+            priority: "0.6",
+          });
+          for (const post of listPosts()) {
+            urls.push({
+              loc: `${base}/${loc}/blog/${post.slug}`,
+              changefreq: "monthly",
+              priority: "0.7",
+              lastmod: post.dateModified ?? post.datePublished,
+            });
+          }
         }
 
         const db = tryCreateDb();

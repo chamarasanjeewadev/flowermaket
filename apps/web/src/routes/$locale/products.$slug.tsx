@@ -4,6 +4,7 @@ import { Badge } from "@flowers/ui/components/badge";
 import { Clock, Store } from "lucide-react";
 import { PriceBlock } from "../../components/catalog/PriceBlock";
 import { WholesaleInfo } from "../../components/catalog/WholesaleInfo";
+import { AddToEnquiryButton } from "../../components/catalog/AddToEnquiryButton";
 import {
   localizedDescription,
   localizedName,
@@ -11,6 +12,11 @@ import {
 } from "../../i18n";
 import { useT } from "../../i18n/react";
 import { absoluteUrl, hreflangLinks } from "../../lib/site";
+import {
+  breadcrumbJsonLd,
+  jsonLdScript,
+  localePath,
+} from "../../lib/seo";
 import { getProductBySlug } from "../../server/catalog";
 
 export const Route = createFileRoute("/$locale/products/$slug")({
@@ -38,36 +44,58 @@ export const Route = createFileRoute("/$locale/products/$slug")({
           ? "https://schema.org/InStock"
           : "https://schema.org/OutOfStock";
 
+    const canonicalUrl = absoluteUrl(`/${locale}/products/${product.slug}`);
+    // Offers carry a validity horizon so Rich Results doesn't flag the price as
+    // stale — end of next calendar year is a safe rolling window.
+    const priceValidUntil = `${new Date().getFullYear() + 1}-12-31`;
+
     const jsonLd = {
       "@context": "https://schema.org",
       "@type": "Product",
       name,
       description,
       ...(imageUrls.length > 0 ? { image: imageUrls } : {}),
+      sku: product.id,
       category: product.category.nameEn,
+      brand: { "@type": "Brand", name: product.shop.nameEn },
       offers: {
         "@type": "Offer",
+        url: canonicalUrl,
         priceCurrency: "LKR",
         price: (product.price / 100).toFixed(2),
+        priceValidUntil,
+        itemCondition: "https://schema.org/NewCondition",
         availability,
         seller: { "@type": "Organization", name: product.shop.nameEn },
       },
     };
 
+    const breadcrumbs = breadcrumbJsonLd([
+      { name: "Home", path: localePath(locale, "/") },
+      {
+        name: product.category.nameEn,
+        path: localePath(locale, `/c/${product.category.slug}`),
+      },
+      {
+        name: product.nameEn,
+        path: localePath(locale, `/products/${product.slug}`),
+      },
+    ]);
+
     return {
       meta: [
         { title: `${name} | FlowerMarket.lk` },
         { name: "description", content: description },
+        { property: "og:type", content: "product" },
         { property: "og:title", content: name },
         { property: "og:description", content: description },
+        { property: "og:url", content: canonicalUrl },
         ...(imageUrls.length > 0
           ? [{ property: "og:image", content: imageUrls[0]! }]
           : []),
       ],
       links: hreflangLinks(`/products/${product.slug}`, locale),
-      scripts: [
-        { type: "application/ld+json", children: JSON.stringify(jsonLd) },
-      ],
+      scripts: [jsonLdScript(jsonLd), jsonLdScript(breadcrumbs)],
     };
   },
   component: ProductDetailPage,
@@ -182,6 +210,25 @@ function ProductDetailPage() {
                 {f(t.catalog.leadTime, { days: product.leadTimeDays })}
               </span>
             ) : null}
+          </div>
+
+          {/* Enquiry CTA — add to the WhatsApp enquiry list */}
+          <div className="pt-1">
+            <AddToEnquiryButton
+              product={{
+                id: product.id,
+                slug: product.slug,
+                nameEn: product.nameEn,
+                nameSi: product.nameSi,
+                price: product.price,
+                listingType: product.listingType,
+              }}
+              variant="detail"
+              className="w-full sm:w-auto"
+            />
+            <p className="mt-2 text-xs text-muted-foreground">
+              {t.enquiry.detailHint}
+            </p>
           </div>
 
           {description && (

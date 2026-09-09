@@ -8,7 +8,12 @@ import {
   type Locale,
 } from "../../i18n";
 import { useT } from "../../i18n/react";
-import { hreflangLinks } from "../../lib/site";
+import { absoluteUrl, hreflangLinks } from "../../lib/site";
+import {
+  breadcrumbJsonLd,
+  jsonLdScript,
+  localePath,
+} from "../../lib/seo";
 import { getShopBySlug } from "../../server/catalog";
 
 export const Route = createFileRoute("/$locale/shops/$slug")({
@@ -24,15 +29,21 @@ export const Route = createFileRoute("/$locale/shops/$slug")({
       return { links: hreflangLinks(`/shops/${params.slug}`, locale) };
     }
     const name = locale === "si" && shop.nameSi ? shop.nameSi : shop.nameEn;
+    // Keyword-rich fallback description when the shop hasn't written its own.
+    const sellerType = shop.shopType === "grower" ? "grower" : "florist";
+    const fallbackDescription = `${shop.nameEn} is a local flower ${sellerType} in ${shop.districtNameEn}, Sri Lanka. Shop fresh flowers direct — grower-direct prices, no middleman — on FlowerMarket.lk.`;
     const description =
       (locale === "si" && shop.descriptionSi
         ? shop.descriptionSi
-        : shop.descriptionEn) ?? name;
+        : shop.descriptionEn) ?? fallbackDescription;
+    const canonicalUrl = absoluteUrl(`/${locale}/shops/${shop.slug}`);
     const jsonLd = {
       "@context": "https://schema.org",
       "@type": "Florist",
       name: shop.nameEn,
-      description: shop.descriptionEn ?? shop.nameEn,
+      url: canonicalUrl,
+      description: shop.descriptionEn ?? fallbackDescription,
+      image: absoluteUrl("/og-image.png"),
       address: {
         "@type": "PostalAddress",
         addressRegion: shop.districtNameEn,
@@ -40,15 +51,20 @@ export const Route = createFileRoute("/$locale/shops/$slug")({
         ...(shop.city ? { addressLocality: shop.city } : {}),
       },
     };
+    const breadcrumbs = breadcrumbJsonLd([
+      { name: "Home", path: localePath(locale, "/") },
+      { name: shop.nameEn, path: localePath(locale, `/shops/${shop.slug}`) },
+    ]);
     return {
       meta: [
-        { title: `${name} | FlowerMarket.lk` },
+        { title: `${name} — Sri Lanka | FlowerMarket.lk` },
         { name: "description", content: description },
+        { property: "og:title", content: name },
+        { property: "og:description", content: description },
+        { property: "og:url", content: canonicalUrl },
       ],
       links: hreflangLinks(`/shops/${shop.slug}`, locale),
-      scripts: [
-        { type: "application/ld+json", children: JSON.stringify(jsonLd) },
-      ],
+      scripts: [jsonLdScript(jsonLd), jsonLdScript(breadcrumbs)],
     };
   },
   component: ShopPage,

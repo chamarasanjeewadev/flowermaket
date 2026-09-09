@@ -5,6 +5,7 @@ import { localizedName } from "../../i18n";
 import { useT } from "../../i18n/react";
 import type { ProductListItemDTO } from "../../server/catalog";
 import { PriceBlock } from "./PriceBlock";
+import { AddToEnquiryButton } from "./AddToEnquiryButton";
 
 /** Rotating pastel tints for the image stage, echoing the reference's
  * colored blocks behind product photography. */
@@ -26,12 +27,12 @@ export function ProductCard({
   const img = product.imageUrl ?? "/placeholder-flower.svg";
   const isWholesale = product.listingType === "wholesale";
 
+  // Stretched-link pattern: the whole card is clickable via an absolutely
+  // positioned link, while the "Add to enquiry" button sits above it (higher
+  // z-index) so it stays independently interactive without nesting a <button>
+  // inside an <a>.
   return (
-    <Link
-      to="/$locale/products/$slug"
-      params={{ locale, slug: product.slug }}
-      className="group flex h-full flex-col overflow-hidden rounded-lg border border-border/60 bg-card transition-transform hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-    >
+    <article className="group relative flex h-full flex-col overflow-hidden rounded-lg border border-border/60 bg-card transition-transform hover:-translate-y-0.5 focus-within:ring-2 focus-within:ring-ring">
       <div
         className={cn(
           "relative aspect-square overflow-hidden",
@@ -69,7 +70,29 @@ export function ProductCard({
         <p className="mt-auto pt-1 text-xs text-muted-foreground">
           {f(t.catalog.soldBy, { shop: shopName })}
         </p>
+        <div className="relative z-20 pt-2">
+          <AddToEnquiryButton
+            product={{
+              id: product.id,
+              slug: product.slug,
+              nameEn: product.nameEn,
+              nameSi: product.nameSi,
+              price: product.price,
+              listingType: product.listingType,
+            }}
+            variant="card"
+          />
+        </div>
       </div>
-    </Link>
+
+      <Link
+        to="/$locale/products/$slug"
+        params={{ locale, slug: product.slug }}
+        aria-label={name}
+        className="absolute inset-0 z-10 focus-visible:outline-none"
+      >
+        <span className="sr-only">{name}</span>
+      </Link>
+    </article>
   );
 }
