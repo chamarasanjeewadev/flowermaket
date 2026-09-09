@@ -253,6 +253,8 @@ async function main() {
       stockQty: number | null;
       leadTimeDays: number | null;
       altEn: string;
+      /** Absolute image URL (free Pexels stock); resolveImageUrl passes it through as-is. */
+      imageUrl: string;
     };
 
     // Prices in LKR cents; wholesale is per stem with compareAtPrice as the
@@ -275,6 +277,8 @@ async function main() {
         stockQty: null,
         leadTimeDays: 2,
         altEn: "Red rose stem",
+        imageUrl:
+          "https://images.pexels.com/photos/38055799/pexels-photo-38055799.jpeg?auto=compress&cs=tinysrgb&w=1200",
       },
       {
         slug: "wholesale-pink-rose-stem",
@@ -291,6 +295,8 @@ async function main() {
         stockQty: null,
         leadTimeDays: 2,
         altEn: "Pink rose stem",
+        imageUrl:
+          "https://images.pexels.com/photos/5658424/pexels-photo-5658424.jpeg?auto=compress&cs=tinysrgb&w=1200",
       },
       {
         slug: "wholesale-white-rose-stem",
@@ -307,6 +313,8 @@ async function main() {
         stockQty: null,
         leadTimeDays: 2,
         altEn: "White rose stem",
+        imageUrl:
+          "https://images.pexels.com/photos/6257764/pexels-photo-6257764.jpeg?auto=compress&cs=tinysrgb&w=1200",
       },
       {
         slug: "wholesale-pink-gerbera-stem",
@@ -323,6 +331,8 @@ async function main() {
         stockQty: null,
         leadTimeDays: 2,
         altEn: "Pink gerbera stem",
+        imageUrl:
+          "https://images.pexels.com/photos/37188244/pexels-photo-37188244.jpeg?auto=compress&cs=tinysrgb&w=1200",
       },
       {
         slug: "wholesale-orange-gerbera-stem",
@@ -339,6 +349,8 @@ async function main() {
         stockQty: null,
         leadTimeDays: 2,
         altEn: "Orange gerbera stem",
+        imageUrl:
+          "https://images.pexels.com/photos/11001622/pexels-photo-11001622.jpeg?auto=compress&cs=tinysrgb&w=1200",
       },
       {
         slug: "wholesale-dendrobium-stem",
@@ -355,6 +367,8 @@ async function main() {
         stockQty: null,
         leadTimeDays: 2,
         altEn: "Dendrobium orchid stem",
+        imageUrl:
+          "https://images.pexels.com/photos/33734514/pexels-photo-33734514.jpeg?auto=compress&cs=tinysrgb&w=1200",
       },
       {
         slug: "wholesale-sonia-orchid-stem",
@@ -371,6 +385,8 @@ async function main() {
         stockQty: null,
         leadTimeDays: 2,
         altEn: "Sonia orchid stem",
+        imageUrl:
+          "https://images.pexels.com/photos/36273679/pexels-photo-36273679.jpeg?auto=compress&cs=tinysrgb&w=1200",
       },
       {
         slug: "wholesale-white-chrysanth-stem",
@@ -387,6 +403,8 @@ async function main() {
         stockQty: null,
         leadTimeDays: 2,
         altEn: "White chrysanthemum stem",
+        imageUrl:
+          "https://images.pexels.com/photos/32394954/pexels-photo-32394954.jpeg?auto=compress&cs=tinysrgb&w=1200",
       },
       {
         slug: "wholesale-yellow-chrysanth-stem",
@@ -403,6 +421,8 @@ async function main() {
         stockQty: null,
         leadTimeDays: 2,
         altEn: "Yellow chrysanthemum stem",
+        imageUrl:
+          "https://images.pexels.com/photos/33702615/pexels-photo-33702615.jpeg?auto=compress&cs=tinysrgb&w=1200",
       },
       {
         slug: "retail-classic-red-rose-bouquet",
@@ -419,6 +439,8 @@ async function main() {
         stockQty: 15,
         leadTimeDays: 1,
         altEn: "Classic red rose bouquet",
+        imageUrl:
+          "https://images.pexels.com/photos/34730769/pexels-photo-34730769.jpeg?auto=compress&cs=tinysrgb&w=1200",
       },
       {
         slug: "retail-mixed-gerbera-bouquet",
@@ -435,6 +457,8 @@ async function main() {
         stockQty: 15,
         leadTimeDays: 1,
         altEn: "Mixed gerbera bouquet",
+        imageUrl:
+          "https://images.pexels.com/photos/37632004/pexels-photo-37632004.jpeg?auto=compress&cs=tinysrgb&w=1200",
       },
       {
         slug: "retail-wedding-orchid-arrangement",
@@ -451,6 +475,8 @@ async function main() {
         stockQty: null,
         leadTimeDays: 3,
         altEn: "Wedding orchid arrangement",
+        imageUrl:
+          "https://images.pexels.com/photos/37606382/pexels-photo-37606382.jpeg?auto=compress&cs=tinysrgb&w=1200",
       },
     ];
 
@@ -478,29 +504,44 @@ async function main() {
         };
       }).filter((v): v is NonNullable<typeof v> => v !== null);
 
-      // Only newly-inserted rows are returned (onConflictDoNothing), so the
-      // image insert below stays idempotent across re-runs.
       const inserted = await db
         .insert(schema.products)
         .values(values)
         .onConflictDoNothing({ target: schema.products.slug })
         .returning({ id: schema.products.id, slug: schema.products.slug });
 
-      const altBySlug = new Map(CATALOG.map((p) => [p.slug, p.altEn]));
-      if (inserted.length > 0) {
+      // Resolve ids for ALL catalog products (not just newly-inserted) so the
+      // primary image is (re)set on every run — self-healing for rows that
+      // predate real photos. Delete-then-insert keeps the primary image in
+      // sync with CATALOG below without needing a unique key to upsert against.
+      const slugs = CATALOG.map((p) => p.slug);
+      const productRows = await db
+        .select({ id: schema.products.id, slug: schema.products.slug })
+        .from(schema.products)
+        .where(inArray(schema.products.slug, slugs));
+
+      const bySlug = new Map(CATALOG.map((p) => [p.slug, p]));
+      const productIds = productRows.map((r) => r.id);
+      if (productIds.length > 0) {
+        await db
+          .delete(schema.productImages)
+          .where(inArray(schema.productImages.productId, productIds));
         await db.insert(schema.productImages).values(
-          inserted.map((row) => ({
-            productId: row.id,
-            storagePath: "/placeholder-flower.svg",
-            altText: altBySlug.get(row.slug) ?? null,
-            sortOrder: 0,
-            isPrimary: true,
-          })),
+          productRows.map((row) => {
+            const p = bySlug.get(row.slug)!;
+            return {
+              productId: row.id,
+              storagePath: p.imageUrl,
+              altText: p.altEn,
+              sortOrder: 0,
+              isPrimary: true,
+            };
+          }),
         );
       }
 
       console.log(
-        `  Catalog seeded: 2 shops, ${values.length} products (${inserted.length} new).`,
+        `  Catalog seeded: 2 shops, ${values.length} products (${inserted.length} new), ${productRows.length} primary images set.`,
       );
     }
   }
