@@ -34,6 +34,12 @@ export function organizationJsonLd() {
     description:
       "Sri Lanka's online flower marketplace connecting buyers with local growers and florists — retail bouquets and wholesale stems, grower-direct.",
     areaServed: { "@type": "Country", name: "Sri Lanka" },
+    parentOrganization: {
+      "@type": "Organization",
+      name: "GritTech",
+      url: "https://grittech.lk",
+    },
+    sameAs: ["https://grittech.lk"],
   };
 }
 
