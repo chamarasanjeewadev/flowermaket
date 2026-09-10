@@ -31,6 +31,8 @@ export const en = {
     strip: "English · සිංහල",
     explore: "Explore",
     guides: "Flower guides",
+    moreFromGritTech: "More from GritTech",
+    builtBy: "Built by",
   },
   blog: {
     title: "Flower Guides",
