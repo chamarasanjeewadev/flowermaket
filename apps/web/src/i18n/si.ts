@@ -28,6 +28,8 @@ export const si: Dict = {
     strip: "English · සිංහල",
     explore: "ගවේෂණය",
     guides: "මල් මාර්ගෝපදේශ",
+    contact: "සම්බන්ධ වන්න",
+    email: "අපට විද්‍යුත් තැපෑලක්",
     moreFromGritTech: "GritTech වෙතින් තවත්",
     builtBy: "නිර්මාණය",
   },

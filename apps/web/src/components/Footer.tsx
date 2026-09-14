@@ -1,5 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { useT } from "../i18n/react";
+import { CONTACT_EMAIL } from "../lib/site";
 
 const SISTER_PRODUCTS = [
   { name: "BabyJourney", url: "https://babyjourney.lk" },
@@ -48,6 +49,17 @@ export function Footer() {
             <Link to="/$locale/blog" params={{ locale }} className={linkClass}>
               {t.footer.guides}
             </Link>
+          </nav>
+          <nav
+            aria-label={t.footer.contact}
+            className="flex flex-col gap-2 sm:items-end"
+          >
+            <p className="text-xs font-semibold uppercase tracking-wide text-background/50">
+              {t.footer.contact}
+            </p>
+            <a href={`mailto:${CONTACT_EMAIL}`} className={linkClass}>
+              {CONTACT_EMAIL}
+            </a>
           </nav>
           <nav
             aria-label={t.footer.moreFromGritTech}

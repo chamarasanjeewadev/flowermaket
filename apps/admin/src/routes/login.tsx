@@ -55,7 +55,7 @@ function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-dvh items-center justify-center bg-background p-6">
+    <div className="flex min-h-dvh flex-col items-center justify-center bg-background p-6">
       <Card className="w-full max-w-sm">
         <CardHeader className="text-center">
           <img
@@ -135,6 +135,15 @@ function LoginPage() {
           )}
         </CardContent>
       </Card>
+      <p className="mt-6 text-center text-xs text-muted-foreground">
+        Need help?{" "}
+        <a
+          href="mailto:hi@flowermarket.lk"
+          className="underline hover:text-foreground"
+        >
+          hi@flowermarket.lk
+        </a>
+      </p>
     </div>
   );
 }
