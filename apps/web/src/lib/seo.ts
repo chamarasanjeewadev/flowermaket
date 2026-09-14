@@ -5,7 +5,7 @@
  * and dependency-light. All URLs are absolutised via `absoluteUrl` so the
  * markup is valid regardless of the locale prefix in the current path.
  */
-import { absoluteUrl, siteUrl } from "./site";
+import { absoluteUrl, siteUrl, CONTACT_EMAIL } from "./site";
 import type { Locale } from "../i18n";
 
 export const SITE_NAME = "FlowerMarket.lk";
@@ -33,7 +33,21 @@ export function organizationJsonLd() {
     image: absoluteUrl("/og-image.png"),
     description:
       "Sri Lanka's online flower marketplace connecting buyers with local growers and florists — retail bouquets and wholesale stems, grower-direct.",
+    email: CONTACT_EMAIL,
     areaServed: { "@type": "Country", name: "Sri Lanka" },
+    contactPoint: {
+      "@type": "ContactPoint",
+      contactType: "customer support",
+      email: CONTACT_EMAIL,
+      areaServed: "LK",
+      availableLanguage: ["en", "si"],
+    },
+    parentOrganization: {
+      "@type": "Organization",
+      name: "GritTech",
+      url: "https://grittech.lk",
+    },
+    sameAs: ["https://grittech.lk"],
   };
 }
 

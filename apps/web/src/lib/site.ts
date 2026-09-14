@@ -7,6 +7,9 @@ import { LOCALES, type Locale } from "../i18n";
 
 export const FALLBACK_SITE_URL = "https://flowermarket.lk";
 
+/** Primary public contact address, surfaced in the footer and structured data. */
+export const CONTACT_EMAIL = "hi@flowermarket.lk";
+
 export function siteUrl(): string {
   if (typeof process !== "undefined" && process.env?.SITE_URL) {
     return process.env.SITE_URL.replace(/\/$/, "");
