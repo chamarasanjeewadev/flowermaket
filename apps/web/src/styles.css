@@ -1,1 +1,25 @@
 @import "@flowers/ui/globals.css";
+
+@media print {
+  body * {
+    visibility: hidden;
+  }
+
+  .quotation-print-root,
+  .quotation-print-root * {
+    visibility: visible;
+  }
+
+  .quotation-print-root {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    background: white;
+    color: black;
+    print-color-adjust: exact;
+  }
+
+  .quotation-screen-only {
+    display: none !important;
+  }
+}

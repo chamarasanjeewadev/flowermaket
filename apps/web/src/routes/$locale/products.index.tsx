@@ -18,7 +18,8 @@ import {
 } from "../../components/catalog/ProductGrid";
 import type { Locale } from "../../i18n";
 import { useT } from "../../i18n/react";
-import { hreflangLinks } from "../../lib/site";
+import { absoluteUrl, hreflangLinks } from "../../lib/site";
+import { socialMeta } from "../../lib/seo";
 import { getCategoriesWithCounts, listProducts } from "../../server/catalog";
 
 interface ProductsSearch {
@@ -65,25 +66,47 @@ export const Route = createFileRoute("/$locale/products/")({
       },
     }),
     categories: await getCategoriesWithCounts(),
+    filters: deps,
   }),
-  head: ({ params }) => {
+  head: ({ loaderData, params }) => {
     const locale = params.locale as Locale;
-    const title =
-      locale === "si"
-        ? "මල් මිලදී ගන්න — සිල්ලර සහ තොග | FlowerMarket.lk"
-        : "Buy Flowers Online in Sri Lanka — Retail & Wholesale | FlowerMarket.lk";
-    const description =
-      locale === "si"
-        ? "සිල්ලර මල් කළඹ හා තොග මල් කඳ, ප්‍රාදේශීය ගොවීන් හා මල් සාප්පුවලින් කෙලින්ම. දිස්ත්‍රික්කය හා වර්ගය අනුව පෙරහන් කරන්න."
-        : "Browse and buy fresh flowers online in Sri Lanka — retail bouquets and wholesale stems direct from local growers and florists. Filter by category, district and type.";
+    const filters = loaderData?.filters;
+    const hasDuplicateProneFilter = Boolean(
+      filters?.category || filters?.district || filters?.q || filters?.page,
+    );
+    const isWholesaleLanding =
+      filters?.type === "wholesale" && !hasDuplicateProneFilter;
+    const isIndexable = !hasDuplicateProneFilter && filters?.type !== "retail";
+    const seoPath = isWholesaleLanding ? "/products?type=wholesale" : "/products";
+    const title = isWholesaleLanding
+      ? locale === "si"
+        ? "ශ්‍රී ලංකාවේ තොග මල් ලැයිස්තු | FlowerMarket.lk"
+        : "Wholesale Flowers in Sri Lanka | FlowerMarket.lk"
+      : locale === "si"
+        ? "ශ්‍රී ලංකාවේ මල් ලැයිස්තු — සිල්ලර සහ තොග | FlowerMarket.lk"
+        : "Flower Listings in Sri Lanka — Retail & Wholesale | FlowerMarket.lk";
+    const description = isWholesaleLanding
+      ? locale === "si"
+        ? "ශ්‍රී ලංකාවේ පළ කර ඇති තොග මල් බලන්න. රෝස, ජර්බෙරා සහ ක්‍රයිසැන්තමම් ලැයිස්තුගත මිල හා අවම ප්‍රමාණය අනුව සසඳන්න."
+        : "Browse wholesale flower listings in Sri Lanka. Compare listed prices and minimum quantities for roses, gerberas, chrysanthemums and event stems."
+      : locale === "si"
+        ? "ශ්‍රී ලංකාවේ පළ කර ඇති සිල්ලර මල් කළඹ සහ තොග මල් කඳ බලන්න. ප්‍රවර්ගය, දිස්ත්‍රික්කය සහ වර්ගය අනුව පෙරහන් කරන්න."
+        : "Browse retail bouquets and wholesale flower stems listed in Sri Lanka. Filter by category, district and type, then send an enquiry.";
     return {
       meta: [
         { title },
         { name: "description", content: description },
-        { property: "og:title", content: title },
-        { property: "og:description", content: description },
+        ...(isIndexable
+          ? []
+          : [{ name: "robots", content: "noindex,follow" }]),
+        ...socialMeta({
+          title,
+          description,
+          url: absoluteUrl(`/${locale}${seoPath}`),
+          locale,
+        }),
       ],
-      links: hreflangLinks("/products", locale),
+      links: hreflangLinks(seoPath, locale),
     };
   },
   pendingComponent: PendingBrowse,

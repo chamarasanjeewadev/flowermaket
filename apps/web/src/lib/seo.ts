@@ -5,10 +5,16 @@
  * and dependency-light. All URLs are absolutised via `absoluteUrl` so the
  * markup is valid regardless of the locale prefix in the current path.
  */
-import { absoluteUrl, siteUrl, CONTACT_EMAIL } from "./site";
+import { absoluteUrl, siteUrl, CONTACT_EMAIL, CONTACT_PHONE } from "./site";
 import type { Locale } from "../i18n";
 
 export const SITE_NAME = "FlowerMarket.lk";
+export const DEFAULT_OG_IMAGE = "/og-image.png";
+
+type MetaEntry =
+  | { title: string }
+  | { name: string; content: string }
+  | { property: string; content: string };
 
 /** A single JSON-LD `<script>` head entry. */
 export function jsonLdScript(data: unknown): {
@@ -16,6 +22,36 @@ export function jsonLdScript(data: unknown): {
   children: string;
 } {
   return { type: "application/ld+json", children: JSON.stringify(data) };
+}
+
+/** Shared Open Graph + Twitter card tags for public pages. */
+export function socialMeta(input: {
+  title: string;
+  description: string;
+  url: string;
+  image?: string;
+  type?: "website" | "article" | "product";
+  locale?: Locale;
+}): MetaEntry[] {
+  const imageInput = input.image ?? DEFAULT_OG_IMAGE;
+  const image = /^https?:\/\//.test(imageInput)
+    ? imageInput
+    : absoluteUrl(imageInput);
+  return [
+    { property: "og:type", content: input.type ?? "website" },
+    { property: "og:site_name", content: SITE_NAME },
+    ...(input.locale
+      ? [{ property: "og:locale", content: input.locale }]
+      : []),
+    { property: "og:title", content: input.title },
+    { property: "og:description", content: input.description },
+    { property: "og:url", content: input.url },
+    { property: "og:image", content: image },
+    { name: "twitter:card", content: "summary_large_image" },
+    { name: "twitter:title", content: input.title },
+    { name: "twitter:description", content: input.description },
+    { name: "twitter:image", content: image },
+  ];
 }
 
 /**
@@ -32,22 +68,18 @@ export function organizationJsonLd() {
     logo: absoluteUrl("/logo.png"),
     image: absoluteUrl("/og-image.png"),
     description:
-      "Sri Lanka's online flower marketplace connecting buyers with local growers and florists — retail bouquets and wholesale stems, grower-direct.",
+      "A Sri Lankan marketplace for browsing retail and wholesale flower listings by category, district and seller.",
     email: CONTACT_EMAIL,
+    telephone: CONTACT_PHONE,
     areaServed: { "@type": "Country", name: "Sri Lanka" },
     contactPoint: {
       "@type": "ContactPoint",
       contactType: "customer support",
       email: CONTACT_EMAIL,
+      telephone: CONTACT_PHONE,
       areaServed: "LK",
       availableLanguage: ["en", "si"],
     },
-    parentOrganization: {
-      "@type": "Organization",
-      name: "GritTech",
-      url: "https://grittech.lk",
-    },
-    sameAs: ["https://grittech.lk"],
   };
 }
 

@@ -220,12 +220,26 @@ export function Header({ session }: { session: SessionUser }) {
             {t.nav.browse}
           </Link>
           <Link
+            to="/$locale/fresh-flowers-near-me"
+            params={{ locale }}
+            className={navLink}
+          >
+            {t.nav.nearMe}
+          </Link>
+          <Link
             to="/$locale/products"
             params={{ locale }}
             search={{ type: "wholesale" }}
             className={navLink}
           >
             {t.nav.wholesale}
+          </Link>
+          <Link
+            to="/$locale/fresh-flower-quotation-generator"
+            params={{ locale }}
+            className={`${navLink} hidden lg:inline-flex`}
+          >
+            {t.nav.quotation}
           </Link>
           <Link to="/$locale/blog" params={{ locale }} className={navLink}>
             {t.nav.guides}
@@ -301,6 +315,14 @@ export function Header({ session }: { session: SessionUser }) {
                   {t.nav.browse}
                 </Link>
                 <Link
+                  to="/$locale/fresh-flowers-near-me"
+                  params={{ locale }}
+                  onClick={() => setMobileOpen(false)}
+                  className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-accent"
+                >
+                  {t.nav.nearMe}
+                </Link>
+                <Link
                   to="/$locale/products"
                   params={{ locale }}
                   search={{ type: "wholesale" }}
@@ -308,6 +330,14 @@ export function Header({ session }: { session: SessionUser }) {
                   className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-accent"
                 >
                   {t.nav.wholesale}
+                </Link>
+                <Link
+                  to="/$locale/fresh-flower-quotation-generator"
+                  params={{ locale }}
+                  onClick={() => setMobileOpen(false)}
+                  className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-accent"
+                >
+                  {t.nav.quotation}
                 </Link>
                 <Link
                   to="/$locale/blog"

@@ -29,6 +29,20 @@
       "when": 1788330939000,
       "tag": "0003_bootstrap_admin",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1789608004000,
+      "tag": "0004_hide_sample_catalog",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1789608005000,
+      "tag": "0005_unhide_sample_catalog",
+      "breakpoints": true
     }
   ]
 }

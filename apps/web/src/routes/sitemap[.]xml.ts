@@ -14,6 +14,7 @@ interface SitemapUrl {
   changefreq?: string;
   priority?: string;
   lastmod?: string;
+  alternates?: Array<{ href: string; hreflang: string }>;
 }
 
 function xmlEscape(s: string): string {
@@ -29,6 +30,12 @@ function renderUrl(u: SitemapUrl): string {
   return [
     "  <url>",
     `    <loc>${xmlEscape(u.loc)}</loc>`,
+    ...(u.alternates ?? []).map(
+      (alt) =>
+        `    <xhtml:link rel="alternate" hreflang="${xmlEscape(
+          alt.hreflang,
+        )}" href="${xmlEscape(alt.href)}" />`,
+    ),
     u.lastmod ? `    <lastmod>${u.lastmod}</lastmod>` : null,
     u.changefreq ? `    <changefreq>${u.changefreq}</changefreq>` : null,
     u.priority ? `    <priority>${u.priority}</priority>` : null,
@@ -38,6 +45,26 @@ function renderUrl(u: SitemapUrl): string {
     .join("\n");
 }
 
+function localizedSitemapUrls(
+  base: string,
+  path: string,
+  options: Omit<SitemapUrl, "loc" | "alternates"> = {},
+): SitemapUrl[] {
+  const suffix = path.startsWith("/") ? path : `/${path}`;
+  const alternates = [
+    ...LOCALES.map((loc) => ({
+      hreflang: loc,
+      href: `${base}/${loc}${suffix}`,
+    })),
+    { hreflang: "x-default", href: `${base}/en${suffix}` },
+  ];
+  return LOCALES.map((loc) => ({
+    ...options,
+    loc: `${base}/${loc}${suffix}`,
+    alternates,
+  }));
+}
+
 export const Route = createFileRoute("/sitemap.xml")({
   server: {
     handlers: {
@@ -45,59 +72,74 @@ export const Route = createFileRoute("/sitemap.xml")({
         const base = siteUrl();
 
         const urls: SitemapUrl[] = [];
-        for (const loc of LOCALES) {
-          urls.push({
-            loc: `${base}/${loc}/`,
+        urls.push(
+          ...localizedSitemapUrls(base, "/", {
             changefreq: "daily",
             priority: "1.0",
-          });
-          urls.push({
-            loc: `${base}/${loc}/products`,
+          }),
+          ...localizedSitemapUrls(base, "/products", {
             changefreq: "daily",
             priority: "0.9",
-          });
-          urls.push({
-            loc: `${base}/${loc}/blog`,
+          }),
+          ...localizedSitemapUrls(base, "/products?type=wholesale", {
+            changefreq: "daily",
+            priority: "0.85",
+          }),
+          ...localizedSitemapUrls(base, "/shops", {
+            changefreq: "weekly",
+            priority: "0.7",
+          }),
+          ...localizedSitemapUrls(base, "/fresh-flowers-near-me", {
+            changefreq: "daily",
+            priority: "0.85",
+          }),
+          ...localizedSitemapUrls(base, "/fresh-flower-quotation-generator", {
+            changefreq: "monthly",
+            priority: "0.8",
+          }),
+          ...localizedSitemapUrls(base, "/blog", {
             changefreq: "weekly",
             priority: "0.6",
-          });
-          for (const post of listPosts()) {
-            urls.push({
-              loc: `${base}/${loc}/blog/${post.slug}`,
+          }),
+        );
+        for (const post of listPosts()) {
+          urls.push(
+            ...localizedSitemapUrls(base, `/blog/${post.slug}`, {
               changefreq: "monthly",
               priority: "0.7",
               lastmod: post.dateModified ?? post.datePublished,
-            });
-          }
+            }),
+          );
         }
 
         const db = tryCreateDb();
         if (db) {
           try {
             const data = await listCatalogSitemap(db);
-            for (const loc of LOCALES) {
-              for (const c of data.categories) {
-                urls.push({
-                  loc: `${base}/${loc}/c/${c.slug}`,
+            for (const c of data.categories) {
+              urls.push(
+                ...localizedSitemapUrls(base, `/c/${c.slug}`, {
                   changefreq: "weekly",
                   priority: "0.7",
-                });
-              }
-              for (const s of data.shops) {
-                urls.push({
-                  loc: `${base}/${loc}/shops/${s.slug}`,
+                }),
+              );
+            }
+            for (const s of data.shops) {
+              urls.push(
+                ...localizedSitemapUrls(base, `/shops/${s.slug}`, {
                   changefreq: "weekly",
                   priority: "0.6",
-                });
-              }
-              for (const p of data.products) {
-                urls.push({
-                  loc: `${base}/${loc}/products/${p.slug}`,
+                }),
+              );
+            }
+            for (const p of data.products) {
+              urls.push(
+                ...localizedSitemapUrls(base, `/products/${p.slug}`, {
                   changefreq: "weekly",
                   priority: "0.8",
                   lastmod: p.updatedAt.toISOString(),
-                });
-              }
+                }),
+              );
             }
           } catch {
             // Degrade to the static entries if the catalog query fails.
@@ -106,7 +148,7 @@ export const Route = createFileRoute("/sitemap.xml")({
 
         const xml = [
           '<?xml version="1.0" encoding="UTF-8"?>',
-          '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
+          '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">',
           ...urls.map(renderUrl),
           "</urlset>",
           "",

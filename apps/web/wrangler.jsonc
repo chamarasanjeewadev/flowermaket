@@ -10,7 +10,13 @@
   // Apex custom domain — wrangler provisions the DNS record + TLS cert on deploy.
   // www.flowermarket.lk is handled by a zone-level Single Redirect rule (301 → apex),
   // not attached here, so it never serves duplicate content.
-  "routes": [{ "pattern": "flowermarket.lk", "custom_domain": true }]
+  "routes": [
+    {
+      "pattern": "flowermarket.lk",
+      "zone_name": "flowermarket.lk",
+      "custom_domain": true
+    }
+  ]
   // Secrets (set with `wrangler secret put <NAME>` after deploy target exists):
   //   DATABASE_URL           — Supabase transaction pooler (port 6543)
   //   SUPABASE_URL, SUPABASE_ANON_KEY

@@ -3,7 +3,7 @@ import { ArrowUpRight } from "lucide-react";
 import type { Locale } from "../../i18n";
 import { useT } from "../../i18n/react";
 import { absoluteUrl, hreflangLinks } from "../../lib/site";
-import { jsonLdScript, SITE_NAME } from "../../lib/seo";
+import { jsonLdScript, SITE_NAME, socialMeta } from "../../lib/seo";
 import { formatPostDate } from "../../lib/date";
 import { listPosts } from "../../content/posts";
 
@@ -37,8 +37,12 @@ export const Route = createFileRoute("/$locale/blog/")({
       meta: [
         { title },
         { name: "description", content: description },
-        { property: "og:title", content: title },
-        { property: "og:description", content: description },
+        ...socialMeta({
+          title,
+          description,
+          url: absoluteUrl(`/${locale}/blog`),
+          locale,
+        }),
       ],
       links: hreflangLinks("/blog", locale),
       scripts: [jsonLdScript(blogJsonLd)],

@@ -9,6 +9,8 @@ export const FALLBACK_SITE_URL = "https://flowermarket.lk";
 
 /** Primary public contact address, surfaced in the footer and structured data. */
 export const CONTACT_EMAIL = "hi@flowermarket.lk";
+export const CONTACT_PHONE = "+94778540633";
+export const CONTACT_PHONE_DISPLAY = "+94 77 854 0633";
 
 export function siteUrl(): string {
   if (typeof process !== "undefined" && process.env?.SITE_URL) {
@@ -18,6 +20,7 @@ export function siteUrl(): string {
 }
 
 export function absoluteUrl(path: string): string {
+  if (/^https?:\/\//.test(path)) return path;
   return `${siteUrl()}${path.startsWith("/") ? path : `/${path}`}`;
 }
 

@@ -13,6 +13,7 @@ import {
   getShopWithProducts,
   listActiveCategoriesWithCounts,
   listActiveProducts,
+  listActiveShops,
   tryCreateDb,
   type CategoryWithCount,
   type ListingType,
@@ -20,6 +21,7 @@ import {
   type ProductListItem,
   type ShopSummary,
 } from "@flowers/api";
+import { setPublicCatalogCache } from "./http-cache";
 
 // ---------------------------------------------------------------------------
 // DTOs (image paths resolved to public URLs)
@@ -114,6 +116,7 @@ export interface ListProductsInput {
 export const listProducts = createServerFn({ method: "GET" })
   .validator((data: ListProductsInput) => data)
   .handler(async ({ data }): Promise<ProductListResultDTO> => {
+    setPublicCatalogCache();
     const db = tryCreateDb();
     if (!db) return emptyResult();
     try {
@@ -133,6 +136,7 @@ export const listProducts = createServerFn({ method: "GET" })
 export const getProductBySlug = createServerFn({ method: "GET" })
   .validator((slug: string) => slug)
   .handler(async ({ data: slug }): Promise<ProductDetailDTO | null> => {
+    setPublicCatalogCache();
     const db = tryCreateDb();
     if (!db) return null;
     try {
@@ -153,6 +157,7 @@ export const getProductBySlug = createServerFn({ method: "GET" })
 export const getShopBySlug = createServerFn({ method: "GET" })
   .validator((slug: string) => slug)
   .handler(async ({ data: slug }): Promise<ShopWithProductsDTO | null> => {
+    setPublicCatalogCache();
     const db = tryCreateDb();
     if (!db) return null;
     try {
@@ -170,6 +175,7 @@ export const getShopBySlug = createServerFn({ method: "GET" })
 export const getCategoriesWithCounts = createServerFn({
   method: "GET",
 }).handler(async (): Promise<CategoryWithCount[]> => {
+  setPublicCatalogCache();
   const db = tryCreateDb();
   if (!db) return [];
   try {
@@ -181,11 +187,26 @@ export const getCategoriesWithCounts = createServerFn({
 
 export const getFeaturedProducts = createServerFn({ method: "GET" }).handler(
   async (): Promise<ProductListItemDTO[]> => {
+    setPublicCatalogCache();
     const db = tryCreateDb();
     if (!db) return [];
     try {
       const result = await listActiveProducts(db, { page: 1 });
       return result.items.slice(0, 8).map(toListItemDTO);
+    } catch {
+      return [];
+    }
+  },
+);
+
+export const listShops = createServerFn({ method: "GET" }).handler(
+  async (): Promise<ShopSummaryDTO[]> => {
+    setPublicCatalogCache();
+    const db = tryCreateDb();
+    if (!db) return [];
+    try {
+      const shops = await listActiveShops(db);
+      return shops.map(enrichShop);
     } catch {
       return [];
     }

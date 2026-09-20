@@ -5,18 +5,19 @@ import { cn } from "@flowers/ui/lib/utils";
 import {
   ArrowUpRight,
   BadgePercent,
-  MapPin,
-  Scissors,
-  Sprout,
+  ListChecks,
+  MessageCircle,
+  Shapes,
   Store,
 } from "lucide-react";
 import { ProductCard } from "../../components/catalog/ProductCard";
 import { localizedCategoryName } from "../../i18n";
 import { useT } from "../../i18n/react";
-import { hreflangLinks } from "../../lib/site";
+import { absoluteUrl, hreflangLinks } from "../../lib/site";
 import {
   jsonLdScript,
   organizationJsonLd,
+  socialMeta,
   webSiteJsonLd,
 } from "../../lib/seo";
 import {
@@ -29,31 +30,34 @@ export const Route = createFileRoute("/$locale/")({
     categories: await getCategoriesWithCounts(),
     featured: await getFeaturedProducts(),
   }),
-  head: ({ params }) => ({
-    meta:
-      params.locale === "si"
-        ? [
-            { title: "ශ්‍රී ලංකාවේ මල් වෙළෙඳපොළ | FlowerMarket.lk" },
-            {
-              name: "description",
-              content:
-                "ප්‍රාදේශීය ගොවීන් හා මල් සාප්පුවලින් කෙලින්ම නැවුම් මල් — සිල්ලර මල් කළඹ හා තොග මල් කඳ. මැදිහත්කරුවන් නැත, ශ්‍රී ලංකාව පුරා බෙදාහැරීම.",
-            },
-          ]
-        : [
-            {
-              title:
-                "Online Flower Shop & Delivery in Sri Lanka | FlowerMarket.lk",
-            },
-            {
-              name: "description",
-              content:
-                "Buy fresh flowers online in Sri Lanka — retail bouquets and wholesale stems direct from local growers and florists. Grower-direct prices, island-wide delivery, no middleman.",
-            },
-          ],
-    links: hreflangLinks("/", params.locale as import("../../i18n").Locale),
-    scripts: [jsonLdScript(organizationJsonLd()), jsonLdScript(webSiteJsonLd())],
-  }),
+  head: ({ params }) => {
+    const locale = params.locale as import("../../i18n").Locale;
+    const title =
+      locale === "si"
+        ? "ශ්‍රී ලංකාවේ මල් වෙළෙඳපොළ | FlowerMarket.lk"
+        : "Online Flower Marketplace in Sri Lanka | FlowerMarket.lk";
+    const description =
+      locale === "si"
+        ? "ශ්‍රී ලංකාවේ සිල්ලර මල් කළඹ සහ තොග මල් කඳ ලැයිස්තු බලන්න. ප්‍රවර්ගය, දිස්ත්‍රික්කය සහ වර්ගය අනුව සොයා විමසුමක් යවන්න."
+        : "Browse retail bouquets and wholesale flower stems listed in Sri Lanka. Filter by category, district and type, then send an enquiry.";
+    return {
+      meta: [
+        { title },
+        { name: "description", content: description },
+        ...socialMeta({
+          title,
+          description,
+          url: absoluteUrl(`/${locale}/`),
+          locale,
+        }),
+      ],
+      links: hreflangLinks("/", locale),
+      scripts: [
+        jsonLdScript(organizationJsonLd()),
+        jsonLdScript(webSiteJsonLd()),
+      ],
+    };
+  },
   component: HomePage,
 });
 
@@ -61,6 +65,13 @@ function HomePage() {
   const { categories, featured } = Route.useLoaderData();
   const { locale, t } = useT();
   const heroImg = featured[0]?.imageUrl ?? "/placeholder-flower.svg";
+  const totalListings = categories.reduce(
+    (total, category) => total + category.productCount,
+    0,
+  );
+  const activeCategories = categories.filter(
+    (category) => category.productCount > 0,
+  ).length;
 
   return (
     <>
@@ -106,34 +117,40 @@ function HomePage() {
               </Link>
             </div>
 
-            <dl className="mt-12 flex items-center gap-10">
-              <div className="flex items-center gap-3">
-                <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-lilac/30 text-foreground">
-                  <Sprout className="size-5" aria-hidden="true" />
-                </span>
-                <div>
-                  <dt className="font-display text-2xl leading-none">
-                    {t.home.heroStatGrowersValue}
-                  </dt>
-                  <dd className="mt-1 text-xs text-muted-foreground">
-                    {t.home.heroStatGrowersLabel}
-                  </dd>
+            {/* Only surface live counts once there is real inventory — an
+                empty marketplace should never advertise "0 listings". */}
+            {totalListings > 0 && (
+              <dl className="mt-12 flex items-center gap-10">
+                <div className="flex items-center gap-3">
+                  <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-lilac/30 text-foreground">
+                    <ListChecks className="size-5" aria-hidden="true" />
+                  </span>
+                  <div>
+                    <dt className="font-display text-2xl leading-none">
+                      {totalListings}
+                    </dt>
+                    <dd className="mt-1 text-xs text-muted-foreground">
+                      {t.home.heroStatListingsLabel}
+                    </dd>
+                  </div>
                 </div>
-              </div>
-              <div className="flex items-center gap-3">
-                <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-sage text-foreground">
-                  <MapPin className="size-5" aria-hidden="true" />
-                </span>
-                <div>
-                  <dt className="font-display text-2xl leading-none">
-                    {t.home.heroStatDistrictsValue}
-                  </dt>
-                  <dd className="mt-1 text-xs text-muted-foreground">
-                    {t.home.heroStatDistrictsLabel}
-                  </dd>
-                </div>
-              </div>
-            </dl>
+                {activeCategories > 0 && (
+                  <div className="flex items-center gap-3">
+                    <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-sage text-foreground">
+                      <Shapes className="size-5" aria-hidden="true" />
+                    </span>
+                    <div>
+                      <dt className="font-display text-2xl leading-none">
+                        {activeCategories}
+                      </dt>
+                      <dd className="mt-1 text-xs text-muted-foreground">
+                        {t.home.heroStatCategoriesLabel}
+                      </dd>
+                    </div>
+                  </div>
+                )}
+              </dl>
+            )}
           </div>
 
           {/* Product stage: butter block + coral offset + discount sticker */}
@@ -165,7 +182,7 @@ function HomePage() {
         </div>
       </section>
 
-      {/* Why buy direct — trust strip */}
+      {/* Marketplace facts — trust strip */}
       <section className="border-b border-border">
         <ul className="mx-auto grid max-w-6xl gap-px px-4 py-10 sm:grid-cols-3">
           {[
@@ -175,11 +192,15 @@ function HomePage() {
               body: t.home.trust1Body,
             },
             {
-              icon: Scissors,
+              icon: Store,
               title: t.home.trust2Title,
               body: t.home.trust2Body,
             },
-            { icon: Store, title: t.home.trust3Title, body: t.home.trust3Body },
+            {
+              icon: MessageCircle,
+              title: t.home.trust3Title,
+              body: t.home.trust3Body,
+            },
           ].map(({ icon: Icon, title, body }) => (
             <li key={title} className="flex gap-4 px-2 py-3">
               <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-accent text-foreground">

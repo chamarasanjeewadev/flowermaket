@@ -3,6 +3,7 @@ import {
   buildWhatsappUrl,
   WHATSAPP_NUMBER,
 } from "@flowers/integrations";
+import { useRouterState } from "@tanstack/react-router";
 import { useT } from "../i18n/react";
 import { useEnquiry } from "../lib/enquiry";
 import { siteUrl } from "../lib/site";
@@ -28,6 +29,12 @@ function WhatsAppGlyph({ className }: { className?: string }) {
 export function FloatingWhatsApp() {
   const { t, locale } = useT();
   const { items, count, hydrated } = useEnquiry();
+  const pathname = useRouterState({
+    select: (state) => state.location.pathname,
+  });
+
+  // The quotation page has its own contextual WhatsApp order action.
+  if (pathname.endsWith("/fresh-flower-quotation-generator")) return null;
 
   const text = buildEnquiryText({
     items: hydrated ? items : [],

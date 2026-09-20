@@ -350,6 +350,30 @@ export async function getShopWithProducts(
   return { shop, products };
 }
 
+/** All publicly-visible shops (verified + active), for the /shops directory. */
+export async function listActiveShops(db: Db): Promise<ShopSummary[]> {
+  return db
+    .select({
+      slug: schema.shops.slug,
+      nameEn: schema.shops.nameEn,
+      nameSi: schema.shops.nameSi,
+      descriptionEn: schema.shops.descriptionEn,
+      descriptionSi: schema.shops.descriptionSi,
+      district: schema.shops.district,
+      city: schema.shops.city,
+      shopType: schema.shops.shopType,
+      verificationStatus: schema.shops.verificationStatus,
+    })
+    .from(schema.shops)
+    .where(
+      and(
+        eq(schema.shops.verificationStatus, "verified"),
+        eq(schema.shops.isActive, true),
+      ),
+    )
+    .orderBy(asc(schema.shops.nameEn));
+}
+
 export interface SitemapData {
   products: { slug: string; updatedAt: Date }[];
   shops: { slug: string }[];

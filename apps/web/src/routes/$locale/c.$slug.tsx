@@ -7,6 +7,7 @@ import {
   breadcrumbJsonLd,
   jsonLdScript,
   localePath,
+  socialMeta,
 } from "../../lib/seo";
 import { getCategoriesWithCounts, listProducts } from "../../server/catalog";
 
@@ -43,7 +44,7 @@ export const Route = createFileRoute("/$locale/c/$slug")({
     const title =
       locale === "si"
         ? `${name} — ශ්‍රී ලංකාව | FlowerMarket.lk`
-        : `${name} in Sri Lanka — Grower-Direct | FlowerMarket.lk`;
+        : `${name} Listings in Sri Lanka | FlowerMarket.lk`;
     const itemList = {
       "@context": "https://schema.org",
       "@type": "ItemList",
@@ -64,8 +65,12 @@ export const Route = createFileRoute("/$locale/c/$slug")({
       meta: [
         { title },
         { name: "description", content: description },
-        { property: "og:title", content: name },
-        { property: "og:description", content: description },
+        ...socialMeta({
+          title,
+          description,
+          url: absoluteUrl(`/${locale}/c/${category.slug}`),
+          locale,
+        }),
       ],
       links: hreflangLinks(`/c/${category.slug}`, locale),
       scripts: [jsonLdScript(itemList), jsonLdScript(breadcrumbs)],

@@ -13,6 +13,7 @@ import {
   breadcrumbJsonLd,
   jsonLdScript,
   localePath,
+  socialMeta,
 } from "../../lib/seo";
 import { getShopBySlug } from "../../server/catalog";
 
@@ -29,21 +30,21 @@ export const Route = createFileRoute("/$locale/shops/$slug")({
       return { links: hreflangLinks(`/shops/${params.slug}`, locale) };
     }
     const name = locale === "si" && shop.nameSi ? shop.nameSi : shop.nameEn;
-    // Keyword-rich fallback description when the shop hasn't written its own.
+    // Factual fallback description when the shop hasn't written its own.
     const sellerType = shop.shopType === "grower" ? "grower" : "florist";
-    const fallbackDescription = `${shop.nameEn} is a local flower ${sellerType} in ${shop.districtNameEn}, Sri Lanka. Shop fresh flowers direct — grower-direct prices, no middleman — on FlowerMarket.lk.`;
+    const fallbackDescription = `${shop.nameEn} is listed as a flower ${sellerType} in ${shop.districtNameEn}, Sri Lanka. Browse its published products on FlowerMarket.lk.`;
     const description =
       (locale === "si" && shop.descriptionSi
         ? shop.descriptionSi
         : shop.descriptionEn) ?? fallbackDescription;
     const canonicalUrl = absoluteUrl(`/${locale}/shops/${shop.slug}`);
+    const title = `${name} — Sri Lanka | FlowerMarket.lk`;
     const jsonLd = {
       "@context": "https://schema.org",
-      "@type": "Florist",
+      "@type": shop.shopType === "florist" ? "Florist" : "Organization",
       name: shop.nameEn,
       url: canonicalUrl,
       description: shop.descriptionEn ?? fallbackDescription,
-      image: absoluteUrl("/og-image.png"),
       address: {
         "@type": "PostalAddress",
         addressRegion: shop.districtNameEn,
@@ -57,11 +58,14 @@ export const Route = createFileRoute("/$locale/shops/$slug")({
     ]);
     return {
       meta: [
-        { title: `${name} — Sri Lanka | FlowerMarket.lk` },
+        { title },
         { name: "description", content: description },
-        { property: "og:title", content: name },
-        { property: "og:description", content: description },
-        { property: "og:url", content: canonicalUrl },
+        ...socialMeta({
+          title,
+          description,
+          url: canonicalUrl,
+          locale,
+        }),
       ],
       links: hreflangLinks(`/shops/${shop.slug}`, locale),
       scripts: [jsonLdScript(jsonLd), jsonLdScript(breadcrumbs)],

@@ -1,6 +1,10 @@
 import { Link } from "@tanstack/react-router";
 import { useT } from "../i18n/react";
-import { CONTACT_EMAIL } from "../lib/site";
+import {
+  CONTACT_EMAIL,
+  CONTACT_PHONE,
+  CONTACT_PHONE_DISPLAY,
+} from "../lib/site";
 
 const SISTER_PRODUCTS = [
   { name: "BabyJourney", url: "https://babyjourney.lk" },
@@ -38,6 +42,16 @@ export function Footer() {
             >
               {t.nav.browse}
             </Link>
+            <Link to="/$locale/shops" params={{ locale }} className={linkClass}>
+              {t.nav.shops}
+            </Link>
+            <Link
+              to="/$locale/fresh-flowers-near-me"
+              params={{ locale }}
+              className={linkClass}
+            >
+              {t.nav.nearMe}
+            </Link>
             <Link
               to="/$locale/products"
               params={{ locale }}
@@ -45,6 +59,13 @@ export function Footer() {
               className={linkClass}
             >
               {t.nav.wholesale}
+            </Link>
+            <Link
+              to="/$locale/fresh-flower-quotation-generator"
+              params={{ locale }}
+              className={linkClass}
+            >
+              {t.nav.quotation}
             </Link>
             <Link to="/$locale/blog" params={{ locale }} className={linkClass}>
               {t.footer.guides}
@@ -59,6 +80,9 @@ export function Footer() {
             </p>
             <a href={`mailto:${CONTACT_EMAIL}`} className={linkClass}>
               {CONTACT_EMAIL}
+            </a>
+            <a href={`tel:${CONTACT_PHONE}`} className={linkClass}>
+              {CONTACT_PHONE_DISPLAY}
             </a>
           </nav>
           <nav

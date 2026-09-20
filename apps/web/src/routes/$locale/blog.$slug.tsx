@@ -8,6 +8,7 @@ import {
   jsonLdScript,
   localePath,
   SITE_NAME,
+  socialMeta,
 } from "../../lib/seo";
 import { formatPostDate } from "../../lib/date";
 import { PostBody } from "../../components/blog/PostBody";
@@ -53,12 +54,17 @@ export const Route = createFileRoute("/$locale/blog/$slug")({
       meta: [
         { title: `${post.title} | FlowerMarket.lk` },
         { name: "description", content: post.description },
-        { property: "og:type", content: "article" },
-        { property: "og:title", content: post.title },
-        { property: "og:description", content: post.description },
-        { property: "og:url", content: url },
-        { property: "og:image", content: absoluteUrl("/og-image.png") },
+        ...socialMeta({
+          title: `${post.title} | FlowerMarket.lk`,
+          description: post.description,
+          url,
+          type: "article",
+          locale,
+        }),
         { property: "article:published_time", content: post.datePublished },
+        ...(post.dateModified
+          ? [{ property: "article:modified_time", content: post.dateModified }]
+          : []),
       ],
       links: hreflangLinks(`/blog/${post.slug}`, locale),
       scripts: [jsonLdScript(blogPosting), jsonLdScript(breadcrumbs)],

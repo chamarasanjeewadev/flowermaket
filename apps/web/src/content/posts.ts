@@ -44,7 +44,7 @@ export const POSTS: readonly Post[] = [
     slug: "wedding-flowers-sri-lanka-guide",
     title: "Wedding Flowers in Sri Lanka: The Complete Planning Guide",
     description:
-      "How to plan wedding flowers in Sri Lanka — what to order, realistic budgets in LKR, seasonal blooms, and how to buy bridal bouquets and centrepieces grower-direct.",
+      "How to plan wedding flowers in Sri Lanka — build a checklist, compare current quotes, choose suitable blooms, and confirm timing with your florist.",
     primaryKeyword: "wedding flowers Sri Lanka",
     secondaryKeywords: [
       "bridal bouquet Sri Lanka",
@@ -52,14 +52,14 @@ export const POSTS: readonly Post[] = [
       "wedding flower decoration Colombo",
     ],
     excerpt:
-      "A practical, budget-aware guide to planning your wedding flowers in Sri Lanka — what to order, when, and how to buy direct from growers.",
+      "A practical guide to planning wedding flowers in Sri Lanka — what to order, what to ask, and when to confirm each detail.",
     datePublished: "2026-02-18",
     readingMinutes: 8,
     tag: "Weddings",
     body: [
       {
         kind: "p",
-        text: "Flowers set the mood of a Sri Lankan wedding — from the poruwa and the bride's bouquet to the reception tables and the car. But flowers are also one of the easiest line items to overspend on when you buy through a chain of middlemen. This guide walks through what you actually need, roughly what it costs in rupees, and how to buy [wedding flowers](/c/wedding) direct from local growers and florists.",
+        text: "Flowers appear throughout many Sri Lankan weddings — from the poruwa and the bride's bouquet to reception tables and the car. This guide helps you list what you need, request comparable quotes, and browse current [wedding flower listings](/c/wedding).",
       },
       { kind: "h2", text: "Start with a flower checklist" },
       {
@@ -80,12 +80,12 @@ export const POSTS: readonly Post[] = [
       },
       {
         kind: "p",
-        text: "Once you have counts, you can price it properly instead of accepting one bundled quote. Ordering [loose flowers](/c/loose-flowers) by the bunch for the pieces your family arranges themselves — garlands, lamp areas, car — is often where the biggest savings hide.",
+        text: "Once you have counts, ask for an itemised quote so you can compare like with like. If your family plans to arrange some pieces, browse [loose flower listings](/c/loose-flowers) and confirm quantities, condition, collection or delivery, and preparation time with the seller.",
       },
       { kind: "h2", text: "Choose blooms that survive the heat" },
       {
         kind: "p",
-        text: "Sri Lanka's warmth is tough on delicate imported flowers. Locally grown blooms not only cost less, they last longer because they haven't spent days in transit. Reliable choices include:",
+        text: "Heat, travel time, and venue conditions can affect different flowers in different ways. Ask your florist which options suit the date and venue, and confirm availability rather than relying on a fixed seasonal assumption. Common choices include:",
       },
       {
         kind: "ul",
@@ -97,14 +97,14 @@ export const POSTS: readonly Post[] = [
           "Anthuriums and tropical foliage — dramatic and heat-hardy",
         ],
       },
-      { kind: "h2", text: "A realistic budget in rupees" },
+      { kind: "h2", text: "Build a current budget" },
       {
         kind: "p",
-        text: "Wedding flower budgets in Sri Lanka vary enormously with scale and style, but as a rough planning frame: a bridal bouquet from fresh premium stems typically lands in the tens of thousands of rupees when made by a florist; simple gerbera or chrysanthemum centrepieces cost a fraction of a rose-and-orchid design. The single biggest lever is buying stems direct and arranging the simpler pieces yourself or with your florist's guidance.",
+        text: "Flower prices and service charges change with design, quantity, availability, transport, and setup. Collect current written quotes from more than one seller and ask each one to separate flowers, labour, delivery, setup, and collection. A listing price may cover only the flowers, not a finished event package.",
       },
       {
         kind: "quote",
-        text: "Rule of thumb: the further your flowers travel and the more hands they pass through, the more you pay for the same stem.",
+        text: "Before comparing totals, check exactly what each quote includes.",
       },
       { kind: "h2", text: "Order timing" },
       {
@@ -112,14 +112,14 @@ export const POSTS: readonly Post[] = [
         items: [
           "6–8 weeks out: confirm your florist or grower and lock the design and colours",
           "2–3 weeks out: finalise stem counts once your guest numbers settle",
-          "3–4 days out: fresh stems are cut and dispatched for a weekend wedding",
+          "3–4 days out: confirm the seller's actual preparation and dispatch plan",
           "Day before: arrange sturdy pieces (garlands, backdrops); keep bouquets cool overnight",
         ],
       },
-      { kind: "h2", text: "Buy direct and keep the savings" },
+      { kind: "h2", text: "Compare current listings" },
       {
         kind: "p",
-        text: "On FlowerMarket.lk you can compare verified growers and florists by district, order retail arrangements or [wholesale stems](/products?type=wholesale) in bulk, and skip the pre-dawn Manning Market run entirely. Browse the full [wedding range](/c/wedding) to start pricing your day.",
+        text: "On FlowerMarket.lk you can browse seller listings by district and compare retail arrangements with [wholesale stems](/products?type=wholesale). Listing details are supplied by each seller, so confirm price, availability, delivery, and the final specification before paying. Browse the current [wedding range](/c/wedding) to start your shortlist.",
       },
     ],
   },
@@ -127,7 +127,7 @@ export const POSTS: readonly Post[] = [
     slug: "how-to-keep-cut-flowers-fresh",
     title: "How to Keep Cut Flowers Fresh Longer in Sri Lanka's Heat",
     description:
-      "Simple, proven ways to make cut flowers last longer in Sri Lanka's heat — water, trimming, flower food, and placement tips that add days to any bouquet.",
+      "Practical ways to care for cut flowers in Sri Lanka's heat — clean water, trimming, flower food, and suitable placement.",
     primaryKeyword: "how to keep flowers fresh",
     secondaryKeywords: [
       "make cut flowers last longer",
@@ -142,7 +142,7 @@ export const POSTS: readonly Post[] = [
     body: [
       {
         kind: "p",
-        text: "A fresh bouquet can look tired within two days in Sri Lanka's heat — or stay beautiful for a week. The difference is a few minutes of care. Whether you bought [retail flowers](/products?type=retail) for the home or a big order for an event, these steps apply to almost every stem.",
+        text: "A cut bouquet can fade quickly in Sri Lanka's heat. Its variety and condition matter, but a few minutes of sensible care can also help. Whether you bought [retail flowers](/products?type=retail) for the home or a larger order for an event, these steps apply to many common cut flowers.",
       },
       { kind: "h2", text: "1. Trim the stems on an angle" },
       {
@@ -181,15 +181,15 @@ export const POSTS: readonly Post[] = [
       { kind: "h2", text: "Flowers that naturally last longer" },
       {
         kind: "p",
-        text: "If you want maximum vase life, start with hardy blooms. [Chrysanthemums](/c/chrysanthemums), [orchids](/c/orchids) and [gerberas](/c/gerberas) are among the longest-lasting flowers grown locally — and buying them [grower-direct](/products) means they reach you fresher to begin with.",
+        text: "Vase life varies by variety, condition, and handling. [Chrysanthemums](/c/chrysanthemums), [orchids](/c/orchids) and [gerberas](/c/gerberas) are often chosen for arrangements intended to last, but ask the seller when the flowers were cut and how they were stored before buying.",
       },
     ],
   },
   {
     slug: "buying-wholesale-flowers-sri-lanka",
-    title: "Buying Wholesale Flowers in Sri Lanka: Grower-Direct vs Manning Market",
+    title: "Buying Wholesale Flowers in Sri Lanka: Online Listings and Manning Market",
     description:
-      "A buyer's guide to wholesale flowers in Sri Lanka — how grower-direct ordering compares with the Manning Market run on price, freshness and hassle.",
+      "A buyer's guide to comparing wholesale flower listings with a Manning Market visit, including price, quantities, availability, and collection or delivery.",
     primaryKeyword: "wholesale flowers Sri Lanka",
     secondaryKeywords: [
       "bulk flowers Colombo",
@@ -197,57 +197,57 @@ export const POSTS: readonly Post[] = [
       "flower supplier Sri Lanka",
     ],
     excerpt:
-      "Florists, event planners and shops: here's how grower-direct wholesale compares with the 4am Manning Market run on price, freshness and time.",
+      "A checklist for florists, event planners, and shops comparing online wholesale listings with a market visit.",
     datePublished: "2026-04-01",
     readingMinutes: 6,
     tag: "Wholesale",
     body: [
       {
         kind: "p",
-        text: "For years, buying flowers in bulk in Sri Lanka meant one thing: a pre-dawn trip to Manning Market in Colombo, cash in hand, hoping the stems you need are in and fresh. It works — but it costs you time, and every hand between the field and your bucket adds to the price. Here's how ordering [wholesale flowers](/products?type=wholesale) direct from growers compares.",
+        text: "Wholesale buyers can compare online listings, contact known suppliers, or visit Manning Market in person. The best option depends on current stock, quantity, timing, transport, and the seller's terms. Use this checklist while reviewing [wholesale flower listings](/products?type=wholesale).",
       },
-      { kind: "h2", text: "Price: fewer middlemen, lower cost" },
+      { kind: "h2", text: "Compare the full cost" },
       {
         kind: "p",
-        text: "The traditional chain runs grower → collector → market trader → you. Each link adds a margin. Buying grower-direct removes most of that chain, so the same rose or gerbera stem reaches you at a lower price — and you see the grower's price up front instead of haggling at 4am.",
+        text: "A listed unit price is only one part of the total. Confirm whether it is per stem, bunch, or box; check the minimum quantity; and add delivery, collection, packing, and any applicable taxes. Online prices are supplied by sellers and should be reconfirmed before you commit.",
       },
-      { kind: "h2", text: "Freshness: cut-to-order beats sat-in-market" },
+      { kind: "h2", text: "Ask about condition and timing" },
       {
         kind: "p",
-        text: "Market stems may have been cut days earlier and passed through several stops. Grower-direct orders are often cut closer to dispatch, so they arrive fresher and last longer in your shop or at your event — which means less wastage and fewer unhappy customers.",
+        text: "The sales channel alone does not guarantee freshness. Ask when the flowers were cut, how they have been stored, when they will be dispatched, and what happens if the delivered condition differs from what was agreed. Inspect in person when the order or event risk justifies it.",
       },
       { kind: "h2", text: "Time and certainty" },
       {
         kind: "ul",
         items: [
-          "No 4am travel and no parking or transport hassle",
-          "See stock, prices and minimum order quantities before you commit",
-          "Filter by district to buy from growers near you and cut delivery time",
-          "A paper trail — useful for event planners billing clients",
+          "Review listed prices and minimum order quantities before contacting a seller",
+          "Filter listings by district and flower type",
+          "Send the selected items and your requirements in one WhatsApp enquiry",
+          "Confirm current stock and fulfilment details directly with the seller",
         ],
       },
       { kind: "h2", text: "When the market still makes sense" },
       {
         kind: "p",
-        text: "Manning Market still wins for last-minute, walk-in buying and for unusual one-off stems. The honest answer for most florists and planners is a mix: plan your predictable volume grower-direct, and keep the market for emergencies.",
+        text: "An in-person market visit lets you inspect available flowers before purchase and may suit urgent or unusual requirements. Online enquiries can help with advance comparison. Many buyers may use both, depending on the order.",
       },
       {
         kind: "quote",
-        text: "Plan your volume grower-direct; keep the market for emergencies.",
+        text: "Compare price, condition, availability, and fulfilment before choosing a seller.",
       },
       { kind: "h2", text: "How to buy wholesale on FlowerMarket.lk" },
       {
         kind: "ol",
         items: [
           "Switch the browse filter to Wholesale to see per-stem pricing and minimum order quantities",
-          "Filter by district to find growers near you",
-          "Compare verified growers by price and lead time",
-          "Order the volume you need — popular lines include [roses](/c/roses), [gerberas](/c/gerberas) and [chrysanthemums](/c/chrysanthemums)",
+          "Filter by district to narrow the available listings",
+          "Review the seller's listed price, quantity, and lead time",
+          "Send an enquiry and confirm every detail with the seller before paying",
         ],
       },
       {
         kind: "p",
-        text: "Ready to price a bulk order? Browse [wholesale flowers by the stem](/products?type=wholesale) and compare growers across the island.",
+        text: "To start a shortlist, browse the current [wholesale flower listings](/products?type=wholesale) and ask sellers to confirm availability and total cost.",
       },
     ],
   },
@@ -300,7 +300,7 @@ export const POSTS: readonly Post[] = [
       { kind: "h2", text: "Buy fresh for Poya" },
       {
         kind: "p",
-        text: "You can order fresh [flowers for Poya and temple offerings](/c/poya-temple) direct from local growers on FlowerMarket.lk — often fresher and better value than a last-minute roadside stop. Browse by district to find blooms near you.",
+        text: "Browse current [flowers for Poya and temple offerings](/c/poya-temple), filter by district, and ask the seller to confirm availability, condition, price, and collection or delivery before ordering.",
       },
     ],
   },

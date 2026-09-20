@@ -5,7 +5,8 @@
  * Safe to re-run: every insert is keyed on a stable slug and uses
  * onConflictDoNothing.
  *
- * Set SEED_DEMO=1 to also insert a demo shop and 3 demo products.
+ * Set SEED_DEMO=1 to insert non-public demo records for local development.
+ * Set SEED_CATALOG=1 to insert a larger non-public sample catalog.
  */
 import { drizzle } from "drizzle-orm/postgres-js";
 import { eq, inArray } from "drizzle-orm";
@@ -101,8 +102,8 @@ async function main() {
         descriptionEn: "A demo flower shop for development and testing.",
         district: "Colombo",
         city: "Colombo",
-        verificationStatus: "verified",
-        isActive: true,
+        verificationStatus: "unverified",
+        isActive: false,
       })
       .onConflictDoNothing({ target: schema.shops.slug });
 
@@ -129,7 +130,7 @@ async function main() {
             descriptionEn: "A dozen fresh red roses, beautifully arranged.",
             price: 350000, // LKR 3,500.00
             listingType: "retail",
-            status: "active",
+            status: "draft",
           },
           {
             shopId: demoShop.id,
@@ -140,7 +141,7 @@ async function main() {
             descriptionEn: "Seasonal flowers hand-picked from local growers.",
             price: 250000, // LKR 2,500.00
             listingType: "retail",
-            status: "active",
+            status: "draft",
           },
           {
             shopId: demoShop.id,
@@ -152,7 +153,7 @@ async function main() {
             price: 800000, // LKR 8,000.00
             listingType: "wholesale",
             minOrderQty: 2,
-            status: "active",
+            status: "draft",
           },
         ])
         .onConflictDoNothing({ target: schema.products.slug });
@@ -165,7 +166,9 @@ async function main() {
   }
 
   if (process.env.SEED_CATALOG === "1") {
-    console.log("SEED_CATALOG=1 — seeding flower catalog (shops + products)…");
+    console.log(
+      "SEED_CATALOG=1 — seeding non-public sample catalog (shops + products)…",
+    );
 
     const growerUserId = "00000000-0000-0000-0000-000000000010";
     const floristUserId = "00000000-0000-0000-0000-000000000011";
@@ -203,8 +206,8 @@ async function main() {
             "කඳුකර මල් ගොවිපොළක් — උදෑසන මානිං වෙළඳපොළට යෑම අත්හැර, ගොවියාගෙන් කෙලින්ම මිලදී ගන්න.",
           district: "nuwara-eliya",
           city: "Nuwara Eliya",
-          verificationStatus: "verified",
-          isActive: true,
+          verificationStatus: "unverified",
+          isActive: false,
         },
         {
           ownerUserId: floristUserId,
@@ -218,8 +221,8 @@ async function main() {
             "සෑම අවස්ථාවකටම නැවුම් මල් කළඹ හා සැකසුම් නිර්මාණය කරන නගර මල් සාප්පුවක්.",
           district: "colombo",
           city: "Colombo",
-          verificationStatus: "verified",
-          isActive: true,
+          verificationStatus: "unverified",
+          isActive: false,
         },
       ])
       .onConflictDoNothing({ target: schema.shops.slug });
@@ -500,7 +503,7 @@ async function main() {
           leadTimeDays: p.leadTimeDays,
           listingType: p.listingType,
           minOrderQty: p.minOrderQty,
-          status: "active" as const,
+          status: "draft" as const,
         };
       }).filter((v): v is NonNullable<typeof v> => v !== null);
 

@@ -1,7 +1,8 @@
 import * as React from "react";
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
+import { formatRupees } from "@flowers/api/money";
 import { Badge } from "@flowers/ui/components/badge";
-import { Clock, Store } from "lucide-react";
+import { ArrowUpRight, Clock, Info, MapPin, Store } from "lucide-react";
 import { PriceBlock } from "../../components/catalog/PriceBlock";
 import { WholesaleInfo } from "../../components/catalog/WholesaleInfo";
 import { AddToEnquiryButton } from "../../components/catalog/AddToEnquiryButton";
@@ -16,8 +17,14 @@ import {
   breadcrumbJsonLd,
   jsonLdScript,
   localePath,
+  socialMeta,
 } from "../../lib/seo";
 import { getProductBySlug } from "../../server/catalog";
+
+function truncateMetaDescription(value: string): string {
+  if (value.length <= 160) return value;
+  return `${value.slice(0, 157).trimEnd()}...`;
+}
 
 export const Route = createFileRoute("/$locale/products/$slug")({
   loader: async ({ params }) => {
@@ -32,10 +39,31 @@ export const Route = createFileRoute("/$locale/products/$slug")({
       return { links: hreflangLinks(`/products/${params.slug}`, locale) };
     }
     const name = locale === "si" && product.nameSi ? product.nameSi : product.nameEn;
-    const description =
-      (locale === "si" && product.descriptionSi
+    const districtName =
+      locale === "si"
+        ? product.shop.districtNameSi
+        : product.shop.districtNameEn;
+    const shopName =
+      locale === "si" && product.shop.nameSi
+        ? product.shop.nameSi
+        : product.shop.nameEn;
+    const productDescription =
+      locale === "si" && product.descriptionSi
         ? product.descriptionSi
-        : product.descriptionEn) ?? name;
+        : product.descriptionEn;
+    const listingSummary =
+      locale === "si"
+        ? `${districtName} හි ${shopName} විසින් ${formatRupees(product.price)} සඳහන් මිලට ලැයිස්තුගත කළ ${name} බලන්න. ලබා ගත හැකි බව සහ සැපයීම තහවුරු කිරීමට විමසන්න.`
+        : `View ${name} in ${districtName}, listed at ${formatRupees(product.price)} by ${shopName}. Send an enquiry to confirm availability, condition, and fulfilment.`;
+    const metaDescription = truncateMetaDescription(
+      productDescription
+        ? `${listingSummary} ${productDescription}`
+        : listingSummary,
+    );
+    const title =
+      locale === "si"
+        ? `${name} — ${districtName}, ශ්‍රී ලංකාව | FlowerMarket.lk`
+        : `${name} in ${districtName}, Sri Lanka | FlowerMarket.lk`;
     const imageUrls = product.images.map((i) => absoluteUrl(i.url));
     const availability =
       product.stockQty === null
@@ -43,30 +71,37 @@ export const Route = createFileRoute("/$locale/products/$slug")({
         : product.stockQty > 0
           ? "https://schema.org/InStock"
           : "https://schema.org/OutOfStock";
+    const socialAvailability =
+      product.stockQty === null
+        ? "preorder"
+        : product.stockQty > 0
+          ? "in stock"
+          : "out of stock";
 
     const canonicalUrl = absoluteUrl(`/${locale}/products/${product.slug}`);
-    // Offers carry a validity horizon so Rich Results doesn't flag the price as
-    // stale — end of next calendar year is a safe rolling window.
-    const priceValidUntil = `${new Date().getFullYear() + 1}-12-31`;
 
     const jsonLd = {
       "@context": "https://schema.org",
       "@type": "Product",
       name,
-      description,
+      description: productDescription ?? listingSummary,
+      inLanguage: locale,
+      mainEntityOfPage: canonicalUrl,
       ...(imageUrls.length > 0 ? { image: imageUrls } : {}),
       sku: product.id,
       category: product.category.nameEn,
-      brand: { "@type": "Brand", name: product.shop.nameEn },
       offers: {
         "@type": "Offer",
         url: canonicalUrl,
         priceCurrency: "LKR",
         price: (product.price / 100).toFixed(2),
-        priceValidUntil,
         itemCondition: "https://schema.org/NewCondition",
         availability,
-        seller: { "@type": "Organization", name: product.shop.nameEn },
+        seller: {
+          "@type": "Organization",
+          name: product.shop.nameEn,
+          url: absoluteUrl(`/${locale}/shops/${product.shop.slug}`),
+        },
       },
     };
 
@@ -84,15 +119,25 @@ export const Route = createFileRoute("/$locale/products/$slug")({
 
     return {
       meta: [
-        { title: `${name} | FlowerMarket.lk` },
-        { name: "description", content: description },
-        { property: "og:type", content: "product" },
-        { property: "og:title", content: name },
-        { property: "og:description", content: description },
-        { property: "og:url", content: canonicalUrl },
-        ...(imageUrls.length > 0
-          ? [{ property: "og:image", content: imageUrls[0]! }]
+        { title },
+        { name: "description", content: metaDescription },
+        {
+          property: "product:price:amount",
+          content: (product.price / 100).toFixed(2),
+        },
+        { property: "product:price:currency", content: "LKR" },
+        { property: "product:availability", content: socialAvailability },
+        ...(imageUrls[0]
+          ? [{ property: "og:image:alt", content: name }]
           : []),
+        ...socialMeta({
+          title,
+          description: metaDescription,
+          url: canonicalUrl,
+          image: imageUrls[0],
+          type: "product",
+          locale,
+        }),
       ],
       links: hreflangLinks(`/products/${product.slug}`, locale),
       scripts: [jsonLdScript(jsonLd), jsonLdScript(breadcrumbs)],
@@ -231,6 +276,11 @@ function ProductDetailPage() {
             </p>
           </div>
 
+          <p className="flex items-start gap-2 border-l-2 border-border pl-3 text-xs leading-relaxed text-muted-foreground">
+            <Info className="mt-0.5 size-3.5 shrink-0" aria-hidden="true" />
+            <span>{t.catalog.sellerNotice}</span>
+          </p>
+
           {description && (
             <p className="whitespace-pre-line text-sm leading-relaxed text-foreground">
               {description}
@@ -263,6 +313,29 @@ function ProductDetailPage() {
               </span>
             </span>
           </Link>
+
+          <nav
+            aria-label={t.catalog.district}
+            className="flex flex-wrap items-center gap-x-5 gap-y-2 pt-1 text-sm"
+          >
+            <Link
+              to="/$locale/fresh-flowers-near-me"
+              params={{ locale }}
+              className="inline-flex items-center gap-1.5 font-medium text-brand hover:underline"
+            >
+              <MapPin className="size-4" aria-hidden="true" />
+              {t.catalog.nearMeLink}
+            </Link>
+            <Link
+              to="/$locale/products"
+              params={{ locale }}
+              search={{ district: product.shop.district }}
+              className="inline-flex items-center gap-1.5 text-muted-foreground hover:text-foreground hover:underline"
+            >
+              {f(t.catalog.moreInDistrict, { district: districtName })}
+              <ArrowUpRight className="size-4" aria-hidden="true" />
+            </Link>
+          </nav>
         </div>
       </div>
     </div>

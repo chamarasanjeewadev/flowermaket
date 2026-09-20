@@ -17,7 +17,8 @@ import { EnquiryProvider } from "../lib/enquiry";
 import { getDict, isLocale, type Locale } from "../i18n";
 import { I18nProvider } from "../i18n/react";
 import { sessionQueryOptions } from "../lib/session";
-import { siteUrl, absoluteUrl } from "../lib/site";
+import { siteUrl } from "../lib/site";
+import { socialMeta } from "../lib/seo";
 import appCss from "../styles.css?url";
 
 /** Extract locale from the current URL path (/en/..., /si/...) or fall back to "en". */
@@ -40,34 +41,19 @@ export const Route = createRootRouteWithContext<RouterContext>()({
     return { session };
   },
   head: () => ({
-    meta: [
-      { charSet: "utf-8" },
-      { name: "viewport", content: "width=device-width, initial-scale=1" },
-      {
-        title: "FlowerMarket.lk — Sri Lanka's flower marketplace",
-      },
-      {
-        name: "description",
-        content:
-          "Shop fresh flowers, arrangements and bouquets from local growers and florists across Sri Lanka — in English and සිංහල.",
-      },
-      { name: "theme-color", content: "#f5f3ee" },
-      { property: "og:type", content: "website" },
-      { property: "og:site_name", content: "FlowerMarket.lk" },
-      {
-        property: "og:title",
-        content: "FlowerMarket.lk — Sri Lanka's flower marketplace",
-      },
-      {
-        property: "og:description",
-        content:
-          "Fresh flowers and arrangements from local growers and florists across Sri Lanka.",
-      },
-      { property: "og:url", content: siteUrl() },
-      { property: "og:image", content: absoluteUrl("/og-image.png") },
-      { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:image", content: absoluteUrl("/og-image.png") },
-    ],
+    meta: (() => {
+      const title = "FlowerMarket.lk — Sri Lanka's flower marketplace";
+      const description =
+        "Browse retail and wholesale flower listings in Sri Lanka by category, district and seller — in English and සිංහල.";
+      return [
+        { charSet: "utf-8" },
+        { name: "viewport", content: "width=device-width, initial-scale=1" },
+        { title },
+        { name: "description", content: description },
+        { name: "theme-color", content: "#f5f3ee" },
+        ...socialMeta({ title, description, url: siteUrl() }),
+      ];
+    })(),
     links: [
       { rel: "stylesheet", href: appCss },
       { rel: "icon", href: "/favicon.ico", sizes: "any" },
