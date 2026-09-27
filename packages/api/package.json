@@ -7,7 +7,8 @@
     ".": "./src/index.ts",
     "./redirect": "./src/redirect.ts",
     "./constants": "./src/constants.ts",
-    "./money": "./src/money.ts"
+    "./money": "./src/money.ts",
+    "./pricing": "./src/pricing.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",

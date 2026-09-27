@@ -18,3 +18,5 @@ export * from "./repos/orders";
 export * from "./repos/rfqs";
 export * from "./repos/awards";
 export * from "./redirect";
+export * from "./pricing";
+export * from "./repos/documents";
