@@ -18,7 +18,7 @@
  *   - docNo at draft: also a placeholder prefixed "DRAFT-" with a short random
  *     suffix. `issueDocument` overwrites both with production values per Task 17.
  */
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, sql } from "drizzle-orm";
 import { schema } from "@flowers/db/client";
 import type { Db } from "../db";
 import { err, isPgError, ok, type ActionResult } from "../errors";
@@ -94,6 +94,69 @@ export interface BuildDocumentDraftOpts {
   notes?: string | null;
   validUntil?: Date | null;
   createdByUserId: string;
+}
+
+// ---------------------------------------------------------------------------
+// Pure helpers for document identifiers
+// ---------------------------------------------------------------------------
+
+/**
+ * Map document type to its prefix in the docNo format.
+ * - quotation → "FM-Q"
+ * - invoice → "FM-INV"
+ * - receipt → "FM-RCP"
+ */
+export function docNoPrefix(type: DocumentType): string {
+  switch (type) {
+    case "quotation":
+      return "FM-Q";
+    case "invoice":
+      return "FM-INV";
+    case "receipt":
+      return "FM-RCP";
+  }
+}
+
+/**
+ * Format a document number: `${docNoPrefix(type)}-${year}-${seq.toString().padStart(4,"0")}`.
+ * Example: nextDocNo("invoice", 2026, 7) === "FM-INV-2026-0007".
+ */
+export function nextDocNo(type: DocumentType, year: number, seq: number): string {
+  const prefix = docNoPrefix(type);
+  const paddedSeq = seq.toString().padStart(4, "0");
+  return `${prefix}-${year}-${paddedSeq}`;
+}
+
+/**
+ * Generate a URL-safe random token (32+ chars, [A-Za-z0-9_-]).
+ * Uses crypto.getRandomValues with base64url encoding.
+ */
+export function generatePublicToken(): string {
+  const bytes = new Uint8Array(24);
+  crypto.getRandomValues(bytes);
+
+  // Base64url encode without padding
+  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
+  let token = "";
+  let bits = 0;
+  let value = 0;
+
+  for (let i = 0; i < bytes.length; i++) {
+    value = (value << 8) | bytes[i];
+    bits += 8;
+
+    while (bits >= 6) {
+      bits -= 6;
+      token += chars[(value >> bits) & 0x3f];
+    }
+  }
+
+  // Flush remaining bits
+  if (bits > 0) {
+    token += chars[(value << (6 - bits)) & 0x3f];
+  }
+
+  return token;
 }
 
 // ---------------------------------------------------------------------------
@@ -343,10 +406,10 @@ export async function buildDocumentDraft(
 
 /**
  * Freeze a draft document: set issuedAt=now, status='sent'.
- * Generates production-ready docNo and publicToken (placeholder until Task 17
- * provides nextDocNo / generatePublicToken helpers — uses crypto random).
+ * Generates production-ready docNo (per-type, per-year sequence) and publicToken.
  *
  * Returns err("forbidden") if the document is already issued.
+ * Returns err("conflict") if a unique constraint violation occurs (rare docNo race).
  */
 export async function issueDocument(
   db: DbOrTx,
@@ -354,7 +417,12 @@ export async function issueDocument(
 ): Promise<ActionResult<{ token: string; docNo: string }>> {
   try {
     const [doc] = await db
-      .select({ id: schema.documents.id, issuedAt: schema.documents.issuedAt })
+      .select({
+        id: schema.documents.id,
+        type: schema.documents.type,
+        createdAt: schema.documents.createdAt,
+        issuedAt: schema.documents.issuedAt,
+      })
       .from(schema.documents)
       .where(eq(schema.documents.id, draftId))
       .limit(1);
@@ -366,9 +434,26 @@ export async function issueDocument(
     const editable = assertEditable(doc);
     if (!editable.ok) return editable;
 
-    // TODO Task 17: replace with nextDocNo(db, type, year) + generatePublicToken()
-    const docNo = tempDocNo("DOC");
-    const publicToken = tempToken("pub");
+    // Derive the document year from createdAt.
+    const year = doc.createdAt.getFullYear();
+
+    // Count existing documents of this type in this year to get the sequence.
+    const [{ count }] = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(schema.documents)
+      .where(
+        and(
+          eq(schema.documents.type, doc.type),
+          // Match documents created in the same year.
+          sql`extract(year from ${schema.documents.createdAt}) = ${year}`,
+          // Exclude this draft itself
+          sql`${schema.documents.id} != ${draftId}`,
+        ),
+      );
+
+    const seq = Number(count) + 1;
+    const docNo = nextDocNo(doc.type, year, seq);
+    const publicToken = generatePublicToken();
     const now = new Date();
 
     await db
@@ -384,6 +469,10 @@ export async function issueDocument(
 
     return ok({ token: publicToken, docNo });
   } catch (e) {
+    // Handle unique constraint violation on docNo (rare race condition).
+    if (isPgError(e, "23505")) {
+      return err("conflict", "Document number already issued (race condition).");
+    }
     return err(
       "unknown",
       e instanceof Error ? e.message : "Could not issue document.",
