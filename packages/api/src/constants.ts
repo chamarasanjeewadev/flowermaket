@@ -37,3 +37,10 @@ export const DISTRICTS: readonly District[] = [
 
 /** Platform commission in basis points (1000 = 10%). */
 export const DEFAULT_COMMISSION_BPS = 1000;
+
+/** Default marketplace markup on sourcing cost, in basis points (2500 = 25%). */
+export const DEFAULT_MARGIN_BPS = 2500;
+
+/** Allowed order/quote units. */
+export const ORDER_UNITS = ["stem", "bunch", "box"] as const;
+export type OrderUnit = (typeof ORDER_UNITS)[number];
