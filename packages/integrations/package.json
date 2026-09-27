@@ -12,7 +12,8 @@
     "build": "echo 'source package - nothing to build'"
   },
   "dependencies": {
-    "js-md5": "^0.8.3"
+    "js-md5": "^0.8.3",
+    "pdf-lib": "^1.17.1"
   },
   "devDependencies": {
     "@flowers/config": "workspace:*",
