@@ -11,7 +11,8 @@
   "routes": [{ "pattern": "admin.flowermarket.lk", "custom_domain": true }],
   // Non-secret vars (safe to commit; deploy overrides via wrangler vars or dashboard):
   "vars": {
-    "SUPPLIER_PORTAL_URL": "https://supplier.flowermarket.lk"
+    "SUPPLIER_PORTAL_URL": "https://supplier.flowermarket.lk",
+    "WEB_PUBLIC_URL": "https://flowermarket.lk"
   }
   // Secrets (set with `wrangler secret put <NAME>` after deploy target exists):
   //   DATABASE_URL           — Supabase transaction pooler (port 6543)
@@ -20,4 +21,5 @@
   //   EVOLUTION_API_URL      — base URL of the Evolution API instance
   //   EVOLUTION_API_KEY      — Evolution API key
   //   EVOLUTION_INSTANCE     — Evolution instance name
+  //   DOC_ACCESS_SECRET      — HMAC secret for document OTP/cookie signing (≥32 chars)
 }

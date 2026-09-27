@@ -21,6 +21,9 @@ import { Checkbox } from "@flowers/ui/components/checkbox";
 import { Input } from "@flowers/ui/components/input";
 import {
   AlertCircle,
+  Check,
+  ClipboardCopy,
+  Download,
   FileText,
   InboxIcon,
   Loader2,
@@ -36,14 +39,21 @@ import {
   sendRfqsFn,
   createAwardFn,
   cancelAwardFn,
+  createDocumentFn,
+  issueDocumentFn,
+  acceptDocumentFn,
+  sendDocumentFn,
+  markPaidFn,
 } from "../server/orders";
 import type { DispatchResult } from "../server/orders";
 import { StatusBadge } from "../components/order-status-badge";
 import { formatDate, formatDateTime } from "../lib/format";
 import { formatRupees } from "@flowers/api/money";
+import { documentTotals } from "@flowers/api/pricing";
 import type {
   MatchedSupplier,
   OrderDetail,
+  OrderDocumentDetail,
   OrderItemDetail,
   OrderItemAwardDetail,
   RfqDetail,
@@ -950,6 +960,780 @@ function AwardsPanel({ order }: AwardsPanelProps) {
 }
 
 // ---------------------------------------------------------------------------
+// Documents panel (Task 20)
+// ---------------------------------------------------------------------------
+
+const DEFAULT_MARGIN_BPS = 2500; // 25% — matches packages/api/src/constants.ts
+
+interface DocumentsPanelProps {
+  order: OrderDetail;
+}
+
+/**
+ * DocumentsPanel — full quotation / invoice / receipt lifecycle UI.
+ *
+ * Renders the existing documents table and the next action (create / issue /
+ * accept / send / mark-paid) based on the order and document state.
+ *
+ * Client-safety: formatRupees and documentTotals/applyMargin are imported from
+ * subpath exports (@flowers/api/money, @flowers/api/pricing). No barrel import
+ * used as a value.
+ */
+function DocumentsPanel({ order }: DocumentsPanelProps) {
+  // Local mirror of documents so we can append after create/issue without a
+  // full page reload.
+  const [documents, setDocuments] = useState<OrderDocumentDetail[]>(
+    order.documents,
+  );
+
+  // Per-action loading/error state
+  const [creating, setCreating] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [sendResults, setSendResults] = useState<
+    Record<string, { sent: boolean; error?: string }>
+  >({});
+
+  // Quotation create form state
+  const [showCreateQuote, setShowCreateQuote] = useState(false);
+  const [marginBps, setMarginBps] = useState<string>(
+    DEFAULT_MARGIN_BPS.toString(),
+  );
+  const [discountStr, setDiscountStr] = useState<string>("0");
+  const [deliveryFeeStr, setDeliveryFeeStr] = useState<string>("0");
+
+  // Mark-paid form state
+  const [payingDocId, setPayingDocId] = useState<string | null>(null);
+  const [payMethod, setPayMethod] = useState<string>("bank_transfer");
+  const [payRef, setPayRef] = useState<string>("");
+  const [payError, setPayError] = useState<string | null>(null);
+
+  // Copied token feedback
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  // ---------------------------------------------------------------------------
+  // Derived state helpers
+  // ---------------------------------------------------------------------------
+
+  const activeLocale = (order.customerLocale === "si" ? "si" : "en") as
+    | "si"
+    | "en";
+
+  const hasQuotation = documents.some(
+    (d) => d.type === "quotation" && d.status !== "void",
+  );
+  const acceptedQuotation = documents.find(
+    (d) => d.type === "quotation" && d.status === "accepted",
+  );
+  const hasInvoice = documents.some(
+    (d) => d.type === "invoice" && d.status !== "void",
+  );
+  const paidInvoice = documents.find(
+    (d) => d.type === "invoice" && d.status === "paid",
+  );
+  const hasReceipt = documents.some(
+    (d) => d.type === "receipt" && d.status !== "void",
+  );
+
+  // Live total preview for the create-quotation form
+  const marginParsed = Math.max(
+    0,
+    Math.min(50000, parseInt(marginBps, 10) || 0),
+  );
+  const discountCents = Math.max(0, parseInt(discountStr, 10) || 0) * 100;
+  const deliveryFeeCents =
+    Math.max(0, parseInt(deliveryFeeStr, 10) || 0) * 100;
+
+  // Build synthetic line items for preview using awards available on the
+  // client. Apply the margin to derive customer prices. The actual total is
+  // computed server-side by buildDocumentDraft (from the award cost rollup).
+  // This is an approximation — it matches when no per-line overrides are set.
+  const previewLines = order.awards
+    .filter((a) => a.status !== "cancelled")
+    .map((a) => {
+      const unitCost = a.awardedQty > 0
+        ? Math.round(a.unitCost)
+        : 0;
+      const unitPrice = Math.round(
+        (unitCost * (10000 + marginParsed)) / 10000,
+      );
+      return { qty: a.awardedQty, unitPrice };
+    });
+  const previewTotals = documentTotals(previewLines, {
+    discount: discountCents,
+    deliveryFee: deliveryFeeCents,
+  });
+  const hasAwards = order.awards.some((a) => a.status !== "cancelled");
+  const previewNote = hasAwards
+    ? `Est. customer total: ${formatRupees(previewTotals.total)} (margin ${((marginParsed / 10000) * 100).toFixed(1)}%${discountCents > 0 ? `, discount ${formatRupees(discountCents)}` : ""}${deliveryFeeCents > 0 ? `, delivery ${formatRupees(deliveryFeeCents)}` : ""})`
+    : `No active awards yet — total computed after sourcing (margin ${((marginParsed / 10000) * 100).toFixed(1)}%)`;
+
+  // ---------------------------------------------------------------------------
+  // Helpers
+  // ---------------------------------------------------------------------------
+
+  function buildDocUrl(doc: OrderDocumentDetail): string {
+    // The public token is only useful after issue; drafts have a "draft_" prefix.
+    return `/${activeLocale}/d/${doc.publicToken}`;
+  }
+
+  async function copyLink(doc: OrderDocumentDetail) {
+    const url = buildDocUrl(doc);
+    try {
+      await navigator.clipboard.writeText(url);
+    } catch {
+      // Clipboard denied — silently ignore; users can still see the URL.
+    }
+    setCopiedId(doc.id);
+    setTimeout(() => setCopiedId(null), 2000);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Actions
+  // ---------------------------------------------------------------------------
+
+  async function handleCreateQuotation() {
+    setCreating(true);
+    setCreateError(null);
+    const result = await createDocumentFn({
+      data: {
+        orderId: order.id,
+        type: "quotation",
+        marginBps: marginParsed,
+        discount: discountCents,
+        deliveryFee: deliveryFeeCents,
+      },
+    });
+    setCreating(false);
+    if (!result.ok) {
+      setCreateError(result.message);
+      return;
+    }
+    setDocuments((prev) => [
+      ...prev,
+      {
+        id: result.data.id,
+        type: result.data.type,
+        docNo: result.data.docNo,
+        status: result.data.status,
+        total: result.data.total,
+        publicToken: result.data.publicToken,
+        issuedAt: result.data.issuedAt,
+        paidAt: result.data.paidAt,
+        createdAt: result.data.createdAt,
+        updatedAt: result.data.updatedAt,
+      },
+    ]);
+    setShowCreateQuote(false);
+    setMarginBps(DEFAULT_MARGIN_BPS.toString());
+    setDiscountStr("0");
+    setDeliveryFeeStr("0");
+  }
+
+  async function handleCreateInvoice() {
+    setActionLoading("create_invoice");
+    setActionError(null);
+    const result = await createDocumentFn({
+      data: { orderId: order.id, type: "invoice" },
+    });
+    setActionLoading(null);
+    if (!result.ok) {
+      setActionError(result.message);
+      return;
+    }
+    setDocuments((prev) => [
+      ...prev,
+      {
+        id: result.data.id,
+        type: result.data.type,
+        docNo: result.data.docNo,
+        status: result.data.status,
+        total: result.data.total,
+        publicToken: result.data.publicToken,
+        issuedAt: result.data.issuedAt,
+        paidAt: result.data.paidAt,
+        createdAt: result.data.createdAt,
+        updatedAt: result.data.updatedAt,
+      },
+    ]);
+  }
+
+  async function handleCreateReceipt() {
+    setActionLoading("create_receipt");
+    setActionError(null);
+    const result = await createDocumentFn({
+      data: { orderId: order.id, type: "receipt" },
+    });
+    setActionLoading(null);
+    if (!result.ok) {
+      setActionError(result.message);
+      return;
+    }
+    setDocuments((prev) => [
+      ...prev,
+      {
+        id: result.data.id,
+        type: result.data.type,
+        docNo: result.data.docNo,
+        status: result.data.status,
+        total: result.data.total,
+        publicToken: result.data.publicToken,
+        issuedAt: result.data.issuedAt,
+        paidAt: result.data.paidAt,
+        createdAt: result.data.createdAt,
+        updatedAt: result.data.updatedAt,
+      },
+    ]);
+  }
+
+  async function handleIssueDocument(doc: OrderDocumentDetail) {
+    setActionLoading(`issue_${doc.id}`);
+    setActionError(null);
+    const result = await issueDocumentFn({
+      data: {
+        docId: doc.id,
+        orderId: order.id,
+        type: doc.type as "quotation" | "invoice" | "receipt",
+      },
+    });
+    setActionLoading(null);
+    if (!result.ok) {
+      setActionError(result.message);
+      return;
+    }
+    setDocuments((prev) =>
+      prev.map((d) =>
+        d.id === doc.id
+          ? {
+              ...d,
+              docNo: result.data.docNo,
+              publicToken: result.data.token,
+              status: "sent",
+              issuedAt: new Date(),
+              updatedAt: new Date(),
+            }
+          : d,
+      ),
+    );
+  }
+
+  async function handleAcceptDocument(doc: OrderDocumentDetail) {
+    setActionLoading(`accept_${doc.id}`);
+    setActionError(null);
+    const result = await acceptDocumentFn({
+      data: { docId: doc.id, orderId: order.id },
+    });
+    setActionLoading(null);
+    if (!result.ok) {
+      setActionError(result.message);
+      return;
+    }
+    setDocuments((prev) =>
+      prev.map((d) =>
+        d.id === doc.id
+          ? { ...d, status: "accepted", updatedAt: new Date() }
+          : d,
+      ),
+    );
+  }
+
+  async function handleSendDocument(doc: OrderDocumentDetail) {
+    setActionLoading(`send_${doc.id}`);
+    const result = await sendDocumentFn({
+      data: {
+        docId: doc.id,
+        orderId: order.id,
+        type: doc.type as "quotation" | "invoice" | "receipt",
+        docNo: doc.docNo,
+        publicToken: doc.publicToken,
+        customerLocale: order.customerLocale,
+        customerPhone: order.customerPhone,
+      },
+    });
+    setActionLoading(null);
+    if (result.ok) {
+      setSendResults((prev) => ({ ...prev, [doc.id]: result.data }));
+    } else {
+      setSendResults((prev) => ({
+        ...prev,
+        [doc.id]: { sent: false, error: result.message },
+      }));
+    }
+  }
+
+  async function handleMarkPaid(doc: OrderDocumentDetail) {
+    if (!payRef.trim()) {
+      setPayError("Payment reference is required.");
+      return;
+    }
+    setActionLoading(`pay_${doc.id}`);
+    setPayError(null);
+    const result = await markPaidFn({
+      data: {
+        docId: doc.id,
+        orderId: order.id,
+        method: payMethod,
+        ref: payRef.trim(),
+      },
+    });
+    setActionLoading(null);
+    if (!result.ok) {
+      setPayError(result.message);
+      return;
+    }
+    setDocuments((prev) =>
+      prev.map((d) =>
+        d.id === doc.id
+          ? { ...d, status: "paid", paidAt: new Date(), updatedAt: new Date() }
+          : d,
+      ),
+    );
+    setPayingDocId(null);
+    setPayMethod("bank_transfer");
+    setPayRef("");
+  }
+
+  // ---------------------------------------------------------------------------
+  // Render helpers
+  // ---------------------------------------------------------------------------
+
+  function docTypeBadge(type: string) {
+    const labels: Record<string, string> = {
+      quotation: "Quotation",
+      invoice: "Invoice",
+      receipt: "Receipt",
+    };
+    return labels[type] ?? type;
+  }
+
+  function docStatusVariant(
+    status: string,
+  ): "default" | "secondary" | "outline" | "destructive" {
+    switch (status) {
+      case "draft":
+        return "secondary";
+      case "sent":
+      case "viewed":
+        return "outline";
+      case "accepted":
+      case "paid":
+        return "default";
+      case "void":
+        return "destructive";
+      default:
+        return "secondary";
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Render
+  // ---------------------------------------------------------------------------
+
+  if (documents.length === 0 && !showCreateQuote) {
+    return (
+      <div className="space-y-4">
+        <EmptyState
+          icon={<FileText />}
+          title="No documents yet"
+          description="Create a quotation to begin the document lifecycle."
+        />
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => setShowCreateQuote(true)}
+        >
+          <FileText className="mr-2 h-4 w-4" />
+          Create Quotation
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* ---- Existing documents table ---- */}
+      {documents.length > 0 && (
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Doc #</TableHead>
+              <TableHead>Type</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead className="text-right">Total</TableHead>
+              <TableHead>Issued</TableHead>
+              <TableHead>Link / PDF</TableHead>
+              <TableHead>Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {documents.map((doc) => {
+              const isLoading =
+                actionLoading === `issue_${doc.id}` ||
+                actionLoading === `accept_${doc.id}` ||
+                actionLoading === `send_${doc.id}` ||
+                actionLoading === `pay_${doc.id}`;
+              const isDraft = doc.issuedAt == null;
+              const docSendResult = sendResults[doc.id];
+
+              return (
+                <TableRow
+                  key={doc.id}
+                  className={doc.status === "void" ? "opacity-50" : undefined}
+                >
+                  {/* Doc # */}
+                  <TableCell className="font-mono text-xs">{doc.docNo}</TableCell>
+
+                  {/* Type */}
+                  <TableCell>
+                    <span className="text-sm font-medium capitalize">
+                      {docTypeBadge(doc.type)}
+                    </span>
+                  </TableCell>
+
+                  {/* Status */}
+                  <TableCell>
+                    <Badge
+                      variant={docStatusVariant(doc.status)}
+                      className="text-xs capitalize"
+                    >
+                      {doc.status}
+                    </Badge>
+                  </TableCell>
+
+                  {/* Total */}
+                  <TableCell className="text-right font-medium">
+                    {formatRupees(doc.total)}
+                  </TableCell>
+
+                  {/* Issued at */}
+                  <TableCell className="text-sm text-muted-foreground">
+                    {doc.issuedAt ? formatDateTime(doc.issuedAt) : "—"}
+                  </TableCell>
+
+                  {/* Public link + PDF */}
+                  <TableCell>
+                    {!isDraft && doc.status !== "void" ? (
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          title="Copy public link"
+                          onClick={() => copyLink(doc)}
+                          className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+                        >
+                          {copiedId === doc.id ? (
+                            <Check className="h-3.5 w-3.5 text-green-600" />
+                          ) : (
+                            <ClipboardCopy className="h-3.5 w-3.5" />
+                          )}
+                          {copiedId === doc.id ? "Copied" : "Copy link"}
+                        </button>
+                        <a
+                          href={`${buildDocUrl(doc)}/pdf`}
+                          target="_blank"
+                          rel="noreferrer"
+                          title="Download PDF"
+                          className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+                        >
+                          <Download className="h-3.5 w-3.5" />
+                          PDF
+                        </a>
+                      </div>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">
+                        {isDraft ? "Draft" : "—"}
+                      </span>
+                    )}
+                  </TableCell>
+
+                  {/* Row actions */}
+                  <TableCell>
+                    <div className="flex flex-col gap-1.5">
+                      {/* Issue (draft only) */}
+                      {isDraft && doc.status !== "void" && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-7 text-xs px-2"
+                          onClick={() => handleIssueDocument(doc)}
+                          disabled={isLoading}
+                        >
+                          {actionLoading === `issue_${doc.id}` ? (
+                            <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                          ) : (
+                            <Send className="mr-1 h-3 w-3" />
+                          )}
+                          Issue
+                        </Button>
+                      )}
+
+                      {/* Send WhatsApp (issued, non-void) */}
+                      {!isDraft && doc.status !== "void" && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-7 text-xs px-2"
+                          onClick={() => handleSendDocument(doc)}
+                          disabled={isLoading}
+                        >
+                          {actionLoading === `send_${doc.id}` ? (
+                            <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                          ) : (
+                            <Send className="mr-1 h-3 w-3" />
+                          )}
+                          Send WA
+                        </Button>
+                      )}
+
+                      {/* Accept (quotation, sent/viewed) */}
+                      {doc.type === "quotation" &&
+                        (doc.status === "sent" || doc.status === "viewed") && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-7 text-xs px-2"
+                            onClick={() => handleAcceptDocument(doc)}
+                            disabled={isLoading}
+                          >
+                            {actionLoading === `accept_${doc.id}` ? (
+                              <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                            ) : (
+                              <Check className="mr-1 h-3 w-3" />
+                            )}
+                            Accept
+                          </Button>
+                        )}
+
+                      {/* Mark paid (invoice, sent/viewed) */}
+                      {doc.type === "invoice" &&
+                        (doc.status === "sent" || doc.status === "viewed") && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-7 text-xs px-2"
+                            onClick={() => setPayingDocId(doc.id)}
+                            disabled={isLoading}
+                          >
+                            Mark paid
+                          </Button>
+                        )}
+
+                      {/* WA send result inline */}
+                      {docSendResult && (
+                        <span
+                          className={
+                            docSendResult.sent
+                              ? "text-xs text-green-600"
+                              : "text-xs text-destructive"
+                          }
+                        >
+                          {docSendResult.sent
+                            ? "WA sent"
+                            : `WA failed: ${docSendResult.error ?? "unknown"}`}
+                        </span>
+                      )}
+                    </div>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
+      )}
+
+      {/* ---- Global action error ---- */}
+      {actionError && (
+        <div className="flex items-start gap-1.5 text-sm text-destructive">
+          <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
+          <span>{actionError}</span>
+        </div>
+      )}
+
+      {/* ---- Mark-paid inline form ---- */}
+      {payingDocId && (
+        <div className="rounded-md border p-4 space-y-3">
+          <p className="text-sm font-medium">Mark invoice as paid</p>
+          <div className="flex flex-wrap items-center gap-3">
+            <select
+              className="rounded-md border border-input bg-background px-2 py-1.5 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              value={payMethod}
+              onChange={(e) => setPayMethod(e.target.value)}
+            >
+              <option value="bank_transfer">Bank transfer</option>
+              <option value="cash">Cash</option>
+              <option value="card">Card</option>
+              <option value="payhere">PayHere</option>
+              <option value="other">Other</option>
+            </select>
+            <Input
+              className="h-9 w-56"
+              placeholder="Reference / receipt no."
+              value={payRef}
+              onChange={(e) => setPayRef(e.target.value)}
+            />
+            <Button
+              size="sm"
+              onClick={() => {
+                const doc = documents.find((d) => d.id === payingDocId);
+                if (doc) handleMarkPaid(doc);
+              }}
+              disabled={actionLoading === `pay_${payingDocId}`}
+            >
+              {actionLoading === `pay_${payingDocId}` ? (
+                <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Check className="mr-1.5 h-3.5 w-3.5" />
+              )}
+              Confirm
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setPayingDocId(null);
+                setPayRef("");
+                setPayError(null);
+              }}
+            >
+              Cancel
+            </Button>
+          </div>
+          {payError && (
+            <p className="text-sm text-destructive">{payError}</p>
+          )}
+        </div>
+      )}
+
+      {/* ---- Create quotation form ---- */}
+      {showCreateQuote && (
+        <div className="rounded-md border p-4 space-y-4">
+          <p className="text-sm font-medium">New quotation</p>
+          <div className="grid gap-3 sm:grid-cols-3">
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-muted-foreground">
+                Margin (basis points)
+              </label>
+              <Input
+                type="number"
+                min={0}
+                max={50000}
+                className="h-9"
+                value={marginBps}
+                onChange={(e) => setMarginBps(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">
+                {((marginParsed / 10000) * 100).toFixed(1)}% markup
+              </p>
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-muted-foreground">
+                Discount (LKR)
+              </label>
+              <Input
+                type="number"
+                min={0}
+                className="h-9"
+                value={discountStr}
+                onChange={(e) => setDiscountStr(e.target.value)}
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-muted-foreground">
+                Delivery fee (LKR)
+              </label>
+              <Input
+                type="number"
+                min={0}
+                className="h-9"
+                value={deliveryFeeStr}
+                onChange={(e) => setDeliveryFeeStr(e.target.value)}
+              />
+            </div>
+          </div>
+          <p className="text-xs text-muted-foreground">{previewNote}</p>
+          {createError && (
+            <p className="text-sm text-destructive">{createError}</p>
+          )}
+          <div className="flex items-center gap-3">
+            <Button
+              size="sm"
+              onClick={handleCreateQuotation}
+              disabled={creating}
+            >
+              {creating ? (
+                <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <FileText className="mr-1.5 h-3.5 w-3.5" />
+              )}
+              Create quotation draft
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setShowCreateQuote(false);
+                setCreateError(null);
+              }}
+            >
+              Cancel
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* ---- Next-step buttons ---- */}
+      <div className="flex flex-wrap gap-3">
+        {/* Create quotation (if none exists yet) */}
+        {!hasQuotation && !showCreateQuote && (
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setShowCreateQuote(true)}
+          >
+            <FileText className="mr-2 h-4 w-4" />
+            Create Quotation
+          </Button>
+        )}
+
+        {/* Create invoice (once a quotation is accepted, and no invoice yet) */}
+        {acceptedQuotation && !hasInvoice && (
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={handleCreateInvoice}
+            disabled={actionLoading === "create_invoice"}
+          >
+            {actionLoading === "create_invoice" ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <FileText className="mr-2 h-4 w-4" />
+            )}
+            Create Invoice
+          </Button>
+        )}
+
+        {/* Create receipt (once the invoice is paid, and no receipt yet) */}
+        {paidInvoice && !hasReceipt && (
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={handleCreateReceipt}
+            disabled={actionLoading === "create_receipt"}
+          >
+            {actionLoading === "create_receipt" ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <FileText className="mr-2 h-4 w-4" />
+            )}
+            Create Receipt
+          </Button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Page
 // ---------------------------------------------------------------------------
 
@@ -1115,17 +1899,13 @@ function OrderDetailPage() {
         </CardContent>
       </Card>
 
-      {/* Documents — future tasks will fill this panel */}
+      {/* Documents */}
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Documents</CardTitle>
         </CardHeader>
         <CardContent>
-          <EmptyState
-            icon={<FileText />}
-            title="No documents yet"
-            description="Quotations, invoices, and receipts linked to this order will appear here."
-          />
+          <DocumentsPanel order={order} />
         </CardContent>
       </Card>
     </div>

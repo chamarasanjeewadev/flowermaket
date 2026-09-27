@@ -46,6 +46,11 @@ export interface AppEnv {
    * verifyOtp fail closed (generic error). Never log or expose this value.
    */
   DOC_ACCESS_SECRET: string | undefined;
+  // ---------------------------------------------------------------------------
+  // Web public URL — used to build customer-facing document links (Task 20)
+  // ---------------------------------------------------------------------------
+  /** Canonical public origin of the web app (e.g. https://flowermarket.lk). */
+  WEB_PUBLIC_URL: string | undefined;
 }
 
 function read(name: string): string | undefined {
@@ -71,5 +76,6 @@ export function getEnv(): AppEnv {
     EVOLUTION_INSTANCE: read("EVOLUTION_INSTANCE"),
     SUPPLIER_PORTAL_URL: read("SUPPLIER_PORTAL_URL"),
     DOC_ACCESS_SECRET: read("DOC_ACCESS_SECRET"),
+    WEB_PUBLIC_URL: read("WEB_PUBLIC_URL"),
   };
 }

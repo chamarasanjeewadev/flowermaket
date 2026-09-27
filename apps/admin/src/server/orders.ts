@@ -22,6 +22,11 @@ import {
   createAward,
   cancelAward,
   orderCostRollup,
+  buildDocumentDraft,
+  issueDocument,
+  acceptDocument,
+  markPaid,
+  updateOrderStatus,
   type ActionResult,
   type CreateOrderInput,
   type OrderDetail,
@@ -29,10 +34,13 @@ import {
   type MatchedSupplier,
   type CreateAwardInput,
   type AwardCostRollupRow,
+  type DocumentType,
+  type DocumentRow,
 } from "@flowers/api";
 import {
   sendWhatsappText,
   buildRfqNudge,
+  buildDocumentLinkMessage,
   type EvolutionConfig,
 } from "@flowers/integrations";
 import { resolveAdminSession } from "./session";
@@ -306,5 +314,174 @@ export const getCostRollupFn = createServerFn({ method: "GET" })
 
       const db = requireDb();
       return orderCostRollup(db, orderId);
+    },
+  );
+
+// ---------------------------------------------------------------------------
+// Document server functions (Task 20)
+// ---------------------------------------------------------------------------
+
+export interface CreateDocumentInput {
+  orderId: string;
+  type: DocumentType;
+  marginBps?: number;
+  discount?: number;
+  deliveryFee?: number;
+  lineOverrides?: Record<string, number>;
+}
+
+export const createDocumentFn = createServerFn({ method: "POST" })
+  .validator((input: CreateDocumentInput) => input)
+  .handler(
+    async ({ data }): Promise<ActionResult<DocumentRow>> => {
+      const resolved = await resolveAdminUserId();
+      if (!resolved.ok) return authError<DocumentRow>();
+
+      const db = requireDb();
+      return buildDocumentDraft(db, data.orderId, data.type, {
+        marginBps: data.marginBps,
+        discount: data.discount,
+        deliveryFee: data.deliveryFee,
+        linePriceOverrides: data.lineOverrides,
+        createdByUserId: resolved.userId,
+      });
+    },
+  );
+
+export interface IssueDocumentResult {
+  token: string;
+  docNo: string;
+}
+
+export const issueDocumentFn = createServerFn({ method: "POST" })
+  .validator(
+    (input: { docId: string; orderId: string; type: DocumentType }) => input,
+  )
+  .handler(
+    async ({
+      data,
+    }): Promise<ActionResult<IssueDocumentResult>> => {
+      const resolved = await resolveAdminUserId();
+      if (!resolved.ok) return authError<IssueDocumentResult>();
+
+      const db = requireDb();
+      const issueResult = await issueDocument(db, data.docId);
+      if (!issueResult.ok) return issueResult;
+
+      // Advance order status: quotation issued → quoted; invoice issued → invoiced.
+      // Status transition errors are surfaced but do NOT roll back the issue — the
+      // document is already immutably issued. The caller should reload to reflect
+      // the current state.
+      if (data.type === "quotation") {
+        await updateOrderStatus(db, data.orderId, "quoted");
+      } else if (data.type === "invoice") {
+        await updateOrderStatus(db, data.orderId, "invoiced");
+      }
+      // receipt: order stays 'paid' (no further lifecycle step from issuing a receipt)
+
+      return issueResult;
+    },
+  );
+
+export const acceptDocumentFn = createServerFn({ method: "POST" })
+  .validator((input: { docId: string; orderId: string }) => input)
+  .handler(
+    async ({ data }): Promise<ActionResult<void>> => {
+      const resolved = await resolveAdminUserId();
+      if (!resolved.ok) return authError<void>();
+
+      const db = requireDb();
+      const acceptResult = await acceptDocument(db, data.docId);
+      if (!acceptResult.ok) return acceptResult;
+
+      // Quotation accepted → order confirmed.
+      await updateOrderStatus(db, data.orderId, "confirmed");
+
+      return acceptResult;
+    },
+  );
+
+export interface SendDocumentResult {
+  sent: boolean;
+  error?: string;
+}
+
+export const sendDocumentFn = createServerFn({ method: "POST" })
+  .validator(
+    (input: {
+      docId: string;
+      orderId: string;
+      type: DocumentType;
+      docNo: string;
+      publicToken: string;
+      customerLocale: string;
+      customerPhone: string;
+    }) => input,
+  )
+  .handler(
+    async ({ data }): Promise<ActionResult<SendDocumentResult>> => {
+      const resolved = await resolveAdminUserId();
+      if (!resolved.ok) return authError<SendDocumentResult>();
+
+      const env = getEnv();
+      const webUrl = env.WEB_PUBLIC_URL ?? "";
+      const locale = data.customerLocale === "si" ? "si" : "en";
+      const docUrl = `${webUrl}/${locale}/d/${data.publicToken}`;
+
+      const message = buildDocumentLinkMessage({
+        type: data.type,
+        docNo: data.docNo,
+        url: docUrl,
+        locale,
+      });
+
+      const evolutionConfig: EvolutionConfig = {
+        apiUrl: env.EVOLUTION_API_URL ?? "",
+        apiKey: env.EVOLUTION_API_KEY ?? "",
+        instance: env.EVOLUTION_INSTANCE ?? "",
+      };
+
+      // Dispatch-after-commit pattern: send failures are surfaced as a
+      // non-fatal result. The document is already issued; a failed send
+      // does not affect the document or order state.
+      const sendResult = await sendWhatsappText(
+        evolutionConfig,
+        data.customerPhone,
+        message,
+      );
+
+      if (sendResult.ok) {
+        return { ok: true, data: { sent: true } };
+      }
+
+      return {
+        ok: true,
+        data: { sent: false, error: sendResult.message },
+      };
+    },
+  );
+
+export interface MarkPaidInput {
+  docId: string;
+  orderId: string;
+  method: string;
+  ref: string;
+}
+
+export const markPaidFn = createServerFn({ method: "POST" })
+  .validator((input: MarkPaidInput) => input)
+  .handler(
+    async ({ data }): Promise<ActionResult<void>> => {
+      const resolved = await resolveAdminUserId();
+      if (!resolved.ok) return authError<void>();
+
+      const db = requireDb();
+      const paidResult = await markPaid(db, data.docId, data.method, data.ref);
+      if (!paidResult.ok) return paidResult;
+
+      // Invoice paid → order paid.
+      await updateOrderStatus(db, data.orderId, "paid");
+
+      return paidResult;
     },
   );

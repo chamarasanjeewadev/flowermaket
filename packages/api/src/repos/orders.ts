@@ -183,7 +183,10 @@ export interface OrderDocumentDetail {
   docNo: string;
   status: string;
   total: number;
+  /** Public token for the customer-facing document URL (set on issue). */
+  publicToken: string;
   issuedAt: Date | null;
+  paidAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -474,7 +477,9 @@ export async function getOrder(
       docNo: schema.documents.docNo,
       status: schema.documents.status,
       total: schema.documents.total,
+      publicToken: schema.documents.publicToken,
       issuedAt: schema.documents.issuedAt,
+      paidAt: schema.documents.paidAt,
       createdAt: schema.documents.createdAt,
       updatedAt: schema.documents.updatedAt,
     })

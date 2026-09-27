@@ -531,6 +531,55 @@ export async function markPaid(
 }
 
 /**
+ * Accept a quotation (admin-driven: customer verbally accepted).
+ * Only allowed when the document status is 'sent' or 'viewed'.
+ * Returns err("validation") for any other status or an unissued draft.
+ */
+export async function acceptDocument(
+  db: DbOrTx,
+  docId: string,
+): Promise<ActionResult<void>> {
+  try {
+    const [doc] = await db
+      .select({
+        id: schema.documents.id,
+        status: schema.documents.status,
+        issuedAt: schema.documents.issuedAt,
+      })
+      .from(schema.documents)
+      .where(eq(schema.documents.id, docId))
+      .limit(1);
+
+    if (!doc) {
+      return err("not_found", `Document ${docId} not found.`);
+    }
+
+    if (doc.issuedAt == null) {
+      return err("validation", "Cannot accept a draft document. Issue it first.");
+    }
+
+    if (doc.status !== "sent" && doc.status !== "viewed") {
+      return err(
+        "validation",
+        `Document cannot be accepted from status '${doc.status}'. Must be 'sent' or 'viewed'.`,
+      );
+    }
+
+    await db
+      .update(schema.documents)
+      .set({ status: "accepted", updatedAt: new Date() })
+      .where(eq(schema.documents.id, docId));
+
+    return ok(undefined);
+  } catch (e) {
+    return err(
+      "unknown",
+      e instanceof Error ? e.message : "Could not accept document.",
+    );
+  }
+}
+
+/**
  * Clone an issued document as a new draft, marking the old document as
  * superseded by the new one.
  *
