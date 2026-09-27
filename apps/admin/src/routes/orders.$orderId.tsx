@@ -194,6 +194,7 @@ function SourcingPanel({ orderId, rfqs }: SourcingPanelProps) {
           return {
             id: rfqId,
             supplierShopId: dr?.supplierShopId ?? rfqId,
+            supplierShopName: dr?.shopName ?? null,
             status: "sent",
             message: null,
             quoteNotes: null,
@@ -582,11 +583,20 @@ function AwardsPanel({ order }: AwardsPanelProps) {
   const [awards, setAwards] = useState<OrderItemAwardDetail[]>(order.awards);
   const [cancellingId, setCancellingId] = useState<string | null>(null);
 
-  // ---- Build a lookup: supplierShopId → short label (shopId prefix) ----
-  // The loader has rfqs which carry supplierShopId but no name.
-  // We use the first 8 chars of the UUID as a label unless a better source arrives.
+  // ---- Build a lookup: supplierShopId → English shop name ----
+  // getOrder enriches each rfq and award with `supplierShopName`. We index those
+  // here so award rows created optimistically (which lack the name) can still be
+  // labelled. Falls back to the short UUID only if a name is somehow missing.
+  const shopNameById = new Map<string, string>();
+  for (const rfq of order.rfqs) {
+    if (rfq.supplierShopName) shopNameById.set(rfq.supplierShopId, rfq.supplierShopName);
+  }
+  for (const award of order.awards) {
+    if (award.supplierShopName) shopNameById.set(award.supplierShopId, award.supplierShopName);
+  }
+
   function supplierLabel(shopId: string): string {
-    return shopId.slice(0, 8);
+    return shopNameById.get(shopId) ?? shopId.slice(0, 8);
   }
 
   // ---- Build quote-cell index per item ----
@@ -643,6 +653,7 @@ function AwardsPanel({ order }: AwardsPanelProps) {
       id: result.data.id,
       orderItemId: itemId,
       supplierShopId: cell.supplierShopId,
+      supplierShopName: shopNameById.get(cell.supplierShopId) ?? null,
       rfqQuoteLineId: cell.quoteLineId,
       awardedQty: qty,
       unitCost: cell.unitPrice,
@@ -716,10 +727,7 @@ function AwardsPanel({ order }: AwardsPanelProps) {
                     key={rfq.id}
                     className="px-4 py-2 text-center font-medium text-muted-foreground min-w-[140px]"
                   >
-                    <span
-                      title={rfq.supplierShopId}
-                      className="font-mono text-xs"
-                    >
+                    <span title={rfq.supplierShopId} className="text-xs">
                       {supplierLabel(rfq.supplierShopId)}
                     </span>
                   </th>

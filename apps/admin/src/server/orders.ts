@@ -301,18 +301,10 @@ export const getCostRollupFn = createServerFn({ method: "GET" })
   .validator((orderId: string) => orderId)
   .handler(
     async ({ data: orderId }): Promise<ActionResult<AwardCostRollupRow[]>> => {
-      const session = await resolveAdminSession();
-      if (
-        session.kind === "anonymous" ||
-        session.kind === "config_error" ||
-        session.kind === "forbidden"
-      ) {
-        return authError<AwardCostRollupRow[]>();
-      }
-      const db = tryCreateDb();
-      if (!db) {
-        return { ok: false, code: "unknown", message: "Database is not configured." };
-      }
+      const resolved = await resolveAdminUserId();
+      if (!resolved.ok) return authError<AwardCostRollupRow[]>();
+
+      const db = requireDb();
       return orderCostRollup(db, orderId);
     },
   );

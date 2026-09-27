@@ -147,6 +147,8 @@ export interface RfqQuoteLineDetail {
 export interface RfqDetail {
   id: string;
   supplierShopId: string;
+  /** English display name of the supplier shop (null if the shop was deleted). */
+  supplierShopName: string | null;
   status: string;
   message: string | null;
   quoteNotes: string | null;
@@ -164,6 +166,8 @@ export interface OrderItemAwardDetail {
   id: string;
   orderItemId: string;
   supplierShopId: string;
+  /** English display name of the supplier shop (null if the shop was deleted). */
+  supplierShopName: string | null;
   rfqQuoteLineId: string | null;
   awardedQty: number;
   unitCost: number;
@@ -409,14 +413,9 @@ export async function getOrder(
     quoteLinesByRfq.set(ql.rfqId, list);
   }
 
-  const rfqs: RfqDetail[] = rfqRows.map((r) => ({
-    ...r,
-    quoteLines: quoteLinesByRfq.get(r.id) ?? [],
-  }));
-
   // 5. Awards — filter by items belonging to this order
   const itemIds = items.map((it) => it.id);
-  const awards: OrderItemAwardDetail[] =
+  const awardRows =
     itemIds.length > 0
       ? await db
           .select({
@@ -435,6 +434,37 @@ export async function getOrder(
           .where(inArray(schema.orderItemAwards.orderItemId, itemIds))
           .orderBy(asc(schema.orderItemAwards.createdAt))
       : [];
+
+  // 5a. Resolve supplier shop names for every shop referenced by an rfq or an
+  //     award, in a single query, then stitch them into both row sets so the
+  //     admin UI can label columns and award rows by grower name.
+  const supplierShopIds = [
+    ...new Set([
+      ...rfqRows.map((r) => r.supplierShopId),
+      ...awardRows.map((a) => a.supplierShopId),
+    ]),
+  ];
+  const shopNameById = new Map<string, string>();
+  if (supplierShopIds.length > 0) {
+    const shopRows = await db
+      .select({ id: schema.shops.id, nameEn: schema.shops.nameEn })
+      .from(schema.shops)
+      .where(inArray(schema.shops.id, supplierShopIds));
+    for (const s of shopRows) {
+      shopNameById.set(s.id, s.nameEn);
+    }
+  }
+
+  const rfqs: RfqDetail[] = rfqRows.map((r) => ({
+    ...r,
+    supplierShopName: shopNameById.get(r.supplierShopId) ?? null,
+    quoteLines: quoteLinesByRfq.get(r.id) ?? [],
+  }));
+
+  const awards: OrderItemAwardDetail[] = awardRows.map((a) => ({
+    ...a,
+    supplierShopName: shopNameById.get(a.supplierShopId) ?? null,
+  }));
 
   // 6. Documents
   const documents: OrderDocumentDetail[] = await db
