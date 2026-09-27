@@ -1,12 +1,10 @@
 import {
   date, index, integer, pgTable, text, timestamp, uniqueIndex, uuid,
 } from "drizzle-orm/pg-core";
-import { language } from "./enums";
-import { orderSource, orderStatus } from "./enums";
+import { awardStatus, language, orderSource, orderStatus, rfqStatus } from "./enums";
 import { users } from "./users";
 import { categories } from "./catalog";
 import { shops } from "./shops";
-import { awardStatus, rfqStatus } from "./enums";
 
 export const orders = pgTable(
   "orders",
