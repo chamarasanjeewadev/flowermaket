@@ -31,6 +31,94 @@ import type {
 } from "@flowers/db/schema";
 
 // ---------------------------------------------------------------------------
+// PublicDocument — customer-facing snapshot only (no cost / margin / internal)
+// ---------------------------------------------------------------------------
+
+/**
+ * Customer-facing snapshot of a document. Contains ONLY fields the customer
+ * is allowed to see: type, docNo, status, issuedAt, currency, the customer's
+ * own snapshot, the line snapshot at customer price, totals, validUntil, paidAt.
+ *
+ * NEVER includes: supplier cost, award data, commission, margin, createdByUserId,
+ * orderId, pdfPath, supersededByDocumentId, paymentRef (internal), or any raw
+ * DB id beyond what's needed.
+ */
+export interface PublicDocument {
+  type: DocumentType;
+  docNo: string;
+  status: DocumentStatus;
+  issuedAt: Date | null;
+  currency: string;
+  lineSnapshot: DocumentLineSnapshot[];
+  customerSnapshot: DocumentCustomerSnapshot;
+  subtotal: number;
+  discount: number;
+  deliveryFee: number;
+  taxAmount: number;
+  total: number;
+  validUntil: Date | null;
+  paidAt: Date | null;
+}
+
+/**
+ * Fetch a document by its public URL token and return a customer-facing
+ * snapshot. Returns err("not_found") if the token does not match any document.
+ *
+ * Security: the SELECT projection is an explicit allow-list — no supplier cost,
+ * margin, award data, internal IDs, or paymentRef are returned.
+ */
+export async function getPublicDocument(
+  db: Db,
+  token: string,
+): Promise<ActionResult<PublicDocument>> {
+  try {
+    const [doc] = await db
+      .select({
+        type: schema.documents.type,
+        docNo: schema.documents.docNo,
+        status: schema.documents.status,
+        issuedAt: schema.documents.issuedAt,
+        currency: schema.documents.currency,
+        lineSnapshot: schema.documents.lineSnapshot,
+        customerSnapshot: schema.documents.customerSnapshot,
+        subtotal: schema.documents.subtotal,
+        discount: schema.documents.discount,
+        deliveryFee: schema.documents.deliveryFee,
+        taxAmount: schema.documents.taxAmount,
+        total: schema.documents.total,
+        validUntil: schema.documents.validUntil,
+        paidAt: schema.documents.paidAt,
+      })
+      .from(schema.documents)
+      .where(eq(schema.documents.publicToken, token))
+      .limit(1);
+
+    if (!doc) {
+      return err("not_found", "Document not found.");
+    }
+
+    return ok({
+      type: doc.type as DocumentType,
+      docNo: doc.docNo,
+      status: doc.status as DocumentStatus,
+      issuedAt: doc.issuedAt,
+      currency: doc.currency,
+      lineSnapshot: doc.lineSnapshot as DocumentLineSnapshot[],
+      customerSnapshot: doc.customerSnapshot as DocumentCustomerSnapshot,
+      subtotal: doc.subtotal,
+      discount: doc.discount,
+      deliveryFee: doc.deliveryFee,
+      taxAmount: doc.taxAmount,
+      total: doc.total,
+      validUntil: doc.validUntil,
+      paidAt: doc.paidAt,
+    });
+  } catch (e) {
+    return err("unknown", e instanceof Error ? e.message : "Could not fetch document.");
+  }
+}
+
+// ---------------------------------------------------------------------------
 // DbOrTx — live client or an open transaction
 // ---------------------------------------------------------------------------
 
