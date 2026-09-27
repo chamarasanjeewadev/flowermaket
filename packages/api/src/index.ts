@@ -16,4 +16,5 @@ export * from "./repos/catalog";
 export * from "./repos/products";
 export * from "./repos/orders";
 export * from "./repos/rfqs";
+export * from "./repos/awards";
 export * from "./redirect";
