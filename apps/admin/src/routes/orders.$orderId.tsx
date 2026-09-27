@@ -49,7 +49,7 @@ import type { DispatchResult } from "../server/orders";
 import { StatusBadge } from "../components/order-status-badge";
 import { formatDate, formatDateTime } from "../lib/format";
 import { formatRupees } from "@flowers/api/money";
-import { documentTotals } from "@flowers/api/pricing";
+import { documentTotals, applyMargin } from "@flowers/api/pricing";
 import type {
   MatchedSupplier,
   OrderDetail,
@@ -1046,20 +1046,22 @@ function DocumentsPanel({ order }: DocumentsPanelProps) {
     Math.max(0, parseInt(deliveryFeeStr, 10) || 0) * 100;
 
   // Build synthetic line items for preview using awards available on the
-  // client. Apply the margin to derive customer prices. The actual total is
-  // computed server-side by buildDocumentDraft (from the award cost rollup).
-  // This is an approximation — it matches when no per-line overrides are set.
-  const previewLines = order.awards
-    .filter((a) => a.status !== "cancelled")
-    .map((a) => {
-      const unitCost = a.awardedQty > 0
-        ? Math.round(a.unitCost)
-        : 0;
-      const unitPrice = Math.round(
-        (unitCost * (10000 + marginParsed)) / 10000,
-      );
-      return { qty: a.awardedQty, unitPrice };
-    });
+  // client. Group by orderItemId, derive a weighted-average unit cost per item,
+  // then apply margin once per item — matching the server-side rollup in
+  // buildDocumentDraft. The actual total is computed server-side; this is an
+  // approximation that aligns when no per-line overrides are set.
+  const activeAwards = order.awards.filter((a) => a.status !== "cancelled");
+  const itemCostMap = new Map<string, { totalCost: number; totalQty: number }>();
+  for (const a of activeAwards) {
+    const existing = itemCostMap.get(a.orderItemId) ?? { totalCost: 0, totalQty: 0 };
+    existing.totalCost += a.awardedQty * a.unitCost;
+    existing.totalQty += a.awardedQty;
+    itemCostMap.set(a.orderItemId, existing);
+  }
+  const previewLines = Array.from(itemCostMap.values()).map(({ totalCost, totalQty }) => {
+    const perUnit = totalQty > 0 ? Math.round(totalCost / totalQty) : 0;
+    return { qty: totalQty, unitPrice: applyMargin(perUnit, marginParsed) };
+  });
   const previewTotals = documentTotals(previewLines, {
     discount: discountCents,
     deliveryFee: deliveryFeeCents,

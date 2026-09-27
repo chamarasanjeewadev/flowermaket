@@ -531,6 +531,7 @@ export async function recordSupplierQuote(
       .select({
         id: schema.rfqs.id,
         supplierShopId: schema.rfqs.supplierShopId,
+        orderId: schema.rfqs.orderId,
       })
       .from(schema.rfqs)
       .where(eq(schema.rfqs.id, rfqId))
@@ -555,9 +556,22 @@ export async function recordSupplierQuote(
       }
     }
 
+    // 3. Cross-order guard — each quote line's orderItemId must belong to the
+    //    order that this RFQ was created for.
+    const orderItemRows = await db
+      .select({ id: schema.orderItems.id })
+      .from(schema.orderItems)
+      .where(eq(schema.orderItems.orderId, rfqRow.orderId));
+    const validItemIds = new Set(orderItemRows.map((r) => r.id));
+    for (const line of lines) {
+      if (!validItemIds.has(line.orderItemId)) {
+        return err("validation", "Quote line references an item not on this order.");
+      }
+    }
+
     const now = new Date();
 
-    // 3. Insert quote lines (lines guaranteed non-empty by the guard above)
+    // 4. Insert quote lines (lines guaranteed non-empty by the guard above)
     await db.insert(schema.rfqQuoteLines).values(
       lines.map((l) => ({
         rfqId,

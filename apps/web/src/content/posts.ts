@@ -209,7 +209,7 @@ export const POSTS: readonly Post[] = [
       { kind: "h2", text: "Compare the full cost" },
       {
         kind: "p",
-        text: "A listed unit price is only one part of the total. Confirm whether it is per stem, bunch, or box; check the minimum quantity; and add delivery, collection, packing, and any applicable taxes. Online prices are supplied by sellers and should be reconfirmed before you commit. For a single popular line, see how buying direct changes the maths in our guide to [rose prices in Sri Lanka](/rose-prices-sri-lanka).",
+        text: "A listed unit price is only one part of the total. Confirm whether it is per stem, bunch, or box; check the minimum quantity; and add delivery, collection, packing, and any applicable taxes. Online prices are supplied by sellers and should be reconfirmed before you commit.",
       },
       { kind: "h2", text: "Ask about condition and timing" },
       {

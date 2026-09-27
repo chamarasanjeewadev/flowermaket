@@ -81,7 +81,6 @@ Intent key: **N** = navigational, **C** = commercial/transactional,
 | **Guide — Freshness** `/blog/how-to-keep-cut-flowers-fresh` | how to keep flowers fresh | make cut flowers last longer, flower care tips | I |
 | **Guide — Wholesale** `/blog/buying-wholesale-flowers-sri-lanka` | wholesale flowers Sri Lanka | Manning Market flowers, bulk flowers Colombo | I→C |
 | **Guide — Poya** `/blog/flowers-for-poya-and-temple-offerings` | poya flowers | temple flowers Sri Lanka, lotus flowers | I |
-| **Landing — Rose prices** `/rose-prices-sri-lanka` | rose prices Sri Lanka | cost of roses Sri Lanka, roses direct from supplier, buy roses direct from growers | I→C |
 
 > The two guides sharing a primary keyword with a category/browse page
 > (`wedding`, `wholesale`) are deliberate: the **guide** captures the
