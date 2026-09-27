@@ -37,6 +37,15 @@ export interface AppEnv {
   // ---------------------------------------------------------------------------
   /** Origin of the supplier portal (e.g. https://supplier.flowermarket.lk). */
   SUPPLIER_PORTAL_URL: string | undefined;
+  // ---------------------------------------------------------------------------
+  // Document access — OTP + signed cookie (Task 18)
+  // ---------------------------------------------------------------------------
+  /**
+   * HMAC secret used to hash OTP codes at rest and sign document-access cookies.
+   * Must be a strong random string (≥ 32 chars). If absent, requestOtp and
+   * verifyOtp fail closed (generic error). Never log or expose this value.
+   */
+  DOC_ACCESS_SECRET: string | undefined;
 }
 
 function read(name: string): string | undefined {
@@ -61,5 +70,6 @@ export function getEnv(): AppEnv {
     EVOLUTION_API_KEY: read("EVOLUTION_API_KEY"),
     EVOLUTION_INSTANCE: read("EVOLUTION_INSTANCE"),
     SUPPLIER_PORTAL_URL: read("SUPPLIER_PORTAL_URL"),
+    DOC_ACCESS_SECRET: read("DOC_ACCESS_SECRET"),
   };
 }
