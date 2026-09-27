@@ -22,4 +22,9 @@
   //   SUPABASE_URL, SUPABASE_ANON_KEY
   //   SITE_URL               — canonical public origin, e.g. https://flowermarket.lk
   //   PAYHERE_MERCHANT_ID, PAYHERE_MERCHANT_SECRET
+  //   DOC_ACCESS_SECRET      — HMAC secret for OTP hashing + doc-access cookie signing (>= 32 chars)
+  //   EVOLUTION_API_KEY      — Evolution API key for WhatsApp OTP dispatch
+  // Non-secret vars (safe to set in wrangler.jsonc vars block if needed):
+  //   EVOLUTION_API_URL      — Evolution API base URL, e.g. https://evolution.example.com
+  //   EVOLUTION_INSTANCE     — Evolution instance name
 }
