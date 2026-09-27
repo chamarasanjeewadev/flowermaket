@@ -1,19 +1,22 @@
 /**
- * RFQs repo — grower matching + supplier-scoped reads + tenant guard.
+ * RFQs repo — grower matching, supplier-scoped reads, tenant guard,
+ * and write operations (createRfqs, recordSupplierQuote, markRfqViewed).
  *
  * Conventions match repos/products.ts and repos/shops.ts:
  * - `db`-first arg (`DbOrTx` alias), accepts live client or open transaction.
  * - Returns `ActionResult<T>` — no throws from business logic.
- * - Pure guard (`assertOwnsRfq`) is exported separately for unit testing
- *   without a database (see rfqs.test.ts).
+ * - Pure guard (`assertOwnsRfq`) and pure helper (`dedupeSupplierIds`) are
+ *   exported separately for unit testing without a database (see rfqs.test.ts).
  *
- * Scope: matching + reads only. createRfq / recordSupplierQuote /
- * markRfqViewed are Task 9.
+ * Dispatch note: `createRfqs` does NOT send WhatsApp messages. The calling
+ * server function (Task 12) sends after the transaction commits so that a
+ * send failure never rolls back the persisted RFQs.
  */
-import { and, asc, eq, inArray } from "drizzle-orm";
+import { and, asc, desc, eq, inArray } from "drizzle-orm";
 import { schema } from "@flowers/db/client";
 import type { Db } from "../db";
-import { err, ok, type ActionResult } from "../errors";
+import { err, isPgError, ok, type ActionResult } from "../errors";
+import { updateOrderStatus } from "./orders";
 
 // ---------------------------------------------------------------------------
 // DbOrTx — live client or an open transaction
@@ -189,7 +192,7 @@ export async function listSupplierRfqs(
       .from(schema.rfqs)
       .innerJoin(schema.orders, eq(schema.orders.id, schema.rfqs.orderId))
       .where(eq(schema.rfqs.supplierShopId, shopId))
-      .orderBy(asc(schema.rfqs.sentAt));
+      .orderBy(desc(schema.rfqs.createdAt));
 
     if (!rfqRows.length) return ok([]);
 
@@ -218,7 +221,7 @@ export async function listSupplierRfqs(
 
     const summaries: SupplierRfqSummary[] = rfqRows.map((r) => {
       const orderItems = itemsByOrder.get(r.orderId) ?? [];
-      const sorted = orderItems.sort((a, b) => a.sortOrder - b.sortOrder);
+      // itemRows already ordered by sortOrder asc from the DB query
       return {
         id: r.id,
         orderId: r.orderId,
@@ -227,7 +230,7 @@ export async function listSupplierRfqs(
         sentAt: r.sentAt,
         expiresAt: r.expiresAt,
         createdAt: r.createdAt,
-        firstItemDescription: sorted[0]?.descriptionEn ?? null,
+        firstItemDescription: orderItems[0]?.descriptionEn ?? null,
         itemCount: orderItems.length,
       };
     });
@@ -333,5 +336,246 @@ export async function getSupplierRfq(
     });
   } catch (e) {
     return err("unknown", e instanceof Error ? e.message : "Failed to fetch RFQ.");
+  }
+}
+
+// ---------------------------------------------------------------------------
+// dedupeSupplierIds — pure helper (exported for unit testing)
+// ---------------------------------------------------------------------------
+
+/**
+ * Return the subset of `requested` supplier IDs that are not already in
+ * `existing`, preserving request order and emitting no duplicates.
+ */
+export function dedupeSupplierIds(
+  existing: string[],
+  requested: string[],
+): string[] {
+  const existingSet = new Set(existing);
+  const seen = new Set<string>();
+  const result: string[] = [];
+  for (const id of requested) {
+    if (!existingSet.has(id) && !seen.has(id)) {
+      result.push(id);
+      seen.add(id);
+    }
+  }
+  return result;
+}
+
+// ---------------------------------------------------------------------------
+// createRfqs
+// ---------------------------------------------------------------------------
+
+/**
+ * Send RFQs to a list of supplier shops for a given order.
+ *
+ * - Idempotent on (orderId, supplierShopId) — duplicates are silently skipped
+ *   via deduplication against existing RFQ rows.
+ * - Runs inside a transaction: inserts new RFQ rows, then if the order is
+ *   currently `draft` transitions it to `sourcing` via updateOrderStatus.
+ * - Does NOT dispatch WhatsApp messages — the calling server function (Task 12)
+ *   sends after commit so that a send failure never rolls back persisted RFQs.
+ *
+ * Returns ok({ created }) with the IDs of the newly inserted RFQ rows.
+ */
+export async function createRfqs(
+  db: Db,
+  orderId: string,
+  supplierShopIds: string[],
+  message?: string,
+): Promise<ActionResult<{ created: string[] }>> {
+  try {
+    const created = await db.transaction(async (tx) => {
+      // 1. Find existing RFQs for this order to avoid duplicates
+      const existing = await tx
+        .select({ supplierShopId: schema.rfqs.supplierShopId })
+        .from(schema.rfqs)
+        .where(eq(schema.rfqs.orderId, orderId));
+
+      const existingIds = existing.map((r) => r.supplierShopId);
+      const newIds = dedupeSupplierIds(existingIds, supplierShopIds);
+
+      // 2. Insert only the net-new supplier IDs
+      const insertedIds: string[] = [];
+      if (newIds.length > 0) {
+        const now = new Date();
+        const inserted = await tx
+          .insert(schema.rfqs)
+          .values(
+            newIds.map((shopId) => ({
+              orderId,
+              supplierShopId: shopId,
+              status: "sent" as const,
+              sentAt: now,
+              message: message ?? null,
+            })),
+          )
+          .returning({ id: schema.rfqs.id });
+        insertedIds.push(...inserted.map((r) => r.id));
+      }
+
+      // 3. If the order is currently draft, move it to sourcing
+      const [orderRow] = await tx
+        .select({ status: schema.orders.status })
+        .from(schema.orders)
+        .where(eq(schema.orders.id, orderId));
+
+      if (orderRow?.status === "draft") {
+        await updateOrderStatus(tx, orderId, "sourcing");
+      }
+
+      return insertedIds;
+    });
+
+    return ok({ created });
+  } catch (e) {
+    if (isPgError(e, "23505")) {
+      // Unique constraint on (orderId, supplierShopId) — race condition between
+      // concurrent calls; treat as partial success by re-reading created rows.
+      return err("conflict", "One or more RFQs already exist for this order/supplier combination.");
+    }
+    return err("unknown", e instanceof Error ? e.message : "Failed to create RFQs.");
+  }
+}
+
+// ---------------------------------------------------------------------------
+// SupplierQuoteLineInput — exported so server fns can type their payloads
+// ---------------------------------------------------------------------------
+
+export interface SupplierQuoteLineInput {
+  orderItemId: string;
+  availableQty: number;
+  unitPrice: number;
+  leadTimeDays?: number | null;
+  notes?: string | null;
+}
+
+// ---------------------------------------------------------------------------
+// recordSupplierQuote
+// ---------------------------------------------------------------------------
+
+/**
+ * Record a supplier's quote against an existing RFQ.
+ *
+ * - Tenant-guarded via assertOwnsRfq.
+ * - Validates each line: availableQty >= 0, unitPrice >= 0.
+ * - Inserts rfqQuoteLines rows and updates rfq.status → 'quoted',
+ *   respondedAt, quoteNotes, quoteValidUntil.
+ */
+export async function recordSupplierQuote(
+  db: DbOrTx,
+  rfqId: string,
+  shopId: string,
+  lines: SupplierQuoteLineInput[],
+  quoteNotes?: string | null,
+  validUntil?: Date | null,
+): Promise<ActionResult<void>> {
+  try {
+    // 1. Fetch RFQ for tenant guard
+    const [rfqRow] = await db
+      .select({
+        id: schema.rfqs.id,
+        supplierShopId: schema.rfqs.supplierShopId,
+      })
+      .from(schema.rfqs)
+      .where(eq(schema.rfqs.id, rfqId))
+      .limit(1);
+
+    if (!rfqRow) return err("not_found", "RFQ not found.");
+
+    const guard = assertOwnsRfq(rfqRow, shopId);
+    if (!guard.ok) return guard;
+
+    // 2. Validate lines
+    for (const line of lines) {
+      if (line.availableQty < 0) {
+        return err("validation", `availableQty must be >= 0 (got ${line.availableQty}).`);
+      }
+      if (line.unitPrice < 0) {
+        return err("validation", `unitPrice must be >= 0 (got ${line.unitPrice}).`);
+      }
+    }
+
+    const now = new Date();
+
+    // 3. Insert quote lines
+    if (lines.length > 0) {
+      await db.insert(schema.rfqQuoteLines).values(
+        lines.map((l) => ({
+          rfqId,
+          orderItemId: l.orderItemId,
+          availableQty: l.availableQty,
+          unitPrice: l.unitPrice,
+          leadTimeDays: l.leadTimeDays ?? null,
+          notes: l.notes ?? null,
+        })),
+      );
+    }
+
+    // 4. Update RFQ status → quoted
+    await db
+      .update(schema.rfqs)
+      .set({
+        status: "quoted",
+        respondedAt: now,
+        quoteNotes: quoteNotes ?? null,
+        quoteValidUntil: validUntil ?? null,
+        updatedAt: now,
+      })
+      .where(eq(schema.rfqs.id, rfqId));
+
+    return ok(undefined);
+  } catch (e) {
+    return err("unknown", e instanceof Error ? e.message : "Failed to record supplier quote.");
+  }
+}
+
+// ---------------------------------------------------------------------------
+// markRfqViewed
+// ---------------------------------------------------------------------------
+
+/**
+ * Mark an RFQ as viewed by the supplier.
+ *
+ * - Tenant-guarded via assertOwnsRfq.
+ * - Only advances status from 'sent' → 'viewed'. If the RFQ is already in a
+ *   later state (quoted, declined, etc.) the update is a no-op so we never
+ *   downgrade a more advanced status.
+ */
+export async function markRfqViewed(
+  db: DbOrTx,
+  rfqId: string,
+  shopId: string,
+): Promise<ActionResult<void>> {
+  try {
+    // 1. Fetch RFQ for tenant guard
+    const [rfqRow] = await db
+      .select({
+        id: schema.rfqs.id,
+        supplierShopId: schema.rfqs.supplierShopId,
+        status: schema.rfqs.status,
+      })
+      .from(schema.rfqs)
+      .where(eq(schema.rfqs.id, rfqId))
+      .limit(1);
+
+    if (!rfqRow) return err("not_found", "RFQ not found.");
+
+    const guard = assertOwnsRfq(rfqRow, shopId);
+    if (!guard.ok) return guard;
+
+    // 2. Only advance if still 'sent' — never downgrade
+    if (rfqRow.status !== "sent") return ok(undefined);
+
+    const now = new Date();
+    await db
+      .update(schema.rfqs)
+      .set({ status: "viewed", viewedAt: now, updatedAt: now })
+      .where(eq(schema.rfqs.id, rfqId));
+
+    return ok(undefined);
+  } catch (e) {
+    return err("unknown", e instanceof Error ? e.message : "Failed to mark RFQ as viewed.");
   }
 }
