@@ -1,6 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Button } from "@flowers/ui/components/button";
-import { Badge } from "@flowers/ui/components/badge";
 import { EmptyState } from "@flowers/ui/components/empty-state";
 import {
   Table,
@@ -12,7 +11,8 @@ import {
 } from "@flowers/ui/components/table";
 import { ClipboardList, Plus } from "lucide-react";
 import { listOrdersFn } from "../server/orders";
-import type { OrderStatus } from "@flowers/api";
+import { StatusBadge } from "../components/order-status-badge";
+import { formatDate } from "../lib/format";
 
 export const Route = createFileRoute("/orders/")({
   loader: async () => {
@@ -21,47 +21,6 @@ export const Route = createFileRoute("/orders/")({
   },
   component: OrdersIndexPage,
 });
-
-// ---------------------------------------------------------------------------
-// Status badge
-// ---------------------------------------------------------------------------
-
-const STATUS_VARIANTS: Record<
-  OrderStatus,
-  "outline" | "secondary" | "info" | "warning" | "success" | "destructive"
-> = {
-  draft: "outline",
-  sourcing: "info",
-  quoted: "info",
-  confirmed: "warning",
-  invoiced: "warning",
-  paid: "success",
-  fulfilling: "success",
-  completed: "success",
-  cancelled: "destructive",
-};
-
-function StatusBadge({ status }: { status: OrderStatus }) {
-  return (
-    <Badge variant={STATUS_VARIANTS[status]}>
-      {status.charAt(0).toUpperCase() + status.slice(1)}
-    </Badge>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Date helpers
-// ---------------------------------------------------------------------------
-
-function formatDate(d: Date | string | null | undefined): string {
-  if (!d) return "—";
-  const date = d instanceof Date ? d : new Date(d);
-  return date.toLocaleDateString("en-GB", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
-}
 
 // ---------------------------------------------------------------------------
 // Page

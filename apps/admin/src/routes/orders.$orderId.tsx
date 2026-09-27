@@ -1,5 +1,4 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
-import { Badge } from "@flowers/ui/components/badge";
 import { EmptyState } from "@flowers/ui/components/empty-state";
 import {
   Card,
@@ -17,7 +16,9 @@ import {
 } from "@flowers/ui/components/table";
 import { FileText, InboxIcon, Package } from "lucide-react";
 import { getOrderFn } from "../server/orders";
-import type { OrderDetail, OrderStatus } from "@flowers/api";
+import { StatusBadge } from "../components/order-status-badge";
+import { formatDate, formatDateTime } from "../lib/format";
+import type { OrderDetail } from "@flowers/api";
 
 // ---------------------------------------------------------------------------
 // Route
@@ -34,59 +35,6 @@ export const Route = createFileRoute("/orders/$orderId")({
   notFoundComponent: OrderNotFound,
   component: OrderDetailPage,
 });
-
-// ---------------------------------------------------------------------------
-// Status badge (shared with list page)
-// ---------------------------------------------------------------------------
-
-const STATUS_VARIANTS: Record<
-  OrderStatus,
-  "outline" | "secondary" | "info" | "warning" | "success" | "destructive"
-> = {
-  draft: "outline",
-  sourcing: "info",
-  quoted: "info",
-  confirmed: "warning",
-  invoiced: "warning",
-  paid: "success",
-  fulfilling: "success",
-  completed: "success",
-  cancelled: "destructive",
-};
-
-function StatusBadge({ status }: { status: OrderStatus }) {
-  return (
-    <Badge variant={STATUS_VARIANTS[status]}>
-      {status.charAt(0).toUpperCase() + status.slice(1)}
-    </Badge>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Date helpers
-// ---------------------------------------------------------------------------
-
-function formatDate(d: Date | string | null | undefined): string {
-  if (!d) return "—";
-  const date = d instanceof Date ? d : new Date(d);
-  return date.toLocaleDateString("en-GB", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
-}
-
-function formatDateTime(d: Date | string | null | undefined): string {
-  if (!d) return "—";
-  const date = d instanceof Date ? d : new Date(d);
-  return date.toLocaleString("en-GB", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
 
 // ---------------------------------------------------------------------------
 // Detail field
