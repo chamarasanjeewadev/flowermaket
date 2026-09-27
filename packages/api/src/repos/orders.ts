@@ -230,7 +230,7 @@ export interface OrderSummary {
  * caller should retry.
  */
 export async function createOrder(
-  db: DbOrTx,
+  db: Db,
   input: CreateOrderInput,
   createdByUserId: string,
 ): Promise<ActionResult<{ id: string; orderNo: string }>> {
@@ -240,7 +240,7 @@ export async function createOrder(
   }
 
   try {
-    return await (db as Db).transaction(async (tx) => {
+    return await db.transaction(async (tx) => {
       const year = new Date().getUTCFullYear();
       // Count existing orders this year to derive the next sequence number.
       const [{ count }] = await tx
