@@ -12,14 +12,24 @@ import { createServerFn } from "@tanstack/react-start";
 import {
   requireDb,
   tryCreateDb,
+  getEnv,
   createOrder,
   getOrder,
   listOrders,
+  matchRoseGrowers,
+  createRfqs,
+  resolveRfqDispatchInfo,
   type ActionResult,
   type CreateOrderInput,
   type OrderDetail,
   type OrderSummary,
+  type MatchedSupplier,
 } from "@flowers/api";
+import {
+  sendWhatsappText,
+  buildRfqNudge,
+  type EvolutionConfig,
+} from "@flowers/integrations";
 import { resolveAdminSession } from "./session";
 
 // ---------------------------------------------------------------------------
@@ -102,5 +112,135 @@ export const createOrderFn = createServerFn({ method: "POST" })
 
       const db = requireDb();
       return createOrder(db, data, resolved.userId);
+    },
+  );
+
+// ---------------------------------------------------------------------------
+// Sourcing server functions (Task 12)
+// ---------------------------------------------------------------------------
+
+export const matchSuppliersFn = createServerFn({ method: "GET" })
+  .validator((orderId: string) => orderId)
+  .handler(async ({ data: orderId }): Promise<ActionResult<MatchedSupplier[]>> => {
+    const session = await resolveAdminSession();
+    if (
+      session.kind === "anonymous" ||
+      session.kind === "config_error" ||
+      session.kind === "forbidden"
+    ) {
+      return authError();
+    }
+    const db = tryCreateDb();
+    if (!db) {
+      return { ok: false, code: "unknown", message: "Database is not configured." };
+    }
+    return matchRoseGrowers(db, orderId);
+  });
+
+// Per-supplier dispatch result returned to the client.
+export interface DispatchResult {
+  supplierShopId: string;
+  shopName: string;
+  sent: boolean;
+  error?: string;
+}
+
+export interface SendRfqsResult {
+  created: string[];
+  dispatch: DispatchResult[];
+}
+
+export interface SendRfqsInput {
+  orderId: string;
+  supplierShopIds: string[];
+  message?: string;
+}
+
+export const sendRfqsFn = createServerFn({ method: "POST" })
+  .validator((input: SendRfqsInput) => input)
+  .handler(
+    async ({ data }): Promise<ActionResult<SendRfqsResult>> => {
+      const resolved = await resolveAdminUserId();
+      if (!resolved.ok) return authError<SendRfqsResult>();
+
+      const db = requireDb();
+
+      // 1. Create RFQs (commits the transaction + transitions order draft→sourcing).
+      const rfqResult = await createRfqs(db, data.orderId, data.supplierShopIds, data.message);
+      if (!rfqResult.ok) {
+        // Surface conflict and other errors to the caller without partial dispatch.
+        return rfqResult;
+      }
+
+      const { created } = rfqResult.data;
+
+      // 2. Dispatch-after-commit: WhatsApp nudges. Send failures MUST NOT
+      //    fail the whole request or roll back the persisted RFQs.
+      if (created.length === 0) {
+        // All suppliers were already RFQ'd (idempotent path). No nudges to send.
+        return { ok: true, data: { created: [], dispatch: [] } };
+      }
+
+      // Resolve the newly created RFQs and their supplier shops (name + owner phone).
+      // This join lives in the repo layer so the server function stays free of
+      // direct drizzle-orm / schema imports (Ruling P2).
+      const dispatchInfoResult = await resolveRfqDispatchInfo(db, created, data.orderId);
+      const dispatchInfoList = dispatchInfoResult.ok ? dispatchInfoResult.data : [];
+
+      // Index by rfqId for quick lookup.
+      const rfqMap = new Map(dispatchInfoList.map((r) => [r.rfqId, r]));
+
+      // Build Evolution config from env — all fields may be absent in dev.
+      const env = getEnv();
+      const evolutionConfig: EvolutionConfig = {
+        apiUrl: env.EVOLUTION_API_URL ?? "",
+        apiKey: env.EVOLUTION_API_KEY ?? "",
+        instance: env.EVOLUTION_INSTANCE ?? "",
+      };
+      const supplierPortalUrl = env.SUPPLIER_PORTAL_URL ?? "";
+
+      // orderNo is returned from resolveRfqDispatchInfo; fall back to orderId
+      // if the lookup failed.
+      const orderNo = dispatchInfoList[0]?.orderNo ?? data.orderId;
+
+      const dispatch: DispatchResult[] = await Promise.all(
+        created.map(async (rfqId): Promise<DispatchResult> => {
+          const row = rfqMap.get(rfqId);
+          const shopName = row?.shopName ?? rfqId;
+          const phone = row?.phone ?? null;
+
+          if (!phone) {
+            return {
+              supplierShopId: row?.supplierShopId ?? rfqId,
+              shopName,
+              sent: false,
+              error: "Supplier has no phone number on record.",
+            };
+          }
+
+          const portalUrl = `${supplierPortalUrl}/rfqs/${rfqId}`;
+          const message = buildRfqNudge({
+            shopName,
+            orderNo,
+            portalUrl,
+            locale: "en",
+          });
+
+          const sendResult = await sendWhatsappText(evolutionConfig, phone, message);
+
+          if (sendResult.ok) {
+            return { supplierShopId: row?.supplierShopId ?? rfqId, shopName, sent: true };
+          }
+
+          return {
+            supplierShopId: row?.supplierShopId ?? rfqId,
+            shopName,
+            sent: false,
+            error: sendResult.message,
+          };
+        }),
+      );
+
+      return { ok: true, data: { created, dispatch } };
     },
   );

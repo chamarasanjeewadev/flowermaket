@@ -364,6 +364,57 @@ export function dedupeSupplierIds(
 }
 
 // ---------------------------------------------------------------------------
+// resolveRfqDispatchInfo — Task 12 helper
+// ---------------------------------------------------------------------------
+
+/**
+ * For a list of newly-created RFQ IDs, resolve the info needed to send
+ * WhatsApp nudges: the supplier's shop name and owner phone number.
+ *
+ * Joins rfqs → shops → users in a single query.  Missing owner phone is
+ * returned as null (caller must treat it as "cannot send").
+ */
+export interface RfqDispatchInfo {
+  rfqId: string;
+  supplierShopId: string;
+  shopName: string;
+  phone: string | null;
+  orderNo: string;
+}
+
+export async function resolveRfqDispatchInfo(
+  db: DbOrTx,
+  rfqIds: string[],
+  orderId: string,
+): Promise<ActionResult<RfqDispatchInfo[]>> {
+  if (rfqIds.length === 0) return ok([]);
+  try {
+    const rows = await db
+      .select({
+        rfqId: schema.rfqs.id,
+        supplierShopId: schema.rfqs.supplierShopId,
+        shopName: schema.shops.nameEn,
+        phone: schema.users.phone,
+        orderNo: schema.orders.orderNo,
+      })
+      .from(schema.rfqs)
+      .innerJoin(schema.shops, eq(schema.shops.id, schema.rfqs.supplierShopId))
+      .innerJoin(schema.users, eq(schema.users.id, schema.shops.ownerUserId))
+      .innerJoin(schema.orders, eq(schema.orders.id, schema.rfqs.orderId))
+      .where(
+        and(
+          inArray(schema.rfqs.id, rfqIds),
+          eq(schema.rfqs.orderId, orderId),
+        ),
+      );
+
+    return ok(rows);
+  } catch (e) {
+    return err("unknown", e instanceof Error ? e.message : "Failed to resolve RFQ dispatch info.");
+  }
+}
+
+// ---------------------------------------------------------------------------
 // createRfqs
 // ---------------------------------------------------------------------------
 

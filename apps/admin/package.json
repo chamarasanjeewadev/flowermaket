@@ -13,6 +13,7 @@
     "@flowers/api": "workspace:*",
     "@flowers/auth": "workspace:*",
     "@flowers/db": "workspace:*",
+    "@flowers/integrations": "workspace:*",
     "@flowers/ui": "workspace:*",
     "@tailwindcss/vite": "^4.1.18",
     "@tanstack/react-query": "^5.101.4",
