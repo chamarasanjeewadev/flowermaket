@@ -19,11 +19,16 @@ import {
   matchRoseGrowers,
   createRfqs,
   resolveRfqDispatchInfo,
+  createAward,
+  cancelAward,
+  orderCostRollup,
   type ActionResult,
   type CreateOrderInput,
   type OrderDetail,
   type OrderSummary,
   type MatchedSupplier,
+  type CreateAwardInput,
+  type AwardCostRollupRow,
 } from "@flowers/api";
 import {
   sendWhatsappText,
@@ -242,5 +247,72 @@ export const sendRfqsFn = createServerFn({ method: "POST" })
       );
 
       return { ok: true, data: { created, dispatch } };
+    },
+  );
+
+// ---------------------------------------------------------------------------
+// Award server functions (Task 15)
+// ---------------------------------------------------------------------------
+
+export interface CreateAwardPayload {
+  orderItemId: string;
+  supplierShopId: string;
+  rfqQuoteLineId?: string | null;
+  awardedQty: number;
+  unitCost: number;
+  notes?: string | null;
+}
+
+export const createAwardFn = createServerFn({ method: "POST" })
+  .validator((input: CreateAwardPayload) => input)
+  .handler(
+    async ({ data }): Promise<ActionResult<{ id: string }>> => {
+      const resolved = await resolveAdminUserId();
+      if (!resolved.ok) return authError<{ id: string }>();
+
+      const db = requireDb();
+
+      const awardInput: CreateAwardInput = {
+        orderItemId: data.orderItemId,
+        supplierShopId: data.supplierShopId,
+        rfqQuoteLineId: data.rfqQuoteLineId ?? null,
+        awardedQty: data.awardedQty,
+        unitCost: data.unitCost,
+        notes: data.notes ?? null,
+      };
+
+      return createAward(db, awardInput);
+    },
+  );
+
+export const cancelAwardFn = createServerFn({ method: "POST" })
+  .validator((awardId: string) => awardId)
+  .handler(
+    async ({ data: awardId }): Promise<ActionResult<void>> => {
+      const resolved = await resolveAdminUserId();
+      if (!resolved.ok) return authError<void>();
+
+      const db = requireDb();
+      return cancelAward(db, awardId);
+    },
+  );
+
+export const getCostRollupFn = createServerFn({ method: "GET" })
+  .validator((orderId: string) => orderId)
+  .handler(
+    async ({ data: orderId }): Promise<ActionResult<AwardCostRollupRow[]>> => {
+      const session = await resolveAdminSession();
+      if (
+        session.kind === "anonymous" ||
+        session.kind === "config_error" ||
+        session.kind === "forbidden"
+      ) {
+        return authError<AwardCostRollupRow[]>();
+      }
+      const db = tryCreateDb();
+      if (!db) {
+        return { ok: false, code: "unknown", message: "Database is not configured." };
+      }
+      return orderCostRollup(db, orderId);
     },
   );
