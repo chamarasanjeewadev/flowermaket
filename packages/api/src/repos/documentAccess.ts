@@ -30,7 +30,7 @@
  *     simply retries until it succeeds.
  */
 
-import { and, count, gt, isNull, eq } from "drizzle-orm";
+import { and, count, desc, gt, isNull, eq } from "drizzle-orm";
 import { schema } from "@flowers/db/client";
 import type { Db } from "../db";
 import { err, ok, type ActionResult } from "../errors";
@@ -337,7 +337,11 @@ export async function requestOtp(
       return err("validation", GENERIC_ERROR);
     }
 
-    // 2. Rate-limit: count recent unconsumed OTPs for this document
+    // 2. Rate-limit: count recent unconsumed *and still-valid* OTPs for this
+    //    document. Expired OTPs must NOT count — otherwise a burst of codes that
+    //    have since expired would sticky-lock issuance for the full rate window
+    //    (a real user, or an attacker, could block new OTPs even though every
+    //    code already expired at the 10-min mark).
     const rateWindowMs = opts.rateWindowMs ?? RATE_WINDOW_MS;
     const maxPending = opts.maxPendingOtps ?? MAX_PENDING_OTPS;
     const windowStart = new Date(Date.now() - rateWindowMs);
@@ -350,6 +354,7 @@ export async function requestOtp(
           eq(schema.documentOtps.documentId, doc.id),
           isNull(schema.documentOtps.consumedAt),
           gt(schema.documentOtps.createdAt, windowStart),
+          gt(schema.documentOtps.expiresAt, new Date()),
         ),
       );
 
@@ -417,6 +422,12 @@ export async function verifyOtp(
   secret: string,
 ): Promise<ActionResult<{ cookie: string }>> {
   try {
+    // 0. Fail closed on missing secret (defense-in-depth: a caller passing an
+    //    empty/undefined secret must never be able to verify or mint a cookie).
+    if (!secret) {
+      return err("validation", GENERIC_ERROR);
+    }
+
     // 1. Resolve document
     const [doc] = await db
       .select({ id: schema.documents.id })
@@ -449,7 +460,11 @@ export async function verifyOtp(
             isNull(schema.documentOtps.consumedAt),
           ),
         )
-        .orderBy(schema.documentOtps.createdAt)
+        // DESC: always verify against the MOST RECENTLY issued code — the one
+        // the user just received. Ascending would check the oldest (likely
+        // stale) OTP, breaking legit users and letting an attacker burn a stale
+        // code's attempts.
+        .orderBy(desc(schema.documentOtps.createdAt))
         .limit(1);
 
       if (!otp) {
