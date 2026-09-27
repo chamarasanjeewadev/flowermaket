@@ -635,3 +635,53 @@ export async function markRfqViewed(
     return err("unknown", e instanceof Error ? e.message : "Failed to mark RFQ as viewed.");
   }
 }
+
+// ---------------------------------------------------------------------------
+// declineRfq
+// ---------------------------------------------------------------------------
+
+/**
+ * Mark an RFQ as declined by the supplier.
+ *
+ * - Tenant-guarded via assertOwnsRfq.
+ * - Only allows transition from 'sent' or 'viewed' — cannot decline an RFQ
+ *   that is already quoted, awarded, closed, or expired.
+ */
+export async function declineRfq(
+  db: DbOrTx,
+  rfqId: string,
+  shopId: string,
+): Promise<ActionResult<void>> {
+  try {
+    // 1. Fetch RFQ for tenant guard
+    const [rfqRow] = await db
+      .select({
+        id: schema.rfqs.id,
+        supplierShopId: schema.rfqs.supplierShopId,
+        status: schema.rfqs.status,
+      })
+      .from(schema.rfqs)
+      .where(eq(schema.rfqs.id, rfqId))
+      .limit(1);
+
+    if (!rfqRow) return err("not_found", "RFQ not found.");
+
+    const guard = assertOwnsRfq(rfqRow, shopId);
+    if (!guard.ok) return guard;
+
+    // 2. Only allow declining from sent/viewed — not from later states
+    if (rfqRow.status !== "sent" && rfqRow.status !== "viewed") {
+      return err("validation", "This RFQ cannot be declined in its current state.");
+    }
+
+    const now = new Date();
+    await db
+      .update(schema.rfqs)
+      .set({ status: "declined", updatedAt: now })
+      .where(eq(schema.rfqs.id, rfqId));
+
+    return ok(undefined);
+  } catch (e) {
+    return err("unknown", e instanceof Error ? e.message : "Failed to decline RFQ.");
+  }
+}
