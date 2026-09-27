@@ -18,7 +18,7 @@
  *   - docNo at draft: also a placeholder prefixed "DRAFT-" with a short random
  *     suffix. `issueDocument` overwrites both with production values per Task 17.
  */
-import { and, desc, eq, ne } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 import { schema } from "@flowers/db/client";
 import type { Db } from "../db";
 import { err, isPgError, ok, type ActionResult } from "../errors";
@@ -242,8 +242,11 @@ export async function buildDocumentDraft(
       });
     } else {
       // invoice / receipt: copy snapshot from the appropriate source document.
-      // invoice → copy from latest accepted quotation.
-      // receipt → copy from latest invoice (sent or accepted).
+      // invoice → copy from latest ACCEPTED quotation.
+      // receipt → copy from latest PAID invoice.
+      // The admin lifecycle (Task 20 UI) drives these transitions: a quotation
+      // must be marked accepted before invoicing, and an invoice must be paid
+      // before a receipt can be produced.
       let sourceStatus: DocumentStatus;
       let sourceType: DocumentType;
       if (type === "invoice") {
@@ -252,7 +255,7 @@ export async function buildDocumentDraft(
       } else {
         // receipt
         sourceType = "invoice";
-        sourceStatus = "sent";
+        sourceStatus = "paid";
       }
 
       const [sourceDoc] = await db
@@ -268,7 +271,7 @@ export async function buildDocumentDraft(
           and(
             eq(schema.documents.orderId, orderId),
             eq(schema.documents.type, sourceType),
-            ne(schema.documents.status, "void"),
+            eq(schema.documents.status, sourceStatus),
           ),
         )
         .orderBy(desc(schema.documents.createdAt))
