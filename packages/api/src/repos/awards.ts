@@ -132,11 +132,15 @@ export async function createAward(
 
   try {
     return await db.transaction(async (tx) => {
-      // Re-read the item's quantity inside the tx (serializable snapshot).
+      // Re-read the item's quantity inside the tx and take a row lock
+      // (`FOR UPDATE`) so concurrent allocations on the SAME item serialize.
+      // Without the lock, under read-committed two concurrent inserts could
+      // each pass validation and collectively over-allocate.
       const [item] = await tx
         .select({ quantity: schema.orderItems.quantity })
         .from(schema.orderItems)
         .where(eq(schema.orderItems.id, input.orderItemId))
+        .for("update")
         .limit(1);
 
       if (!item) {
