@@ -415,14 +415,17 @@ export async function createRfqs(
         insertedIds.push(...inserted.map((r) => r.id));
       }
 
-      // 3. If the order is currently draft, move it to sourcing
-      const [orderRow] = await tx
-        .select({ status: schema.orders.status })
-        .from(schema.orders)
-        .where(eq(schema.orders.id, orderId));
+      // 3. Only bump order status when we actually created new RFQs — a
+      //    no-op call (all suppliers already RFQ'd) must not touch the order.
+      if (insertedIds.length > 0) {
+        const [orderRow] = await tx
+          .select({ status: schema.orders.status })
+          .from(schema.orders)
+          .where(eq(schema.orders.id, orderId));
 
-      if (orderRow?.status === "draft") {
-        await updateOrderStatus(tx, orderId, "sourcing");
+        if (orderRow?.status === "draft") {
+          await updateOrderStatus(tx, orderId, "sourcing");
+        }
       }
 
       return insertedIds;
@@ -487,7 +490,11 @@ export async function recordSupplierQuote(
     const guard = assertOwnsRfq(rfqRow, shopId);
     if (!guard.ok) return guard;
 
-    // 2. Validate lines
+    // 2. Validate lines — reject empty quotes so a supplier can't advance the
+    //    RFQ to 'quoted' with zero lines (would break downstream award logic).
+    if (lines.length === 0) {
+      return err("validation", "At least one quote line is required.");
+    }
     for (const line of lines) {
       if (line.availableQty < 0) {
         return err("validation", `availableQty must be >= 0 (got ${line.availableQty}).`);
@@ -499,19 +506,17 @@ export async function recordSupplierQuote(
 
     const now = new Date();
 
-    // 3. Insert quote lines
-    if (lines.length > 0) {
-      await db.insert(schema.rfqQuoteLines).values(
-        lines.map((l) => ({
-          rfqId,
-          orderItemId: l.orderItemId,
-          availableQty: l.availableQty,
-          unitPrice: l.unitPrice,
-          leadTimeDays: l.leadTimeDays ?? null,
-          notes: l.notes ?? null,
-        })),
-      );
-    }
+    // 3. Insert quote lines (lines guaranteed non-empty by the guard above)
+    await db.insert(schema.rfqQuoteLines).values(
+      lines.map((l) => ({
+        rfqId,
+        orderItemId: l.orderItemId,
+        availableQty: l.availableQty,
+        unitPrice: l.unitPrice,
+        leadTimeDays: l.leadTimeDays ?? null,
+        notes: l.notes ?? null,
+      })),
+    );
 
     // 4. Update RFQ status → quoted
     await db
