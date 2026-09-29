@@ -18,7 +18,7 @@
  *   - docNo at draft: also a placeholder prefixed "DRAFT-" with a short random
  *     suffix. `issueDocument` overwrites both with production values per Task 17.
  */
-import { and, desc, eq, sql } from "drizzle-orm";
+import { and, desc, eq, ne, sql } from "drizzle-orm";
 import { schema } from "@flowers/db/client";
 import type { Db } from "../db";
 import { err, isPgError, ok, type ActionResult } from "../errors";
@@ -90,7 +90,14 @@ export async function getPublicDocument(
         paidAt: schema.documents.paidAt,
       })
       .from(schema.documents)
-      .where(eq(schema.documents.publicToken, token))
+      .where(
+        and(
+          eq(schema.documents.publicToken, token),
+          // Superseded (void) documents must not resolve — a buyer holding an
+          // old link would otherwise keep seeing outdated prices/terms.
+          ne(schema.documents.status, "void"),
+        ),
+      )
       .limit(1);
 
     if (!doc) {
@@ -362,6 +369,22 @@ export async function buildDocumentDraft(
       const effectiveMarginBps = opts.marginBps ?? DEFAULT_MARGIN_BPS;
       const linePriceOverrides = opts.linePriceOverrides ?? {};
 
+      // Every item must be priceable: either it has awarded quantity (cost
+      // basis for margin) or an explicit per-line price override. Otherwise
+      // the quotation would silently contain 0-price lines.
+      const unpriceable = items.filter(
+        (item) =>
+          linePriceOverrides[item.id] === undefined &&
+          !((rollupByItemId.get(item.id)?.awardedQty ?? 0) > 0),
+      );
+      if (unpriceable.length > 0) {
+        const names = unpriceable.map((i) => i.descriptionEn).join(", ");
+        return err(
+          "validation",
+          `Cannot create a quotation: no awarded quantity or price override for: ${names}. Award suppliers for these items (or set a line price) first.`,
+        );
+      }
+
       lineSnapshot = items.map((item): DocumentLineSnapshot => {
         const row = rollupByItemId.get(item.id);
 
@@ -488,6 +511,34 @@ export async function buildDocumentDraft(
     return err(
       "unknown",
       e instanceof Error ? e.message : "Could not build document draft.",
+    );
+  }
+}
+
+/**
+ * Mark a document as viewed by the customer (sent → viewed only; never
+ * downgrades a later status). Called best-effort when the OTP-gated public
+ * view first renders, so the admin panel shows customer engagement.
+ */
+export async function markDocumentViewed(
+  db: DbOrTx,
+  token: string,
+): Promise<ActionResult<void>> {
+  try {
+    await db
+      .update(schema.documents)
+      .set({ status: "viewed", updatedAt: new Date() })
+      .where(
+        and(
+          eq(schema.documents.publicToken, token),
+          eq(schema.documents.status, "sent"),
+        ),
+      );
+    return ok(undefined);
+  } catch (e) {
+    return err(
+      "unknown",
+      e instanceof Error ? e.message : "Could not mark document viewed.",
     );
   }
 }

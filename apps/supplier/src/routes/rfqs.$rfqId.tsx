@@ -139,8 +139,11 @@ function RfqDetailPage() {
     );
   }
 
-  const isResponded =
-    rfq.status !== "sent" && rfq.status !== "viewed";
+  // A quoted RFQ stays editable (re-submitting replaces the quote) until it is
+  // awarded/closed — matches the server-side canSubmitQuote guard.
+  const isEditable =
+    rfq.status === "sent" || rfq.status === "viewed" || rfq.status === "quoted";
+  const isRequoting = rfq.status === "quoted";
 
   return (
     <div className="space-y-6">
@@ -169,18 +172,23 @@ function RfqDetailPage() {
         </Alert>
       )}
 
-      {/* Already responded notice */}
-      {isResponded && (
+      {/* Already responded / re-quote notice */}
+      {!isEditable && (
         <Alert>
           <AlertDescription>{t.rfqs.alreadyResponded}</AlertDescription>
         </Alert>
       )}
+      {isRequoting && (
+        <Alert>
+          <AlertDescription>{t.rfqs.updateQuoteNotice}</AlertDescription>
+        </Alert>
+      )}
 
       {/* Items table + quote form or read-only display */}
-      {isResponded ? (
-        <ReadOnlyView rfq={rfq} />
-      ) : (
+      {isEditable ? (
         <QuoteForm rfq={rfq} />
+      ) : (
+        <ReadOnlyView rfq={rfq} />
       )}
     </div>
   );
@@ -289,11 +297,16 @@ function QuoteForm({ rfq }: { rfq: SupplierRfqDetail }) {
   const { t } = useT();
   const router = useRouter();
 
+  const isRequoting = rfq.status === "quoted";
   const [lines, setLines] = React.useState<LineState[]>(() =>
     initLineState(rfq.items, rfq.quoteLines),
   );
   const [quoteNotes, setQuoteNotes] = React.useState(rfq.quoteNotes ?? "");
-  const [validUntil, setValidUntil] = React.useState("");
+  const [validUntil, setValidUntil] = React.useState(() =>
+    rfq.quoteValidUntil
+      ? new Date(rfq.quoteValidUntil).toISOString().slice(0, 10)
+      : "",
+  );
   const [submitting, setSubmitting] = React.useState(false);
   const [declining, setDeclining] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
@@ -520,26 +533,32 @@ function QuoteForm({ rfq }: { rfq: SupplierRfqDetail }) {
               <Loader2 className="mr-2 size-4 animate-spin" />
               {t.rfqs.submittingQuote}
             </>
+          ) : isRequoting ? (
+            t.rfqs.updateQuote
           ) : (
             t.rfqs.submitQuote
           )}
         </Button>
 
-        <Button
-          type="button"
-          variant="outline"
-          disabled={submitting || declining}
-          onClick={() => void handleDecline()}
-        >
-          {declining ? (
-            <>
-              <Loader2 className="mr-2 size-4 animate-spin" />
-              {t.rfqs.decliningRfq}
-            </>
-          ) : (
-            t.rfqs.declineRfq
-          )}
-        </Button>
+        {/* Declining is only possible before a quote exists — the server
+            rejects declineRfq once the RFQ is 'quoted'. */}
+        {!isRequoting && (
+          <Button
+            type="button"
+            variant="outline"
+            disabled={submitting || declining}
+            onClick={() => void handleDecline()}
+          >
+            {declining ? (
+              <>
+                <Loader2 className="mr-2 size-4 animate-spin" />
+                {t.rfqs.decliningRfq}
+              </>
+            ) : (
+              t.rfqs.declineRfq
+            )}
+          </Button>
+        )}
       </div>
     </form>
   );

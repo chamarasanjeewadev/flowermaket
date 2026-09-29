@@ -10,7 +10,7 @@ import { asc, desc, eq, inArray, sql } from "drizzle-orm";
 import { schema } from "@flowers/db/client";
 import type { Db } from "../db";
 import { err, isPgError, ok, type ActionResult } from "../errors";
-import { DISTRICTS, ORDER_UNITS } from "../constants";
+import { DISTRICTS, ORDER_SOURCES, ORDER_UNITS, type OrderSource } from "../constants";
 import type { ValidationError } from "./shops";
 
 // ---------------------------------------------------------------------------
@@ -39,6 +39,8 @@ export interface CreateOrderInput {
   customerPhone: string;
   customerEmail?: string | null;
   customerLocale?: "en" | "si";
+  /** How the order reached us. Defaults to "whatsapp" when omitted. */
+  source?: OrderSource;
   deliveryAddress?: string | null;
   deliveryDistrict?: string | null;
   deliveryCity?: string | null;
@@ -67,12 +69,26 @@ export function validateCreateOrderInput(input: CreateOrderInput): ValidationErr
   if (!input.customerName?.trim()) errors.push({ field: "customerName", message: "Customer name is required" });
   const digits = (input.customerPhone ?? "").replace(/\D/g, "");
   if (digits.length < 9) errors.push({ field: "customerPhone", message: "A valid phone number is required" });
+  if (input.source && !ORDER_SOURCES.includes(input.source))
+    errors.push({ field: "source", message: "Unknown order source" });
   if (input.deliveryDistrict && !DISTRICTS.some((d) => d.slug === input.deliveryDistrict))
     errors.push({ field: "deliveryDistrict", message: "Unknown district" });
+  if (!input.items?.length)
+    errors.push({ field: "items", message: "At least one order item is required" });
   (input.items ?? []).forEach((it, i) => {
     for (const e of validateOrderItemInput(it)) errors.push({ field: `items.${i}.${e.field}`, message: e.message });
   });
   return errors;
+}
+
+/**
+ * Normalize a phone number for storage: bare digits only (keeps whatever
+ * country/local prefix the digits carry). WhatsApp dispatch normalizes again
+ * to a JID at send time; OTP matching canonicalizes both sides — this simply
+ * keeps stored values free of spaces, dashes and "+".
+ */
+export function normalizeStoredPhone(phone: string): string {
+  return phone.replace(/\D/g, "");
 }
 
 // ---------------------------------------------------------------------------
@@ -261,9 +277,10 @@ export async function createOrder(
         .values({
           orderNo,
           customerName: input.customerName.trim(),
-          customerPhone: input.customerPhone.trim(),
+          customerPhone: normalizeStoredPhone(input.customerPhone),
           customerEmail: input.customerEmail ?? null,
           customerLocale: input.customerLocale ?? "en",
+          source: input.source ?? "whatsapp",
           deliveryAddress: input.deliveryAddress ?? null,
           deliveryDistrict: input.deliveryDistrict ?? null,
           deliveryCity: input.deliveryCity ?? null,

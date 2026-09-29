@@ -258,6 +258,70 @@ export const sendRfqsFn = createServerFn({ method: "POST" })
     },
   );
 
+export interface ResendRfqNudgeInput {
+  orderId: string;
+  rfqId: string;
+}
+
+/**
+ * Re-send the WhatsApp nudge for an existing RFQ. Recovery path for RFQs
+ * whose original dispatch failed (Evolution API down, supplier phone missing
+ * at the time) — without this the RFQ sits in 'sent' with the supplier never
+ * having been notified, and the admin has no way to retry.
+ */
+export const resendRfqNudgeFn = createServerFn({ method: "POST" })
+  .validator((input: ResendRfqNudgeInput) => input)
+  .handler(async ({ data }): Promise<ActionResult<DispatchResult>> => {
+    const resolved = await resolveAdminUserId();
+    if (!resolved.ok) return authError<DispatchResult>();
+
+    const db = requireDb();
+    const infoResult = await resolveRfqDispatchInfo(db, [data.rfqId], data.orderId);
+    if (!infoResult.ok) return infoResult;
+
+    const row = infoResult.data[0];
+    if (!row) {
+      return { ok: false, code: "not_found", message: "RFQ not found on this order." };
+    }
+    if (!row.phone) {
+      return {
+        ok: true,
+        data: {
+          supplierShopId: row.supplierShopId,
+          shopName: row.shopName,
+          sent: false,
+          error: "Supplier has no phone number on record.",
+        },
+      };
+    }
+
+    const env = getEnv();
+    const evolutionConfig: EvolutionConfig = {
+      apiUrl: env.EVOLUTION_API_URL ?? "",
+      apiKey: env.EVOLUTION_API_KEY ?? "",
+      instance: env.EVOLUTION_INSTANCE ?? "",
+    };
+    const supplierPortalUrl = env.SUPPLIER_PORTAL_URL ?? "";
+
+    const message = buildRfqNudge({
+      shopName: row.shopName,
+      orderNo: row.orderNo,
+      portalUrl: `${supplierPortalUrl}/rfqs/${data.rfqId}`,
+      locale: "en",
+    });
+
+    const sendResult = await sendWhatsappText(evolutionConfig, row.phone, message);
+    return {
+      ok: true,
+      data: {
+        supplierShopId: row.supplierShopId,
+        shopName: row.shopName,
+        sent: sendResult.ok,
+        ...(sendResult.ok ? {} : { error: sendResult.message }),
+      },
+    };
+  });
+
 // ---------------------------------------------------------------------------
 // Award server functions (Task 15)
 // ---------------------------------------------------------------------------
@@ -425,6 +489,17 @@ export const sendDocumentFn = createServerFn({ method: "POST" })
 
       const env = getEnv();
       const webUrl = env.WEB_PUBLIC_URL ?? "";
+      if (!webUrl) {
+        // Without a base URL the WhatsApp message would carry a broken
+        // protocol-relative link — refuse to send rather than mislead.
+        return {
+          ok: true,
+          data: {
+            sent: false,
+            error: "WEB_PUBLIC_URL is not configured — cannot build the document link.",
+          },
+        };
+      }
       const locale = data.customerLocale === "si" ? "si" : "en";
       const docUrl = `${webUrl}/${locale}/d/${data.publicToken}`;
 

@@ -44,3 +44,15 @@ export const DEFAULT_MARGIN_BPS = 2500;
 /** Allowed order/quote units. */
 export const ORDER_UNITS = ["stem", "bunch", "box"] as const;
 export type OrderUnit = (typeof ORDER_UNITS)[number];
+
+/** How an order reached the marketplace (mirrors the order_source pg enum). */
+export const ORDER_SOURCES = ["whatsapp", "phone", "web", "walk_in"] as const;
+export type OrderSource = (typeof ORDER_SOURCES)[number];
+
+/** Human-readable labels for order sources (admin UI). */
+export const ORDER_SOURCE_LABELS: Record<OrderSource, string> = {
+  whatsapp: "WhatsApp",
+  phone: "Phone call",
+  web: "Website",
+  walk_in: "Walk-in",
+};

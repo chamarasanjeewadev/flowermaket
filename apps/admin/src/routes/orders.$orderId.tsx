@@ -37,6 +37,7 @@ import {
   getOrderFn,
   matchSuppliersFn,
   sendRfqsFn,
+  resendRfqNudgeFn,
   createAwardFn,
   cancelAwardFn,
   createDocumentFn,
@@ -129,6 +130,25 @@ function SourcingPanel({ orderId, rfqs }: SourcingPanelProps) {
   // Re-read RFQs from loader data but allow the panel to show new state after
   // a successful send.  We track created RFQ IDs locally post-dispatch.
   const [localRfqs, setLocalRfqs] = useState<OrderDetail["rfqs"]>(rfqs);
+
+  const [resendingRfqId, setResendingRfqId] = useState<string | null>(null);
+  const [resendNotes, setResendNotes] = useState<Record<string, string>>({});
+
+  async function handleResendNudge(rfqId: string) {
+    setResendingRfqId(rfqId);
+    setResendNotes((prev) => ({ ...prev, [rfqId]: "" }));
+    try {
+      const result = await resendRfqNudgeFn({ data: { orderId, rfqId } });
+      const note = !result.ok
+        ? result.message
+        : result.data.sent
+          ? "Nudge sent."
+          : `Send failed: ${result.data.error ?? "unknown error"}`;
+      setResendNotes((prev) => ({ ...prev, [rfqId]: note }));
+    } finally {
+      setResendingRfqId(null);
+    }
+  }
 
   async function handleFindGrowers() {
     setMatchLoading(true);
@@ -234,15 +254,22 @@ function SourcingPanel({ orderId, rfqs }: SourcingPanelProps) {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Supplier shop ID</TableHead>
+              <TableHead>Supplier</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Sent</TableHead>
+              <TableHead />
             </TableRow>
           </TableHeader>
           <TableBody>
             {localRfqs.map((rfq) => (
               <TableRow key={rfq.id}>
-                <TableCell className="font-mono text-xs">{rfq.supplierShopId}</TableCell>
+                <TableCell>
+                  {rfq.supplierShopName ? (
+                    <span title={rfq.supplierShopId}>{rfq.supplierShopName}</span>
+                  ) : (
+                    <span className="font-mono text-xs">{rfq.supplierShopId}</span>
+                  )}
+                </TableCell>
                 <TableCell>
                   <Badge variant="outline" className="text-xs capitalize">
                     {rfq.status}
@@ -250,6 +277,28 @@ function SourcingPanel({ orderId, rfqs }: SourcingPanelProps) {
                 </TableCell>
                 <TableCell className="text-sm text-muted-foreground">
                   {rfq.sentAt ? formatDateTime(rfq.sentAt) : "—"}
+                </TableCell>
+                <TableCell className="text-right">
+                  {(rfq.status === "sent" || rfq.status === "viewed") && (
+                    <div className="flex flex-col items-end gap-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => void handleResendNudge(rfq.id)}
+                        disabled={resendingRfqId === rfq.id}
+                      >
+                        {resendingRfqId === rfq.id ? (
+                          <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                        ) : null}
+                        Resend nudge
+                      </Button>
+                      {resendNotes[rfq.id] ? (
+                        <span className="text-xs text-muted-foreground">
+                          {resendNotes[rfq.id]}
+                        </span>
+                      ) : null}
+                    </div>
+                  )}
                 </TableCell>
               </TableRow>
             ))}

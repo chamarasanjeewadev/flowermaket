@@ -15,6 +15,7 @@ import { getCookies, setCookie } from "@tanstack/react-start/server";
 import {
   getEnv,
   getPublicDocument,
+  markDocumentViewed,
   requestOtp,
   verifyOtp,
   verifyDocCookie,
@@ -86,6 +87,11 @@ export const getPublicDocumentFn = createServerFn({ method: "GET" })
       return { gated: true };
     }
 
+    // Best-effort engagement signal for the admin panel: sent → viewed.
+    if (result.data.status === "sent") {
+      await markDocumentViewed(db, token);
+    }
+
     return { gated: false, doc: result.data };
   });
 
@@ -121,12 +127,16 @@ export const requestDocOtpFn = createServerFn({ method: "POST" })
     await requestOtp(db, data.token, data.phone, {
       onCode: async (code) => {
         const message = buildOtpMessage({ code, locale: "en" });
-        // Best-effort; failure is swallowed — code lands in server logs in dev
-        await sendWhatsappText(evolutionConfig, data.phone, message);
+        const sendResult = await sendWhatsappText(evolutionConfig, data.phone, message);
+        if (!sendResult.ok) {
+          // Throwing makes requestOtp delete the stored OTP row so a retry
+          // is not blocked by the pending-OTP rate limit.
+          throw new Error(sendResult.message);
+        }
       },
     });
 
-    // Always return generic success regardless of outcome
+    // Always return generic success regardless of outcome (no enumeration)
     return ok({ sent: true as const });
   });
 

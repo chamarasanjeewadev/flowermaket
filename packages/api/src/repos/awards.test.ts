@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { remainingQty, validateAward } from "./awards";
+import { remainingQty, validateAward, validateAwardSource } from "./awards";
 
 const item = 100;
 
@@ -34,6 +34,44 @@ describe("remainingQty — pure helper", () => {
       ]),
     ).toBe(20);
   });
+});
+
+describe("validateAwardSource — pure quote-line/RFQ consistency guard", () => {
+  const source = {
+    lineOrderItemId: "item-1",
+    rfqSupplierShopId: "shop-1",
+    rfqStatus: "quoted",
+  };
+  const input = { orderItemId: "item-1", supplierShopId: "shop-1" };
+
+  it("accepts a quote line on the same item, same shop, quoted RFQ", () => {
+    expect(validateAwardSource(source, input)).toBeNull();
+  });
+
+  it("accepts an RFQ already partially awarded", () => {
+    expect(
+      validateAwardSource({ ...source, rfqStatus: "awarded" }, input),
+    ).toBeNull();
+  });
+
+  it("rejects a quote line for a different order item", () => {
+    expect(
+      validateAwardSource({ ...source, lineOrderItemId: "item-2" }, input),
+    ).not.toBeNull();
+  });
+
+  it("rejects a quote line owned by a different supplier shop", () => {
+    expect(
+      validateAwardSource({ ...source, rfqSupplierShopId: "shop-2" }, input),
+    ).not.toBeNull();
+  });
+
+  it.each(["declined", "expired", "closed", "sent", "viewed"])(
+    "rejects awarding from an RFQ in state %s",
+    (rfqStatus) => {
+      expect(validateAwardSource({ ...source, rfqStatus }, input)).not.toBeNull();
+    },
+  );
 });
 
 describe("validateAward — pure invariant guard (over-allocation focus)", () => {

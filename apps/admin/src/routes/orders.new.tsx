@@ -14,7 +14,13 @@ import {
 import { Loader2, Plus, Trash2 } from "lucide-react";
 import { createOrderFn } from "../server/orders";
 import type { CreateOrderInput, OrderItemInput } from "@flowers/api";
-import { DISTRICTS, ORDER_UNITS } from "@flowers/api/constants";
+import {
+  DISTRICTS,
+  ORDER_SOURCES,
+  ORDER_SOURCE_LABELS,
+  ORDER_UNITS,
+  type OrderSource,
+} from "@flowers/api/constants";
 
 // ---------------------------------------------------------------------------
 // Route
@@ -205,6 +211,7 @@ function NewOrderPage() {
   const [customerPhone, setCustomerPhone] = React.useState("");
   const [customerEmail, setCustomerEmail] = React.useState("");
   const [customerLocale, setCustomerLocale] = React.useState<"en" | "si">("en");
+  const [source, setSource] = React.useState<OrderSource>("whatsapp");
 
   // Delivery fields
   const [deliveryAddress, setDeliveryAddress] = React.useState("");
@@ -260,6 +267,7 @@ function NewOrderPage() {
       customerPhone: customerPhone.trim(),
       customerEmail: customerEmail.trim() || null,
       customerLocale,
+      source,
       deliveryAddress: deliveryAddress.trim() || null,
       deliveryDistrict: deliveryDistrict || null,
       deliveryCity: deliveryCity.trim() || null,
@@ -376,6 +384,21 @@ function NewOrderPage() {
                 >
                   <option value="en">English</option>
                   <option value="si">Sinhala / සිංහල</option>
+                </select>
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="orderSource">Order source</Label>
+                <select
+                  id="orderSource"
+                  value={source}
+                  onChange={(e) => setSource(e.target.value as OrderSource)}
+                  className={selectClassName}
+                >
+                  {ORDER_SOURCES.map((s) => (
+                    <option key={s} value={s}>
+                      {ORDER_SOURCE_LABELS[s]}
+                    </option>
+                  ))}
                 </select>
               </div>
             </div>

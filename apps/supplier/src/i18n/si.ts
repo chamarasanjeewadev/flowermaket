@@ -197,6 +197,9 @@ export const si: Dict = {
     declined: "RFQ ප්‍රතික්ෂේප කළා.",
     notFound: "RFQ හමු නොවීය.",
     alreadyResponded: "මෙම RFQ දැනටමත් ප්‍රතිචාර ලබා දී ඇත.",
+    updateQuoteNotice:
+      "ඔබ මෙම RFQ සඳහා දැනටමත් මිලකෝෂයක් ඉදිරිපත් කර ඇත. නැවත ඉදිරිපත් කිරීමෙන් පෙර මිලකෝෂය ප්‍රතිස්ථාපනය වේ.",
+    updateQuote: "මිලකෝෂය යාවත්කාලීන කරන්න",
     existingQuote: "පවතින මිලකෝෂය",
     unitPricePlaceholder: "උදා: 250",
   },

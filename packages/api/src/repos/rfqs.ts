@@ -108,6 +108,28 @@ export function assertOwnsRfq(
   return ok(true as const);
 }
 
+/**
+ * State guard for quote submission: a supplier may submit (or replace) a quote
+ * only while the RFQ is still open — sent, viewed, or quoted (re-quote).
+ * Declined, awarded, closed, and expired RFQs reject; so does an open RFQ whose
+ * expiresAt has passed. Pure so it is unit-testable without a database.
+ */
+export function canSubmitQuote(
+  rfq: { status: string; expiresAt: Date | null },
+  now: Date,
+): ActionResult<true> {
+  if (rfq.status !== "sent" && rfq.status !== "viewed" && rfq.status !== "quoted") {
+    return err(
+      "validation",
+      `This RFQ is ${rfq.status} and no longer accepts quotes.`,
+    );
+  }
+  if (rfq.expiresAt != null && rfq.expiresAt <= now) {
+    return err("validation", "This RFQ has expired and no longer accepts quotes.");
+  }
+  return ok(true as const);
+}
+
 // ---------------------------------------------------------------------------
 // matchRoseGrowers — Task 8 Review Focus
 // ---------------------------------------------------------------------------
@@ -513,12 +535,17 @@ export interface SupplierQuoteLineInput {
  * Record a supplier's quote against an existing RFQ.
  *
  * - Tenant-guarded via assertOwnsRfq.
- * - Validates each line: availableQty >= 0, unitPrice >= 0.
- * - Inserts rfqQuoteLines rows and updates rfq.status → 'quoted',
- *   respondedAt, quoteNotes, quoteValidUntil.
+ * - State-guarded via canSubmitQuote: only open RFQs (sent/viewed/quoted,
+ *   not past expiresAt) accept quotes — a stale tab cannot revert an awarded
+ *   or closed RFQ back to 'quoted'.
+ * - Validates each line: availableQty >= 0, unitPrice >= 0, and at least one
+ *   line must offer availableQty > 0 (an all-zero quote is a decline).
+ * - Replace semantics: existing quote lines for the RFQ are deleted and the
+ *   new set inserted in one transaction, so re-submitting updates the quote
+ *   instead of accumulating duplicate line versions.
  */
 export async function recordSupplierQuote(
-  db: DbOrTx,
+  db: Db,
   rfqId: string,
   shopId: string,
   lines: SupplierQuoteLineInput[],
@@ -526,12 +553,14 @@ export async function recordSupplierQuote(
   validUntil?: Date | null,
 ): Promise<ActionResult<void>> {
   try {
-    // 1. Fetch RFQ for tenant guard
+    // 1. Fetch RFQ for tenant + state guards
     const [rfqRow] = await db
       .select({
         id: schema.rfqs.id,
         supplierShopId: schema.rfqs.supplierShopId,
         orderId: schema.rfqs.orderId,
+        status: schema.rfqs.status,
+        expiresAt: schema.rfqs.expiresAt,
       })
       .from(schema.rfqs)
       .where(eq(schema.rfqs.id, rfqId))
@@ -541,6 +570,9 @@ export async function recordSupplierQuote(
 
     const guard = assertOwnsRfq(rfqRow, shopId);
     if (!guard.ok) return guard;
+
+    const stateGuard = canSubmitQuote(rfqRow, new Date());
+    if (!stateGuard.ok) return stateGuard;
 
     // 2. Validate lines — reject empty quotes so a supplier can't advance the
     //    RFQ to 'quoted' with zero lines (would break downstream award logic).
@@ -554,6 +586,12 @@ export async function recordSupplierQuote(
       if (line.unitPrice < 0) {
         return err("validation", `unitPrice must be >= 0 (got ${line.unitPrice}).`);
       }
+    }
+    if (!lines.some((l) => l.availableQty > 0)) {
+      return err(
+        "validation",
+        "At least one line must offer a quantity above zero — use Decline if you cannot supply this order.",
+      );
     }
 
     // 3. Cross-order guard — each quote line's orderItemId must belong to the
@@ -571,32 +609,46 @@ export async function recordSupplierQuote(
 
     const now = new Date();
 
-    // 4. Insert quote lines (lines guaranteed non-empty by the guard above)
-    await db.insert(schema.rfqQuoteLines).values(
-      lines.map((l) => ({
-        rfqId,
-        orderItemId: l.orderItemId,
-        availableQty: l.availableQty,
-        unitPrice: l.unitPrice,
-        leadTimeDays: l.leadTimeDays ?? null,
-        notes: l.notes ?? null,
-      })),
-    );
+    // 4. Replace lines + update RFQ atomically. The delete makes re-submission
+    //    an update rather than an append — without it, each submit would add a
+    //    second set of lines and the award matrix would show stale duplicates.
+    await db.transaction(async (tx) => {
+      await tx
+        .delete(schema.rfqQuoteLines)
+        .where(eq(schema.rfqQuoteLines.rfqId, rfqId));
 
-    // 4. Update RFQ status → quoted
-    await db
-      .update(schema.rfqs)
-      .set({
-        status: "quoted",
-        respondedAt: now,
-        quoteNotes: quoteNotes ?? null,
-        quoteValidUntil: validUntil ?? null,
-        updatedAt: now,
-      })
-      .where(eq(schema.rfqs.id, rfqId));
+      await tx.insert(schema.rfqQuoteLines).values(
+        lines.map((l) => ({
+          rfqId,
+          orderItemId: l.orderItemId,
+          availableQty: l.availableQty,
+          unitPrice: l.unitPrice,
+          leadTimeDays: l.leadTimeDays ?? null,
+          notes: l.notes ?? null,
+        })),
+      );
+
+      await tx
+        .update(schema.rfqs)
+        .set({
+          status: "quoted",
+          respondedAt: now,
+          quoteNotes: quoteNotes ?? null,
+          quoteValidUntil: validUntil ?? null,
+          updatedAt: now,
+        })
+        .where(eq(schema.rfqs.id, rfqId));
+    });
 
     return ok(undefined);
   } catch (e) {
+    if (isPgError(e, "23503")) {
+      // Awards reference the existing quote lines — they can no longer be replaced.
+      return err(
+        "validation",
+        "This quote has already been awarded against and can no longer be changed.",
+      );
+    }
     return err("unknown", e instanceof Error ? e.message : "Failed to record supplier quote.");
   }
 }

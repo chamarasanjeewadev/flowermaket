@@ -13,10 +13,39 @@ import { describe, expect, it } from "vitest";
 import {
   generateOtpCode,
   hashOtp,
+  phoneMatchesCustomer,
   signDocCookie,
   verifyDocCookie,
   otpVerdict,
 } from "./documentAccess";
+
+// ---------------------------------------------------------------------------
+// phoneMatchesCustomer
+// ---------------------------------------------------------------------------
+
+describe("phoneMatchesCustomer", () => {
+  it("matches identical numbers", () => {
+    expect(phoneMatchesCustomer("0771234567", "0771234567")).toBe(true);
+  });
+
+  it("matches local vs international format", () => {
+    expect(phoneMatchesCustomer("0771234567", "94771234567")).toBe(true);
+    expect(phoneMatchesCustomer("+94 77 123 4567", "0771234567")).toBe(true);
+  });
+
+  it("matches formatted vs bare digits", () => {
+    expect(phoneMatchesCustomer("077-123 4567", "+94771234567")).toBe(true);
+  });
+
+  it("rejects a different number", () => {
+    expect(phoneMatchesCustomer("0779999999", "0771234567")).toBe(false);
+  });
+
+  it("rejects empty input", () => {
+    expect(phoneMatchesCustomer("", "0771234567")).toBe(false);
+    expect(phoneMatchesCustomer("0771234567", "")).toBe(false);
+  });
+});
 
 // ---------------------------------------------------------------------------
 // generateOtpCode

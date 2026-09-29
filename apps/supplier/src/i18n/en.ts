@@ -203,6 +203,9 @@ export const en = {
     declined: "RFQ declined.",
     notFound: "RFQ not found.",
     alreadyResponded: "This RFQ has already been responded to.",
+    updateQuoteNotice:
+      "You have already quoted this RFQ. Submitting again will replace your previous quote.",
+    updateQuote: "Update quote",
     existingQuote: "Existing quote",
     unitPricePlaceholder: "e.g. 250",
   },

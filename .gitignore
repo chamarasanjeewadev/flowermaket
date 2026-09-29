@@ -15,3 +15,6 @@ routeTree.gen.ts
 .dev.vars
 _to_delete_scaffold.tar.gz
 .superpowers/
+
+# graft's local graph cache — regenerable, not committed (run `graft build`).
+/graft/

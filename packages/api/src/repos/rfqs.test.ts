@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { assertOwnsRfq, dedupeSupplierIds } from "./rfqs";
+import { assertOwnsRfq, canSubmitQuote, dedupeSupplierIds } from "./rfqs";
 
 describe("assertOwnsRfq — pure tenant guard", () => {
   it("rejects RFQ owned by another shop", () => {
@@ -16,6 +16,41 @@ describe("assertOwnsRfq — pure tenant guard", () => {
     if (!result.ok) {
       expect(result.code).toBe("not_found");
     }
+  });
+});
+
+describe("canSubmitQuote — pure state guard", () => {
+  const now = new Date("2026-09-29T12:00:00Z");
+
+  it("allows quoting a sent RFQ", () => {
+    expect(canSubmitQuote({ status: "sent", expiresAt: null }, now).ok).toBe(true);
+  });
+
+  it("allows quoting a viewed RFQ", () => {
+    expect(canSubmitQuote({ status: "viewed", expiresAt: null }, now).ok).toBe(true);
+  });
+
+  it("allows re-quoting an already-quoted RFQ", () => {
+    expect(canSubmitQuote({ status: "quoted", expiresAt: null }, now).ok).toBe(true);
+  });
+
+  it.each(["declined", "awarded", "closed", "expired"] as const)(
+    "rejects quoting a %s RFQ",
+    (status) => {
+      const result = canSubmitQuote({ status, expiresAt: null }, now);
+      expect(result.ok).toBe(false);
+      if (!result.ok) expect(result.code).toBe("validation");
+    },
+  );
+
+  it("rejects quoting past expiresAt even when status is still open", () => {
+    const expired = new Date(now.getTime() - 1000);
+    expect(canSubmitQuote({ status: "sent", expiresAt: expired }, now).ok).toBe(false);
+  });
+
+  it("allows quoting before expiresAt", () => {
+    const future = new Date(now.getTime() + 1000);
+    expect(canSubmitQuote({ status: "sent", expiresAt: future }, now).ok).toBe(true);
   });
 });
 

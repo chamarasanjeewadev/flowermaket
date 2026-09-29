@@ -107,6 +107,34 @@ export function validateAward(
   return errors;
 }
 
+/**
+ * Consistency guard for an award created from an RFQ quote line.
+ * Returns a human-readable problem, or null when the source is valid:
+ *  - the quote line must be for the same order item being awarded,
+ *  - the quote line's RFQ must belong to the same supplier shop,
+ *  - the RFQ must be in a quotable state (quoted, or awarded for a
+ *    subsequent partial award) — never declined/expired/closed.
+ */
+export function validateAwardSource(
+  source: {
+    lineOrderItemId: string;
+    rfqSupplierShopId: string;
+    rfqStatus: string;
+  },
+  input: { orderItemId: string; supplierShopId: string },
+): string | null {
+  if (source.lineOrderItemId !== input.orderItemId) {
+    return "The selected quote line is for a different order item.";
+  }
+  if (source.rfqSupplierShopId !== input.supplierShopId) {
+    return "The selected quote line belongs to a different supplier.";
+  }
+  if (source.rfqStatus !== "quoted" && source.rfqStatus !== "awarded") {
+    return `The quote's RFQ is ${source.rfqStatus} and cannot be awarded from.`;
+  }
+  return null;
+}
+
 // ---------------------------------------------------------------------------
 // Repo mutations
 // ---------------------------------------------------------------------------
@@ -167,6 +195,35 @@ export async function createAward(
         return err("validation", errors.map((e) => e.message).join(" "));
       }
 
+      // When the award is backed by a quote line, verify it is consistent:
+      // same order item, same supplier shop, and an RFQ that is actually
+      // quoted (not declined/expired/closed or from another order).
+      let sourceRfqId: string | null = null;
+      let sourceRfqStatus: string | null = null;
+      if (input.rfqQuoteLineId) {
+        const [line] = await tx
+          .select({
+            lineOrderItemId: schema.rfqQuoteLines.orderItemId,
+            rfqId: schema.rfqs.id,
+            rfqSupplierShopId: schema.rfqs.supplierShopId,
+            rfqStatus: schema.rfqs.status,
+          })
+          .from(schema.rfqQuoteLines)
+          .innerJoin(schema.rfqs, eq(schema.rfqs.id, schema.rfqQuoteLines.rfqId))
+          .where(eq(schema.rfqQuoteLines.id, input.rfqQuoteLineId))
+          .limit(1);
+
+        if (!line) {
+          return err("validation", "The selected quote line does not exist.");
+        }
+        const problem = validateAwardSource(line, input);
+        if (problem) {
+          return err("validation", problem);
+        }
+        sourceRfqId = line.rfqId;
+        sourceRfqStatus = line.rfqStatus;
+      }
+
       const [row] = await tx
         .insert(schema.orderItemAwards)
         .values({
@@ -178,6 +235,15 @@ export async function createAward(
           notes: input.notes ?? null,
         })
         .returning({ id: schema.orderItemAwards.id });
+
+      // Surface the win on the supplier's RFQ: quoted → awarded, so their
+      // portal shows the RFQ was won and further re-quoting is blocked.
+      if (sourceRfqId && sourceRfqStatus === "quoted") {
+        await tx
+          .update(schema.rfqs)
+          .set({ status: "awarded", updatedAt: new Date() })
+          .where(eq(schema.rfqs.id, sourceRfqId));
+      }
 
       return ok({ id: row.id });
     });
@@ -198,23 +264,68 @@ export async function createAward(
 /**
  * Cancel an award by setting its status to 'cancelled'.
  * Returns void on success; not_found if the award doesn't exist.
+ *
+ * If the award was backed by an RFQ quote line and no other live award
+ * references that RFQ, the RFQ reverts awarded → quoted so the supplier's
+ * portal reflects that the win was withdrawn (and they may re-quote).
  */
 export async function cancelAward(
-  db: DbOrTx,
+  db: Db,
   awardId: string,
 ): Promise<ActionResult<void>> {
   try {
-    const [row] = await db
-      .update(schema.orderItemAwards)
-      .set({ status: "cancelled", updatedAt: new Date() })
-      .where(eq(schema.orderItemAwards.id, awardId))
-      .returning({ id: schema.orderItemAwards.id });
+    return await db.transaction(async (tx) => {
+      const [row] = await tx
+        .update(schema.orderItemAwards)
+        .set({ status: "cancelled", updatedAt: new Date() })
+        .where(eq(schema.orderItemAwards.id, awardId))
+        .returning({
+          id: schema.orderItemAwards.id,
+          rfqQuoteLineId: schema.orderItemAwards.rfqQuoteLineId,
+        });
 
-    if (!row) {
-      return err("not_found", "Award not found.");
-    }
+      if (!row) {
+        return err("not_found", "Award not found.");
+      }
 
-    return ok(undefined);
+      if (row.rfqQuoteLineId) {
+        const [line] = await tx
+          .select({ rfqId: schema.rfqQuoteLines.rfqId })
+          .from(schema.rfqQuoteLines)
+          .where(eq(schema.rfqQuoteLines.id, row.rfqQuoteLineId))
+          .limit(1);
+
+        if (line) {
+          const [{ liveCount }] = await tx
+            .select({ liveCount: sql<number>`count(*)::int` })
+            .from(schema.orderItemAwards)
+            .innerJoin(
+              schema.rfqQuoteLines,
+              eq(schema.rfqQuoteLines.id, schema.orderItemAwards.rfqQuoteLineId),
+            )
+            .where(
+              and(
+                eq(schema.rfqQuoteLines.rfqId, line.rfqId),
+                ne(schema.orderItemAwards.status, "cancelled"),
+              ),
+            );
+
+          if (Number(liveCount) === 0) {
+            await tx
+              .update(schema.rfqs)
+              .set({ status: "quoted", updatedAt: new Date() })
+              .where(
+                and(
+                  eq(schema.rfqs.id, line.rfqId),
+                  eq(schema.rfqs.status, "awarded"),
+                ),
+              );
+          }
+        }
+      }
+
+      return ok(undefined);
+    });
   } catch (e) {
     return err(
       "unknown",

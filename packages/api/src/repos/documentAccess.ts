@@ -101,6 +101,36 @@ export function generateOtpCode(): string {
 }
 
 // ---------------------------------------------------------------------------
+// Pure: phoneMatchesCustomer
+// ---------------------------------------------------------------------------
+
+/** Canonicalize a Sri Lankan phone number to bare 94-prefixed digits. */
+function canonicalPhone(phone: string): string {
+  let d = phone.replace(/\D/g, "");
+  if (d.startsWith("0")) d = `94${d.slice(1)}`;
+  if (!d.startsWith("94")) d = `94${d}`;
+  return d;
+}
+
+/**
+ * True when the phone a visitor supplies for OTP delivery is the same number
+ * as the customer phone on the document, tolerating formatting differences
+ * ("077 123 4567" vs "+94771234567"). This binds the OTP gate to the actual
+ * customer — without it, anyone holding the link could send the code to
+ * their own phone.
+ */
+export function phoneMatchesCustomer(
+  supplied: string,
+  customerPhone: string,
+): boolean {
+  const a = canonicalPhone(supplied);
+  const b = canonicalPhone(customerPhone);
+  // "94" alone (empty input) must never match.
+  if (a.length <= 2 || b.length <= 2) return false;
+  return a === b;
+}
+
+// ---------------------------------------------------------------------------
 // Pure/Crypto: hashOtp
 // ---------------------------------------------------------------------------
 
@@ -325,15 +355,25 @@ export async function requestOtp(
       return err("validation", GENERIC_ERROR);
     }
 
-    // 1. Resolve document
+    // 1. Resolve document (customerSnapshot needed for phone binding)
     const [doc] = await db
-      .select({ id: schema.documents.id })
+      .select({
+        id: schema.documents.id,
+        customerSnapshot: schema.documents.customerSnapshot,
+      })
       .from(schema.documents)
       .where(eq(schema.documents.publicToken, token))
       .limit(1);
 
     if (!doc) {
       // Generic message — no token enumeration
+      return err("validation", GENERIC_ERROR);
+    }
+
+    // 1b. Phone binding: the OTP only ever goes to the customer's own number.
+    //     A mismatched phone gets the same generic error (no enumeration).
+    const customerPhone = doc.customerSnapshot?.phone ?? "";
+    if (!phoneMatchesCustomer(phone, customerPhone)) {
       return err("validation", GENERIC_ERROR);
     }
 
@@ -371,18 +411,31 @@ export async function requestOtp(
     const maxAttempts = opts.maxAttempts ?? DEFAULT_MAX_ATTEMPTS;
 
     // 4. Store the hash (never the plaintext)
-    await db.insert(schema.documentOtps).values({
-      documentId: doc.id,
-      phone,
-      codeHash,
-      expiresAt,
-      attempts: 0,
-      maxAttempts,
-      consumedAt: null,
-    });
+    const [inserted] = await db
+      .insert(schema.documentOtps)
+      .values({
+        documentId: doc.id,
+        phone,
+        codeHash,
+        expiresAt,
+        attempts: 0,
+        maxAttempts,
+        consumedAt: null,
+      })
+      .returning({ id: schema.documentOtps.id });
 
-    // 5. Hand the plaintext to the caller for WhatsApp dispatch
-    await opts.onCode(code);
+    // 5. Hand the plaintext to the caller for WhatsApp dispatch. If dispatch
+    //    throws, remove the row: an undeliverable code must not consume the
+    //    pending-OTP rate limit (the user could otherwise be locked out for
+    //    the whole window by transient WhatsApp failures).
+    try {
+      await opts.onCode(code);
+    } catch {
+      await db
+        .delete(schema.documentOtps)
+        .where(eq(schema.documentOtps.id, inserted.id));
+      return err("validation", GENERIC_ERROR);
+    }
 
     return ok(undefined);
   } catch {
