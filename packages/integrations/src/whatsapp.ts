@@ -7,6 +7,9 @@
  * backend order — this is a lead-gen handoff into WhatsApp.
  */
 
+import { WHATSAPP_NUMBER } from "./config";
+export { WHATSAPP_NUMBER };
+
 export type EnquiryLocale = "en" | "si";
 export type EnquiryListingType = "retail" | "wholesale";
 
@@ -27,9 +30,6 @@ export interface EnquiryForm {
   deliveryArea?: string;
   notes?: string;
 }
-
-/** Marketplace WhatsApp number that receives enquiries (digits only). */
-export const WHATSAPP_NUMBER = "94778540633";
 
 /** "Rs 1,250" — deterministic thousands grouping (no Intl/locale dependency). */
 function formatRupees(cents: number): string {
