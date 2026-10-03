@@ -56,3 +56,16 @@ export const ORDER_SOURCE_LABELS: Record<OrderSource, string> = {
   web: "Website",
   walk_in: "Walk-in",
 };
+
+/**
+ * Category slugs whose products are offered as "ingredients" in the AI bouquet
+ * designer. Editable in one place — add a slug here to expose that category's
+ * stems in the picker. Must match seeded category slugs.
+ */
+export const DESIGNER_CATEGORY_SLUGS: readonly string[] = [
+  "roses",
+  "gerberas",
+  "orchids",
+  "chrysanthemums",
+  "loose-flowers",
+];

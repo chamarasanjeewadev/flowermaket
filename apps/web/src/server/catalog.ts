@@ -14,6 +14,7 @@ import {
   listActiveCategoriesWithCounts,
   listActiveProducts,
   listActiveShops,
+  listDesignerFlowers as repoListDesignerFlowers,
   tryCreateDb,
   type CategoryWithCount,
   type ListingType,
@@ -195,6 +196,20 @@ export const getFeaturedProducts = createServerFn({ method: "GET" }).handler(
       return result.items.slice(0, 8).map(toListItemDTO);
     } catch {
       return [];
+    }
+  },
+);
+
+export const listDesignerFlowers = createServerFn({ method: "GET" }).handler(
+  async (): Promise<{ items: ProductListItemDTO[] }> => {
+    setPublicCatalogCache();
+    const db = tryCreateDb();
+    if (!db) return { items: [] };
+    try {
+      const items = await repoListDesignerFlowers(db);
+      return { items: items.map(toListItemDTO) };
+    } catch {
+      return { items: [] };
     }
   },
 );
