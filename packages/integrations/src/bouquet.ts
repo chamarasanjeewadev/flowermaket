@@ -1,8 +1,8 @@
 /**
  * Pure, dependency-free helpers for the AI bouquet designer: building the
- * Imagen text prompt from a flower selection, and shaping/parsing the Google
- * Generative Language API (Imagen `:predict`) request/response. No I/O here —
- * the server function in apps/web supplies `fetch` and the API key.
+ * Gemini image-generation prompt and shaping/parsing the Google Generative
+ * Language API (gemini-3.1-flash-image `generateContent`) request/response.
+ * No I/O here — the server function in apps/web supplies `fetch` and the API key.
  */
 
 export interface BouquetPromptItem {
@@ -40,26 +40,31 @@ export function pendingBasketAdditions<T extends { id: string }>(
   return selection.filter((item) => !isInBasket(item.id));
 }
 
-/** Imagen model id — confirm it is enabled on the project's API key. */
-export const IMAGEN_MODEL = "imagen-3.0-generate-002";
+/** Gemini image generation model. */
+export const IMAGEN_MODEL = "gemini-3.1-flash-image";
 
 export function buildImagenEndpoint(apiKey: string): string {
-  return `https://generativelanguage.googleapis.com/v1beta/models/${IMAGEN_MODEL}:predict?key=${apiKey}`;
+  return `https://generativelanguage.googleapis.com/v1beta/models/${IMAGEN_MODEL}:generateContent?key=${apiKey}`;
 }
 
 export function buildImagenRequest(prompt: string) {
   return {
-    instances: [{ prompt }],
-    parameters: { sampleCount: 1, aspectRatio: "1:1" },
+    contents: [{ parts: [{ text: prompt }] }],
+    generationConfig: { responseModalities: ["IMAGE", "TEXT"] },
   };
 }
 
-export function extractImagenImage(json: unknown): string | null {
+export function extractImagenImage(json: unknown): { data: string; mimeType: string } | null {
   if (typeof json !== "object" || json === null) return null;
-  const preds = (json as { predictions?: unknown }).predictions;
-  if (!Array.isArray(preds) || preds.length === 0) return null;
-  const first = preds[0] as { bytesBase64Encoded?: unknown };
-  return typeof first?.bytesBase64Encoded === "string"
-    ? first.bytesBase64Encoded
-    : null;
+  const candidates = (json as { candidates?: unknown }).candidates;
+  if (!Array.isArray(candidates) || candidates.length === 0) return null;
+  const parts = (candidates[0] as { content?: { parts?: unknown[] } }).content?.parts;
+  if (!Array.isArray(parts)) return null;
+  for (const part of parts) {
+    const inline = (part as { inlineData?: { data?: string; mimeType?: string } }).inlineData;
+    if (typeof inline?.data === "string" && inline.data.length > 0) {
+      return { data: inline.data, mimeType: inline.mimeType ?? "image/jpeg" };
+    }
+  }
+  return null;
 }

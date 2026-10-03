@@ -72,29 +72,31 @@ describe("pendingBasketAdditions", () => {
 });
 
 describe("imagen helpers", () => {
-  it("builds the predict endpoint with the model and key", () => {
+  it("builds the generateContent endpoint with the model and key", () => {
     expect(buildImagenEndpoint("KEY123")).toBe(
-      `https://generativelanguage.googleapis.com/v1beta/models/${IMAGEN_MODEL}:predict?key=KEY123`,
+      `https://generativelanguage.googleapis.com/v1beta/models/${IMAGEN_MODEL}:generateContent?key=KEY123`,
     );
   });
 
-  it("builds a single-sample square request", () => {
+  it("builds a generateContent request with IMAGE responseModality", () => {
     const body = buildImagenRequest("a bouquet");
-    expect(body.instances[0].prompt).toBe("a bouquet");
-    expect(body.parameters.sampleCount).toBe(1);
-    expect(body.parameters.aspectRatio).toBe("1:1");
+    expect(body.contents[0].parts[0].text).toBe("a bouquet");
+    expect(body.generationConfig.responseModalities).toContain("IMAGE");
   });
 
-  it("extracts the base64 image from a prediction", () => {
-    expect(
-      extractImagenImage({ predictions: [{ bytesBase64Encoded: "AAAA" }] }),
-    ).toBe("AAAA");
+  it("extracts the base64 image from a Gemini generateContent response", () => {
+    const response = {
+      candidates: [
+        { content: { parts: [{ inlineData: { data: "AAAA", mimeType: "image/jpeg" } }] } },
+      ],
+    };
+    expect(extractImagenImage(response)).toEqual({ data: "AAAA", mimeType: "image/jpeg" });
   });
 
-  it("returns null when predictions are missing or empty", () => {
+  it("returns null when candidates are missing, empty, or have no image part", () => {
     expect(extractImagenImage({})).toBeNull();
-    expect(extractImagenImage({ predictions: [] })).toBeNull();
-    expect(extractImagenImage({ predictions: [{}] })).toBeNull();
+    expect(extractImagenImage({ candidates: [] })).toBeNull();
+    expect(extractImagenImage({ candidates: [{ content: { parts: [{ text: "hi" }] } }] })).toBeNull();
     expect(extractImagenImage(null)).toBeNull();
   });
 });

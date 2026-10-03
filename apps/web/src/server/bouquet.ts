@@ -36,9 +36,9 @@ export const generateBouquetImage = createServerFn({ method: "POST" })
         body: JSON.stringify(buildImagenRequest(prompt)),
       });
       if (!res.ok) return { ok: false, reason: "api_error" };
-      const b64 = extractImagenImage(await res.json());
-      if (!b64) return { ok: false, reason: "api_error" };
-      return { ok: true, dataUrl: `data:image/png;base64,${b64}` };
+      const img = extractImagenImage(await res.json());
+      if (!img) return { ok: false, reason: "api_error" };
+      return { ok: true, dataUrl: `data:${img.mimeType};base64,${img.data}` };
     } catch {
       return { ok: false, reason: "api_error" };
     }
