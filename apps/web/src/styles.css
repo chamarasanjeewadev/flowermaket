@@ -17,9 +17,50 @@
     background: white;
     color: black;
     print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
   }
 
   .quotation-screen-only {
     display: none !important;
+  }
+
+  /* Show print-only logo header */
+  .quotation-print-header {
+    display: flex !important;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 32px 12px;
+    border-bottom: 2px solid #e5e7eb;
+    margin-bottom: 8px;
+  }
+
+  /* Compact spacing for print */
+  .quotation-print-root section {
+    padding-top: 16px !important;
+    padding-bottom: 16px !important;
+  }
+
+  /* Hide gallery & SEO sections in print */
+  .quotation-print-root section:has(.grid-cols-2) {
+    display: none !important;
+  }
+
+  /* Nice card borders in print */
+  article {
+    border: 1px solid #d1d5db !important;
+    margin-bottom: 6px;
+    page-break-inside: avoid;
+  }
+
+  /* Summary sidebar becomes a footer block */
+  aside {
+    position: static !important;
+    border: 2px solid #d1d5db;
+    margin-top: 16px;
+  }
+
+  @page {
+    margin: 0.75in;
+    size: A4;
   }
 }

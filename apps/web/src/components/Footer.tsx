@@ -63,6 +63,7 @@ export function Footer() {
             <Link
               to="/$locale/fresh-flower-quotation-generator"
               params={{ locale }}
+              search={{ q: undefined }}
               className={linkClass}
             >
               {t.nav.quotation}

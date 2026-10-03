@@ -237,6 +237,7 @@ export function Header({ session }: { session: SessionUser }) {
           <Link
             to="/$locale/fresh-flower-quotation-generator"
             params={{ locale }}
+            search={{ q: undefined }}
             className={`${navLink} hidden lg:inline-flex`}
           >
             {t.nav.quotation}
@@ -334,6 +335,7 @@ export function Header({ session }: { session: SessionUser }) {
                 <Link
                   to="/$locale/fresh-flower-quotation-generator"
                   params={{ locale }}
+                  search={{ q: undefined }}
                   onClick={() => setMobileOpen(false)}
                   className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-accent"
                 >
