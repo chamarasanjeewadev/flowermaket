@@ -59,10 +59,12 @@ import { useT } from "../../i18n/react";
 import { jsonLdScript, localePath, socialMeta } from "../../lib/seo";
 import { absoluteUrl, hreflangLinks, siteUrl } from "../../lib/site";
 import {
+  FEATURED_FLOWERS,
   FLOWER_CATALOG,
   type FlowerCategory,
   type FlowerType,
 } from "../../lib/flower-catalog";
+import { FlowerShowcase } from "../../components/catalog/FlowerShowcase";
 import {
   listProducts,
   type ProductListItemDTO,
@@ -421,8 +423,18 @@ function FlowerQuotationGeneratorPage() {
             </p>
           </div>
 
+          {/* Featured flowers — photo showcase */}
+          <div className="mt-8 border-b border-border pb-10">
+            <FlowerShowcase
+              flowers={FEATURED_FLOWERS}
+              locale={locale}
+              onEnquire={addFlowerFromCatalog}
+              ctaLabel="Add to quote"
+            />
+          </div>
+
           {/* Search + Category tabs */}
-          <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
+          <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
             <div className="relative flex-1 max-w-xs">
               <Input
                 value={flowerSearch}

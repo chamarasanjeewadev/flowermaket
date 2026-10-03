@@ -8,7 +8,9 @@ import {
   MessageCircle,
   Search,
 } from "lucide-react";
+import { FlowerShowcase } from "../../components/catalog/FlowerShowcase";
 import { ProductGrid } from "../../components/catalog/ProductGrid";
+import { FEATURED_FLOWERS } from "../../lib/flower-catalog";
 import type { Locale } from "../../i18n";
 import { useT } from "../../i18n/react";
 import { absoluteUrl, hreflangLinks } from "../../lib/site";
@@ -139,6 +141,23 @@ function FreshFlowersNearMePage() {
             <MapPin className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
             <span>{t.nearMe.locationNote}</span>
           </p>
+        </div>
+      </section>
+
+      <section className="mx-auto max-w-6xl px-4 py-16" aria-labelledby="our-flowers-heading">
+        <h2 id="our-flowers-heading" className="font-display text-3xl sm:text-4xl">
+          Our Flowers
+        </h2>
+        <p className="mt-2 max-w-xl text-sm leading-relaxed text-muted-foreground">
+          Sourced fresh from Sri Lankan growers. Send an enquiry for pricing and availability.
+        </p>
+        <div className="mt-10">
+          <FlowerShowcase
+            flowers={FEATURED_FLOWERS}
+            locale={locale}
+            getHref={() => `/${locale}/fresh-flower-quotation-generator`}
+            ctaLabel="Enquire"
+          />
         </div>
       </section>
 
