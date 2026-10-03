@@ -101,6 +101,26 @@ describe("buildEnquiryText", () => {
     expect(text).toContain("https://flowermarket.lk/en/products/red-roses");
     expect(text).not.toContain("lk//en");
   });
+
+  it("includes the design note line when provided", () => {
+    const text = buildEnquiryText({
+      items: [roses],
+      locale: "en",
+      siteUrl: SITE,
+      designNote: "AI bouquet design (image attached)",
+    });
+    expect(text).toContain("AI bouquet design (image attached)");
+  });
+
+  it("omits the design note line when absent or blank", () => {
+    const text = buildEnquiryText({
+      items: [roses],
+      locale: "en",
+      siteUrl: SITE,
+      designNote: "  ",
+    });
+    expect(text).not.toContain("design");
+  });
 });
 
 describe("buildWhatsappUrl", () => {

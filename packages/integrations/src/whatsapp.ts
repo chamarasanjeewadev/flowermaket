@@ -48,6 +48,8 @@ export interface BuildEnquiryTextInput {
   locale: EnquiryLocale;
   /** Canonical site origin, e.g. `https://flowermarket.lk` (trailing slash ok). */
   siteUrl: string;
+  /** Optional single line noting an attached AI bouquet design. */
+  designNote?: string;
 }
 
 /**
@@ -55,9 +57,10 @@ export interface BuildEnquiryTextInput {
  * friendly greeting (used by the floating button before anything is added).
  */
 export function buildEnquiryText(input: BuildEnquiryTextInput): string {
-  const { items, form, locale, siteUrl } = input;
+  const { items, form, locale, siteUrl, designNote } = input;
   const base = siteUrl.replace(/\/$/, "");
   const lines: string[] = ["Hello FlowerMarket.lk 🌸", ""];
+  if (designNote?.trim()) lines.push(`— ${designNote.trim()} —`, "");
 
   if (items.length === 0) {
     lines.push("I'd like to ask about your flowers.");
