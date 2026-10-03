@@ -60,22 +60,28 @@ export default function BouquetDesigner({ flowers }: { flowers: ProductListItemD
     if (empty || status === "loading") return;
     setStatus("loading");
     setRateLimitReason(null);
-    const result = await generateBouquetImage({
-      data: { items: selection.map((i) => ({ nameEn: i.nameEn, qty: i.qty })) },
-    });
-    if (result.ok) {
-      setDataUrl(result.dataUrl);
-      setImageUrl(result.imageUrl);
-      setStatus("ready");
-    } else if (result.reason === "rate_limited") {
+    try {
+      const result = await generateBouquetImage({
+        data: { items: selection.map((i) => ({ nameEn: i.nameEn, qty: i.qty })) },
+      });
+      if (result.ok) {
+        setDataUrl(result.dataUrl);
+        setImageUrl(result.imageUrl);
+        setStatus("ready");
+      } else if (result.reason === "rate_limited") {
+        setDataUrl(null);
+        setImageUrl(null);
+        setRateLimitReason(result.limitKind);
+        setStatus("rate_limited");
+      } else {
+        setDataUrl(null);
+        setImageUrl(null);
+        setStatus(result.reason === "unconfigured" ? "unconfigured" : "error");
+      }
+    } catch {
       setDataUrl(null);
       setImageUrl(null);
-      setRateLimitReason(result.limitKind);
-      setStatus("rate_limited");
-    } else {
-      setDataUrl(null);
-      setImageUrl(null);
-      setStatus(result.reason === "unconfigured" ? "unconfigured" : "error");
+      setStatus("error");
     }
   }
 
