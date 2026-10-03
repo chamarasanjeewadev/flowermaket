@@ -64,6 +64,13 @@
       "when": 1759526400000,
       "tag": "0008_bouquet_generations",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1759612800000,
+      "tag": "0009_fix_new_user_trigger",
+      "breakpoints": true
     }
   ]
 }
