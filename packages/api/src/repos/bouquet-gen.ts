@@ -1,4 +1,4 @@
-import { and, count, desc, eq, gt, isNull } from "drizzle-orm";
+import { and, count, desc, eq, gt, isNotNull, isNull } from "drizzle-orm";
 import { schema } from "@flowers/db/client";
 import type { Db } from "../db";
 
@@ -77,6 +77,7 @@ export async function recordBouquetGeneration(
   opts: {
     userId: string | null;
     ipAddress: string;
+    flowersJson: string | null;
     imageStoragePath: string | null;
     imagePublicUrl: string | null;
   },
@@ -84,6 +85,7 @@ export async function recordBouquetGeneration(
   await db.insert(schema.bouquetGenerations).values({
     userId: opts.userId ?? null,
     ipAddress: opts.ipAddress,
+    flowersJson: opts.flowersJson,
     imageStoragePath: opts.imageStoragePath,
     imagePublicUrl: opts.imagePublicUrl,
   });
@@ -93,23 +95,26 @@ export interface BouquetGenerationRow {
   id: string;
   userId: string | null;
   ipAddress: string;
+  flowersJson: string | null;
   imagePublicUrl: string | null;
   createdAt: Date;
 }
 
 export async function listBouquetGenerations(
   db: Db,
-  opts: { limit?: number } = {},
+  opts: { limit?: number; publicOnly?: boolean } = {},
 ): Promise<BouquetGenerationRow[]> {
   return db
     .select({
       id: schema.bouquetGenerations.id,
       userId: schema.bouquetGenerations.userId,
       ipAddress: schema.bouquetGenerations.ipAddress,
+      flowersJson: schema.bouquetGenerations.flowersJson,
       imagePublicUrl: schema.bouquetGenerations.imagePublicUrl,
       createdAt: schema.bouquetGenerations.createdAt,
     })
     .from(schema.bouquetGenerations)
+    .where(opts.publicOnly ? isNotNull(schema.bouquetGenerations.imagePublicUrl) : undefined)
     .orderBy(desc(schema.bouquetGenerations.createdAt))
     .limit(opts.limit ?? 200);
 }

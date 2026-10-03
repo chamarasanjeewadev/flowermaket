@@ -103,8 +103,20 @@ export const en = {
     rateLimitUser: "Daily limit reached. You can generate 3 bouquets per day.",
     rateLimitCooloff: "Please wait a few minutes before generating again.",
     signInToGenerate: "Sign in to generate more",
+    aiDisclaimer:
+      "The AI preview is for illustration only. Actual flowers may vary depending on seasonal availability.",
     add: "Add",
     remove: "Remove",
+  },
+  gallery: {
+    title: "Bouquet Gallery",
+    subtitle: "AI-generated bouquet designs from our community.",
+    metaTitle: "Bouquet Gallery — AI Flower Design Ideas | FlowerMarket.lk",
+    metaDescription:
+      "Browse AI-generated custom bouquet designs from FlowerMarket.lk. Get inspired and create your own flower arrangement.",
+    empty: "No designs yet. Be the first to create one!",
+    designYours: "Design your bouquet",
+    viewDesign: "Create your own",
   },
   home: {
     heroTitle: "Flower listings in Sri Lanka",

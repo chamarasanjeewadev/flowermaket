@@ -7,6 +7,7 @@ export const bouquetGenerations = pgTable(
     id: uuid("id").primaryKey().defaultRandom(),
     userId: uuid("user_id").references(() => users.id),
     ipAddress: text("ip_address").notNull(),
+    flowersJson: text("flowers_json"),
     imageStoragePath: text("image_storage_path"),
     imagePublicUrl: text("image_public_url"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),

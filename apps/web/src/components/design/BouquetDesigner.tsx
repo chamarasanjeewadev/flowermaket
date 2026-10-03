@@ -132,6 +132,9 @@ export default function BouquetDesigner({ flowers }: { flowers: ProductListItemD
         <p className="mt-3 text-sm text-muted-foreground">
           {f(t.design.selectedSummary, { flowers: selection.length, stems })}
         </p>
+        <p className="mt-2 text-xs italic text-muted-foreground">
+          {t.design.aiDisclaimer}
+        </p>
         <div className="mt-4 flex flex-col gap-2">
           <Button
             onClick={() => void onGenerate()}

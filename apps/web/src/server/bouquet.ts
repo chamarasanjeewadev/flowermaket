@@ -107,6 +107,7 @@ export const generateBouquetImage = createServerFn({ method: "POST" })
         await recordBouquetGeneration(db, {
           userId,
           ipAddress,
+          flowersJson: JSON.stringify(data.items),
           imageStoragePath,
           imagePublicUrl,
         });

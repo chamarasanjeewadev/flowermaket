@@ -100,8 +100,20 @@ export const si: Dict = {
     rateLimitUser: "දෛනික සීමාව පිරී ඇත. ඔබට දිනකට මල් කළඹ 3ක් සෑදිය හැක.",
     rateLimitCooloff: "නැවත සෑදීමට මිනිත්තු කිහිපයක් රැඳී සිටින්න.",
     signInToGenerate: "තවත් සෑදීමට ලොග් වන්න",
+    aiDisclaimer:
+      "AI පෙරදසුන නිදර්ශනය සඳහා පමණි. සෘතුමය ලබාගැනීම අනුව ඇත්ත මල් වෙනස් විය හැක.",
     add: "එකතු කරන්න",
     remove: "ඉවත් කරන්න",
+  },
+  gallery: {
+    title: "මල් කළඹ ගැලරිය",
+    subtitle: "අපගේ ප්‍රජාවේ AI-නිර්මිත මල් කළඹ නිර්මාණ.",
+    metaTitle: "Bouquet Gallery — AI Flower Design Ideas | FlowerMarket.lk",
+    metaDescription:
+      "Browse AI-generated custom bouquet designs from FlowerMarket.lk. Get inspired and create your own flower arrangement.",
+    empty: "තවම නිර්මාණ නොමැත. ඔබ ප්‍රථම වන්න!",
+    designYours: "ඔබේ මල් කළඹ සාදන්න",
+    viewDesign: "ඔබේ එකක් සාදන්න",
   },
   home: {
     heroTitle: "ශ්‍රී ලංකාවේ මල් ලැයිස්තු",
