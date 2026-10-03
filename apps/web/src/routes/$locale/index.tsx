@@ -61,7 +61,6 @@ export const Route = createFileRoute("/$locale/")({
 function HomePage() {
   const { categories, featured } = Route.useLoaderData();
   const { locale, t } = useT();
-  const heroImg = featured[0]?.imageUrl ?? "/flowers/hero-gerbera.jpg";
 
   return (
     <>
@@ -102,13 +101,11 @@ function HomePage() {
 
           {/* Image column */}
           <div className="relative mx-auto w-full max-w-sm lg:max-w-none">
-            <div className="aspect-[3/4] overflow-hidden rounded-2xl">
-              <img
-                src={heroImg}
-                alt=""
-                className="size-full object-cover"
-              />
-            </div>
+            <img
+              src="/flowers/hero-bouquet.png"
+              alt="Fresh gerbera bouquet"
+              className="w-full drop-shadow-2xl"
+            />
             <div className="absolute bottom-5 left-5 right-5 rounded-xl border border-border bg-background/90 px-5 py-4 backdrop-blur-sm">
               <p className="text-xs text-muted-foreground">Sri Lanka</p>
               <p className="font-display text-base leading-snug">
