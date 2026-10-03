@@ -9,6 +9,7 @@ export const si: Dict = {
     wholesale: "තොග",
     shops: "සාප්පු",
     quotation: "මිල ගණකය",
+    design: "මල් කළඹක් සාදන්න",
     guides: "මාර්ගෝපදේශ",
     enquiry: "මගේ විමසුම් ලැයිස්තුව",
     login: "පිවිසෙන්න",
@@ -75,6 +76,27 @@ export const si: Dict = {
     notesPlaceholder: "වර්ණ, අවස්ථාව, අයවැය, වෙනත් ඕනෑම දෙයක්…",
     sendWhatsapp: "WhatsApp හරහා එවන්න",
     sendHint: "ඔබේ ලැයිස්තුව සමඟ WhatsApp විවෘත වේ.",
+  },
+  design: {
+    title: "ඔබේම මල් කළඹක් සාදන්න",
+    subtitle:
+      "මල් තෝරන්න, AI මල් කළඹක් පෙරදසුන් බලන්න, WhatsApp හරහා මල් සාප්පුවකට එවන්න.",
+    pickHeading: "මල් තෝරන්න",
+    empty: "දැනට මල් නොමැත. කරුණාකර පසුව නැවත පරීක්ෂා කරන්න.",
+    selectedSummary: "මල් වර්ග {flowers} · කඳ {stems}",
+    generate: "පෙරදසුන සාදන්න",
+    generating: "ඔබේ මල් කළඹ සාදමින්…",
+    regenerate: "නැවත සාදන්න",
+    previewAlt: "AI මඟින් සෑදූ මල් කළඹ පෙරදසුන",
+    previewPlaceholder: "ඔබේ AI මල් කළඹ පෙරදසුන මෙහි දිස්වේ.",
+    download: "රූපය බාගන්න",
+    sendWhatsapp: "WhatsApp හරහා මල් සාප්පුවකට එවන්න",
+    genUnavailable:
+      "AI පෙරදසුන දැනට ලබාගත නොහැක — ඔබට තවමත් WhatsApp හරහා මල් ලැයිස්තුව එවිය හැක.",
+    genError:
+      "පෙරදසුන සෑදීමට නොහැකි විය. නැවත උත්සාහ කරන්න — ඔබේ තේරීම සුරැකී ඇත.",
+    add: "එකතු කරන්න",
+    remove: "ඉවත් කරන්න",
   },
   home: {
     heroTitle: "ශ්‍රී ලංකාවේ මල් ලැයිස්තු",

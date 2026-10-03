@@ -7,6 +7,9 @@
  * backend order — this is a lead-gen handoff into WhatsApp.
  */
 
+import { WHATSAPP_NUMBER } from "./config";
+export { WHATSAPP_NUMBER };
+
 export type EnquiryLocale = "en" | "si";
 export type EnquiryListingType = "retail" | "wholesale";
 
@@ -28,9 +31,6 @@ export interface EnquiryForm {
   notes?: string;
 }
 
-/** Marketplace WhatsApp number that receives enquiries (digits only). */
-export const WHATSAPP_NUMBER = "94778540633";
-
 /** "Rs 1,250" — deterministic thousands grouping (no Intl/locale dependency). */
 function formatRupees(cents: number): string {
   const rupees = Math.round(cents / 100);
@@ -48,6 +48,8 @@ export interface BuildEnquiryTextInput {
   locale: EnquiryLocale;
   /** Canonical site origin, e.g. `https://flowermarket.lk` (trailing slash ok). */
   siteUrl: string;
+  /** Optional single line noting an attached AI bouquet design. */
+  designNote?: string;
 }
 
 /**
@@ -55,9 +57,10 @@ export interface BuildEnquiryTextInput {
  * friendly greeting (used by the floating button before anything is added).
  */
 export function buildEnquiryText(input: BuildEnquiryTextInput): string {
-  const { items, form, locale, siteUrl } = input;
+  const { items, form, locale, siteUrl, designNote } = input;
   const base = siteUrl.replace(/\/$/, "");
   const lines: string[] = ["Hello FlowerMarket.lk 🌸", ""];
+  if (designNote?.trim()) lines.push(`— ${designNote.trim()} —`, "");
 
   if (items.length === 0) {
     lines.push("I'd like to ask about your flowers.");

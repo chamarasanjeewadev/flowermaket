@@ -17,6 +17,7 @@
 import { and, asc, desc, eq, ilike, inArray, or, sql } from "drizzle-orm";
 import type { SQL } from "drizzle-orm";
 import { schema } from "@flowers/db/client";
+import { DESIGNER_CATEGORY_SLUGS } from "../constants";
 import type { Db } from "../db";
 
 export const CATALOG_PAGE_SIZE = 24;
@@ -243,6 +244,16 @@ export async function listActiveProducts(
     page,
     pageSize: CATALOG_PAGE_SIZE,
   };
+}
+
+/** Publicly-visible products in the designer's configured category set,
+ * ordered newest-first (via selectListItems). Used by the AI bouquet designer. */
+export async function listDesignerFlowers(db: Db): Promise<ProductListItem[]> {
+  const conditions: SQL[] = [
+    ...publicConditions(),
+    inArray(schema.categories.slug, [...DESIGNER_CATEGORY_SLUGS]),
+  ];
+  return selectListItems(db, conditions, { limit: 200 });
 }
 
 export async function getActiveProductBySlug(

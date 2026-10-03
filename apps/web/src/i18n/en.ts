@@ -12,6 +12,7 @@ export const en = {
     wholesale: "Wholesale",
     shops: "Shops",
     quotation: "Quote calculator",
+    design: "Design a bouquet",
     guides: "Guides",
     enquiry: "My enquiry list",
     login: "Sign in",
@@ -78,6 +79,27 @@ export const en = {
     notesPlaceholder: "Colours, occasion, budget, anything else…",
     sendWhatsapp: "Send on WhatsApp",
     sendHint: "Opens WhatsApp with your list ready to send.",
+  },
+  design: {
+    title: "Design your own bouquet",
+    subtitle:
+      "Pick your flowers, preview an AI arrangement, and send it to a florist on WhatsApp.",
+    pickHeading: "Choose flowers",
+    empty: "No flowers available right now. Please check back soon.",
+    selectedSummary: "{flowers} flowers · {stems} stems",
+    generate: "Generate preview",
+    generating: "Creating your bouquet…",
+    regenerate: "Regenerate",
+    previewAlt: "AI-generated bouquet preview",
+    previewPlaceholder: "Your AI bouquet preview will appear here.",
+    download: "Download image",
+    sendWhatsapp: "Send to a florist on WhatsApp",
+    genUnavailable:
+      "AI preview is unavailable right now — you can still send your flower list on WhatsApp.",
+    genError:
+      "Couldn't create the preview. Please try again — your flower selection is saved.",
+    add: "Add",
+    remove: "Remove",
   },
   home: {
     heroTitle: "Flower listings in Sri Lanka",

@@ -5,6 +5,7 @@
 @import "@fontsource/noto-sans-sinhala/500.css";
 @import "@fontsource/noto-sans-sinhala/700.css";
 @import "tailwindcss";
+@source "./**/*.{ts,tsx}";
 
 @custom-variant dark (&:is(.dark *));
 
