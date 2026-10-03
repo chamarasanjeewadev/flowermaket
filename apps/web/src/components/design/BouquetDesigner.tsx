@@ -3,6 +3,7 @@ import { Send, Sparkles } from "lucide-react";
 import {
   buildEnquiryText,
   buildWhatsappUrl,
+  pendingBasketAdditions,
   WHATSAPP_NUMBER,
   type EnquiryItem,
 } from "@flowers/integrations";
@@ -18,7 +19,7 @@ import { BouquetPreview, type PreviewStatus } from "./BouquetPreview";
 
 export default function BouquetDesigner({ flowers }: { flowers: ProductListItemDTO[] }) {
   const { t, f, locale } = useT();
-  const { add } = useEnquiry();
+  const { add, has } = useEnquiry();
   const [quantities, setQuantities] = React.useState<Record<string, number>>({});
   const [status, setStatus] = React.useState<PreviewStatus>("idle");
   const [dataUrl, setDataUrl] = React.useState<string | null>(null);
@@ -77,7 +78,9 @@ export default function BouquetDesigner({ flowers }: { flowers: ProductListItemD
   );
 
   function onSendWhatsapp() {
-    for (const item of selection) {
+    // Only add items not already in the basket, so repeat clicks don't
+    // accumulate quantities (matches AddToEnquiryButton's has() guard).
+    for (const item of pendingBasketAdditions(selection, has)) {
       const { qty, ...draft } = item;
       add({ ...draft, qty });
     }

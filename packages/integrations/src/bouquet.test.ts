@@ -6,6 +6,7 @@ import {
   extractImagenImage,
   IMAGEN_MODEL,
   MAX_PROMPT_FLOWERS,
+  pendingBasketAdditions,
   type BouquetPromptItem,
 } from "./bouquet";
 
@@ -48,6 +49,25 @@ describe("buildBouquetPrompt", () => {
   it("returns an empty string when nothing is selected", () => {
     expect(buildBouquetPrompt([], "en")).toBe("");
     expect(buildBouquetPrompt([{ nameEn: "X", qty: 0 }], "en")).toBe("");
+  });
+});
+
+describe("pendingBasketAdditions", () => {
+  const sel = [{ id: "a" }, { id: "b" }, { id: "c" }];
+
+  it("returns all items when none are in the basket", () => {
+    expect(pendingBasketAdditions(sel, () => false)).toEqual(sel);
+  });
+
+  it("skips items already in the basket (no double-add on repeat clicks)", () => {
+    const inBasket = new Set(["a", "c"]);
+    expect(pendingBasketAdditions(sel, (id) => inBasket.has(id))).toEqual([
+      { id: "b" },
+    ]);
+  });
+
+  it("returns nothing when every item is already in the basket (idempotent)", () => {
+    expect(pendingBasketAdditions(sel, () => true)).toEqual([]);
   });
 });
 

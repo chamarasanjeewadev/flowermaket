@@ -28,6 +28,18 @@ export function buildBouquetPrompt(
   );
 }
 
+/**
+ * Which selected items should be added to the enquiry basket: only those not
+ * already present. Keeps "Send to WhatsApp" idempotent — repeat clicks don't
+ * accumulate quantities (the basket's add() sums qty for existing items).
+ */
+export function pendingBasketAdditions<T extends { id: string }>(
+  selection: readonly T[],
+  isInBasket: (id: string) => boolean,
+): T[] {
+  return selection.filter((item) => !isInBasket(item.id));
+}
+
 /** Imagen model id — confirm it is enabled on the project's API key. */
 export const IMAGEN_MODEL = "imagen-3.0-generate-002";
 
