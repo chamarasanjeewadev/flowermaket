@@ -2,14 +2,15 @@ import { Download } from "lucide-react";
 import { Button } from "@flowers/ui/components/button";
 import { useT } from "../../i18n/react";
 
-export type PreviewStatus = "idle" | "loading" | "ready" | "error" | "unconfigured";
+export type PreviewStatus = "idle" | "loading" | "ready" | "error" | "unconfigured" | "rate_limited";
 
 export interface PreviewProps {
   status: PreviewStatus;
   dataUrl: string | null;
+  rateLimitMessage?: string;
 }
 
-export function BouquetPreview({ status, dataUrl }: PreviewProps) {
+export function BouquetPreview({ status, dataUrl, rateLimitMessage }: PreviewProps) {
   const { t } = useT();
   return (
     <div className="flex flex-col gap-3">
@@ -25,6 +26,10 @@ export function BouquetPreview({ status, dataUrl }: PreviewProps) {
         ) : status === "unconfigured" ? (
           <span className="px-6 text-center text-sm text-muted-foreground">
             {t.design.genUnavailable}
+          </span>
+        ) : status === "rate_limited" ? (
+          <span className="px-6 text-center text-sm text-muted-foreground">
+            {rateLimitMessage ?? t.design.rateLimitAnon}
           </span>
         ) : (
           <span className="px-6 text-center text-sm text-muted-foreground">

@@ -193,6 +193,13 @@ function RootLayout() {
           >
             Orders
           </Link>
+          <Link
+            to="/bouquet-usage"
+            className="rounded-md px-3 py-2 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+            activeProps={{ className: "bg-accent font-medium text-brand" }}
+          >
+            Bouquet AI
+          </Link>
         </nav>
         <SessionFooter session={session} />
       </aside>

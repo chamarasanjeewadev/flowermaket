@@ -98,6 +98,11 @@ export const en = {
       "AI preview is unavailable right now — you can still send your flower list on WhatsApp.",
     genError:
       "Couldn't create the preview. Please try again — your flower selection is saved.",
+    rateLimitAnon:
+      "You've used your free generation. Sign in or register to create up to 3 more.",
+    rateLimitUser: "Daily limit reached. You can generate 3 bouquets per day.",
+    rateLimitCooloff: "Please wait a few minutes before generating again.",
+    signInToGenerate: "Sign in to generate more",
     add: "Add",
     remove: "Remove",
   },

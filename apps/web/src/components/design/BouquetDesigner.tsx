@@ -1,4 +1,5 @@
 import * as React from "react";
+import { Link } from "@tanstack/react-router";
 import { Send, Sparkles } from "lucide-react";
 import {
   buildEnquiryText,
@@ -17,16 +18,19 @@ import type { ProductListItemDTO } from "../../server/catalog";
 import { FlowerPicker } from "./FlowerPicker";
 import { BouquetPreview, type PreviewStatus } from "./BouquetPreview";
 
+type RateLimitReason = "anon_limit" | "user_limit" | "cooloff" | null;
+
 export default function BouquetDesigner({ flowers }: { flowers: ProductListItemDTO[] }) {
   const { t, f, locale } = useT();
   const { add, has } = useEnquiry();
   const [quantities, setQuantities] = React.useState<Record<string, number>>({});
   const [status, setStatus] = React.useState<PreviewStatus>("idle");
   const [dataUrl, setDataUrl] = React.useState<string | null>(null);
+  const [imageUrl, setImageUrl] = React.useState<string | null>(null);
+  const [rateLimitReason, setRateLimitReason] = React.useState<RateLimitReason>(null);
 
   const byId = React.useMemo(() => new Map(flowers.map((fl) => [fl.id, fl])), [flowers]);
 
-  // Selection = flowers with qty >= 1, shaped as EnquiryItem for the basket.
   const selection = React.useMemo<EnquiryItem[]>(() => {
     const out: EnquiryItem[] = [];
     for (const [id, qty] of Object.entries(quantities)) {
@@ -55,36 +59,55 @@ export default function BouquetDesigner({ flowers }: { flowers: ProductListItemD
   async function onGenerate() {
     if (empty || status === "loading") return;
     setStatus("loading");
+    setRateLimitReason(null);
     const result = await generateBouquetImage({
       data: { items: selection.map((i) => ({ nameEn: i.nameEn, qty: i.qty })) },
     });
     if (result.ok) {
       setDataUrl(result.dataUrl);
+      setImageUrl(result.imageUrl);
       setStatus("ready");
+    } else if (result.reason === "rate_limited") {
+      setDataUrl(null);
+      setImageUrl(null);
+      setRateLimitReason(result.limitKind);
+      setStatus("rate_limited");
     } else {
       setDataUrl(null);
+      setImageUrl(null);
       setStatus(result.reason === "unconfigured" ? "unconfigured" : "error");
     }
   }
+
+  const rateLimitMessage =
+    rateLimitReason === "user_limit"
+      ? t.design.rateLimitUser
+      : rateLimitReason === "cooloff"
+        ? t.design.rateLimitCooloff
+        : t.design.rateLimitAnon;
 
   const waHref = buildWhatsappUrl(
     buildEnquiryText({
       items: selection,
       locale,
       siteUrl: siteUrl(),
-      designNote: status === "ready" ? "AI bouquet design (image attached)" : undefined,
+      designNote: status === "ready" ? "AI bouquet design attached" : undefined,
+      designImageUrl: imageUrl ?? undefined,
     }),
     WHATSAPP_NUMBER,
   );
 
   function onSendWhatsapp() {
-    // Only add items not already in the basket, so repeat clicks don't
-    // accumulate quantities (matches AddToEnquiryButton's has() guard).
     for (const item of pendingBasketAdditions(selection, has)) {
       const { qty, ...draft } = item;
       add({ ...draft, qty });
     }
   }
+
+  // After a successful generation, fetch the session to know if user is anon
+  // so we can show the sign-in nudge. We derive this from whether the server
+  // returned an imageUrl (storage only works when Supabase is configured).
+  const showSignInNudge = status === "rate_limited" && rateLimitReason === "anon_limit";
 
   return (
     <div className="grid gap-8 lg:grid-cols-[1fr_380px]">
@@ -101,12 +124,20 @@ export default function BouquetDesigner({ flowers }: { flowers: ProductListItemD
       </section>
 
       <aside className="lg:sticky lg:top-6 lg:self-start">
-        <BouquetPreview status={status} dataUrl={dataUrl} />
+        <BouquetPreview
+          status={status}
+          dataUrl={dataUrl}
+          rateLimitMessage={rateLimitMessage}
+        />
         <p className="mt-3 text-sm text-muted-foreground">
           {f(t.design.selectedSummary, { flowers: selection.length, stems })}
         </p>
         <div className="mt-4 flex flex-col gap-2">
-          <Button onClick={onGenerate} disabled={empty || status === "loading"} size="lg">
+          <Button
+            onClick={() => void onGenerate()}
+            disabled={empty || status === "loading" || status === "rate_limited"}
+            size="lg"
+          >
             <Sparkles className="size-4" aria-hidden="true" />
             {status === "loading"
               ? t.design.generating
@@ -114,6 +145,13 @@ export default function BouquetDesigner({ flowers }: { flowers: ProductListItemD
                 ? t.design.regenerate
                 : t.design.generate}
           </Button>
+
+          {showSignInNudge && (
+            <Button asChild variant="outline" size="sm">
+              <Link to="/$locale/login" params={{ locale }}>{t.design.signInToGenerate}</Link>
+            </Button>
+          )}
+
           {empty ? (
             <Button
               size="lg"

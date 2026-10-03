@@ -4,3 +4,4 @@ export * from "./shops";
 export * from "./catalog";
 export * from "./orders";
 export * from "./documents";
+export * from "./bouquet-generations";

@@ -17,24 +17,35 @@ export const Route = createFileRoute("/$locale/design")({
     const title =
       locale === "si"
         ? `${dict.design.title} | FlowerMarket.lk`
-        : `Design Your Own Bouquet Online in Sri Lanka | FlowerMarket.lk`;
-    const description = dict.design.subtitle;
+        : `Design Your Own Bouquet Online | Custom Bouquet Maker Sri Lanka | FlowerMarket.lk`;
+    const description =
+      locale === "si"
+        ? dict.design.subtitle
+        : "Build a custom flower bouquet online — pick your flowers, get an AI-generated preview, and send your design to a local florist in Sri Lanka. Free bouquet maker, no account needed.";
+    const pageUrl = absoluteUrl(`/${locale}/design`);
     const webApp = {
       "@context": "https://schema.org",
       "@type": "WebApplication",
-      name: dict.design.title,
+      name: locale === "si" ? dict.design.title : "Custom Bouquet Maker — FlowerMarket.lk",
       applicationCategory: "LifestyleApplication",
-      url: absoluteUrl(`/${locale}/design`),
+      operatingSystem: "Any",
+      url: pageUrl,
       description,
+      offers: {
+        "@type": "Offer",
+        price: "0",
+        priceCurrency: "LKR",
+      },
     };
     return {
       meta: [
         { title },
         { name: "description", content: description },
+        { name: "keywords", content: "design your own bouquet online Sri Lanka, custom bouquet maker, build a bouquet, AI bouquet, flower arrangement online, custom flower bouquet Sri Lanka" },
         ...socialMeta({
           title,
           description,
-          url: absoluteUrl(`/${locale}/design`),
+          url: pageUrl,
           locale,
         }),
       ],

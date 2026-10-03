@@ -21,3 +21,4 @@ export * from "./redirect";
 export * from "./pricing";
 export * from "./repos/documents";
 export * from "./repos/documentAccess";
+export * from "./repos/bouquet-gen";

@@ -50,6 +50,8 @@ export interface BuildEnquiryTextInput {
   siteUrl: string;
   /** Optional single line noting an attached AI bouquet design. */
   designNote?: string;
+  /** Public URL of the AI-generated bouquet image to include in the message. */
+  designImageUrl?: string;
 }
 
 /**
@@ -57,10 +59,11 @@ export interface BuildEnquiryTextInput {
  * friendly greeting (used by the floating button before anything is added).
  */
 export function buildEnquiryText(input: BuildEnquiryTextInput): string {
-  const { items, form, locale, siteUrl, designNote } = input;
+  const { items, form, locale, siteUrl, designNote, designImageUrl } = input;
   const base = siteUrl.replace(/\/$/, "");
   const lines: string[] = ["Hello FlowerMarket.lk 🌸", ""];
   if (designNote?.trim()) lines.push(`— ${designNote.trim()} —`, "");
+  if (designImageUrl?.trim()) lines.push(`🖼 AI bouquet design: ${designImageUrl.trim()}`, "");
 
   if (items.length === 0) {
     lines.push("I'd like to ask about your flowers.");
