@@ -12,6 +12,7 @@ export const en = {
     wholesale: "Wholesale",
     shops: "Shops",
     quotation: "Quote calculator",
+    design: "Design a bouquet",
     guides: "Guides",
     enquiry: "My enquiry list",
     login: "Sign in",

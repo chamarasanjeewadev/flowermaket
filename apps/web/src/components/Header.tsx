@@ -242,6 +242,9 @@ export function Header({ session }: { session: SessionUser }) {
           >
             {t.nav.quotation}
           </Link>
+          <Link to="/$locale/design" params={{ locale }} className={navLink}>
+            {t.nav.design}
+          </Link>
           <Link to="/$locale/blog" params={{ locale }} className={navLink}>
             {t.nav.guides}
           </Link>

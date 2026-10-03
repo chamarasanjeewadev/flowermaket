@@ -9,6 +9,7 @@ export const si: Dict = {
     wholesale: "තොග",
     shops: "සාප්පු",
     quotation: "මිල ගණකය",
+    design: "මල් කළඹක් සාදන්න",
     guides: "මාර්ගෝපදේශ",
     enquiry: "මගේ විමසුම් ලැයිස්තුව",
     login: "පිවිසෙන්න",

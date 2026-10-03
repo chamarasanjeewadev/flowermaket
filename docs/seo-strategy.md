@@ -64,6 +64,7 @@ Intent key: **N** = navigational, **C** = commercial/transactional,
 | Home `/$locale/` | online flower shop Sri Lanka | flower delivery Sri Lanka, buy flowers online Sri Lanka | C/N |
 | Browse `/$locale/products` | buy flowers online Sri Lanka | fresh flowers Sri Lanka, retail & wholesale flowers | C |
 | Wholesale view `/$locale/products?type=wholesale` | wholesale flowers Sri Lanka | bulk flowers Colombo, flower supplier Sri Lanka | C |
+| Bouquet designer `/$locale/design` | design your own bouquet online Sri Lanka | custom bouquet maker, build a bouquet, AI bouquet | C/N |
 | Category — Wedding `/c/wedding` | wedding flowers Sri Lanka | bridal bouquet, wedding centrepieces | C |
 | Category — Funeral `/c/funeral` | funeral flowers Sri Lanka | condolence wreaths, sympathy flowers | C |
 | Category — Bouquets `/c/bouquets` | flower bouquet Sri Lanka | gift bouquet, birthday flowers | C |
