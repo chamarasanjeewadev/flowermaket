@@ -54,6 +54,7 @@ import {
   Share2,
   Trash2,
 } from "lucide-react";
+import { toast } from "sonner";
 import { localizedName, type Locale } from "../../i18n";
 import { useT } from "../../i18n/react";
 import { jsonLdScript, localePath, socialMeta } from "../../lib/seo";
@@ -82,7 +83,11 @@ interface QuotationState {
 
 function encodeState(state: QuotationState): string {
   const json = JSON.stringify(state);
-  return btoa(json).replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "");
+  // encodeURIComponent first makes it safe for any Unicode (Sinhala, etc.)
+  return btoa(encodeURIComponent(json))
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=/g, "");
 }
 
 function decodeState(encoded: string): QuotationState | null {
@@ -91,7 +96,7 @@ function decodeState(encoded: string): QuotationState | null {
       .replace(/-/g, "+")
       .replace(/_/g, "/")
       .padEnd(encoded.length + ((4 - (encoded.length % 4)) % 4), "=");
-    const json = atob(padded);
+    const json = decodeURIComponent(atob(padded));
     const parsed = JSON.parse(json) as unknown;
     if (
       typeof parsed !== "object" ||
@@ -199,6 +204,7 @@ function FlowerQuotationGeneratorPage() {
     listings[0]?.id ?? "none",
   );
   const [copyState, setCopyState] = React.useState<"idle" | "copied">("idle");
+  const [qrImageUrl, setQrImageUrl] = React.useState<string | null>(null);
   const [activeCategory, setActiveCategory] =
     React.useState<FlowerCategory | "all">("all");
   const [flowerSearch, setFlowerSearch] = React.useState("");
@@ -242,6 +248,13 @@ function FlowerQuotationGeneratorPage() {
   }
 
   function addFlowerFromCatalog(flower: FlowerType) {
+    const matchedListing = listings.find(
+      (p) =>
+        localizedName(p, "en").toLowerCase() ===
+          flower.name_en.toLowerCase() ||
+        localizedName(p, "si") === flower.name_si,
+    );
+    const unitPrice = matchedListing?.price ?? 0;
     setLines((current) => {
       const existing = current.find((l) => l.id === `catalog-${flower.id}`);
       if (existing) {
@@ -258,11 +271,18 @@ function FlowerQuotationGeneratorPage() {
           id: `catalog-${flower.id}`,
           name: locale === "si" ? flower.name_si : flower.name_en,
           quantity: 1,
-          unitPrice: 0,
+          unitPrice,
           unit: flower.defaultUnit,
         },
       ];
     });
+    const displayName = locale === "si" ? flower.name_si : flower.name_en;
+    toast.success(
+      locale === "si"
+        ? `${displayName} ගණනට එකතු කරන ලදී`
+        : `${displayName} added to your quote`,
+      { duration: 2000 },
+    );
   }
 
   function addPublishedListing() {
@@ -335,8 +355,9 @@ function FlowerQuotationGeneratorPage() {
     const encoded = encodeState(state);
     const shareUrl = new URL(window.location.href);
     shareUrl.searchParams.set("q", encoded);
-    const qrUrl = `https://helavoice.lk/qr-code-generator?url=${encodeURIComponent(shareUrl.toString())}`;
-    window.open(qrUrl, "_blank", "noopener,noreferrer");
+    setQrImageUrl(
+      `https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=${encodeURIComponent(shareUrl.toString())}`,
+    );
   }
 
   const filteredFlowers = React.useMemo(() => {
@@ -780,6 +801,40 @@ function FlowerQuotationGeneratorPage() {
           </div>
         </aside>
       </main>
+
+      {/* QR code overlay */}
+      {qrImageUrl && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/60 p-4 backdrop-blur-sm"
+          onClick={() => setQrImageUrl(null)}
+        >
+          <div
+            className="w-full max-w-xs rounded-2xl border border-border bg-background p-6 shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <p className="font-display text-xl">{t.quotation.createQrCode}</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {locale === "si"
+                ? "QR කේතය scan කර ගණන් ශීටය ඕනෑ කෙනෙකුට බලන්න යවන්න."
+                : "Scan with any camera to open and view this quotation."}
+            </p>
+            <div className="mt-4 flex justify-center">
+              <img
+                src={qrImageUrl}
+                alt="QR code for this quotation"
+                className="size-60 rounded-xl border border-border"
+              />
+            </div>
+            <button
+              type="button"
+              onClick={() => setQrImageUrl(null)}
+              className="mt-5 w-full rounded-lg border border-border py-2 text-sm font-medium transition-colors hover:bg-accent"
+            >
+              {locale === "si" ? "වසන්න" : "Close"}
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* SEO content — flower types reference */}
       <section className="quotation-screen-only border-t border-border bg-muted/30 px-4 py-12">

@@ -211,7 +211,7 @@ export const en = {
     copyLink: "Copy link",
     linkCopied: "Copied!",
     createQrCode: "Create QR code",
-    qrCodeHint: "via helavoice.lk — adds a backlink",
+    qrCodeHint: "Anyone with the link can view this quotation",
     downloadPdf: "Download / Print PDF",
     flowerGallery: "Choose from {count} flower types",
     flowerGalleryHint: "Click any flower to add it to your quotation — then set the price",

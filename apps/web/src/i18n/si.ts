@@ -208,7 +208,7 @@ export const si: Dict = {
     copyLink: "සබැඳිය පිටපත් කරන්න",
     linkCopied: "පිටපත් කෙරිණ!",
     createQrCode: "QR කේතයක් සාදන්න",
-    qrCodeHint: "helavoice.lk හරහා — backlink එකක් ද ලැබේ",
+    qrCodeHint: "සබැඳිය ඇති ඕනෑම කෙනෙකුට මෙම මිල ගණන බැලිය හැකිය",
     downloadPdf: "PDF බාගන්න / මුද්‍රණය",
     flowerGallery: "මල් වර්ග {count}ක් අතරින් තෝරන්න",
     flowerGalleryHint: "ඕනෑම මලක් ක්ලික් කර ඔබේ මිල ගණනට එකතු කරන්න — ඉන්පසු මිල සකසන්න",
