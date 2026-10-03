@@ -1,13 +1,10 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { buttonVariants } from "@flowers/ui/components/button";
-import { Badge } from "@flowers/ui/components/badge";
 import { cn } from "@flowers/ui/lib/utils";
 import {
   ArrowUpRight,
   BadgePercent,
-  ListChecks,
   MessageCircle,
-  Shapes,
   Store,
 } from "lucide-react";
 import { ProductCard } from "../../components/catalog/ProductCard";
@@ -64,42 +61,29 @@ export const Route = createFileRoute("/$locale/")({
 function HomePage() {
   const { categories, featured } = Route.useLoaderData();
   const { locale, t } = useT();
-  const heroImg = featured[0]?.imageUrl ?? "/placeholder-flower.svg";
-  const totalListings = categories.reduce(
-    (total, category) => total + category.productCount,
-    0,
-  );
-  const activeCategories = categories.filter(
-    (category) => category.productCount > 0,
-  ).length;
+  const heroImg = featured[0]?.imageUrl ?? "/flowers/hero-gerbera.jpg";
 
   return (
     <>
-      {/* Hero — the page's one bold moment */}
-      <section className="grid-paper border-b border-border">
-        <div className="mx-auto grid max-w-6xl items-center gap-10 px-4 pb-14 pt-12 sm:pt-16 lg:grid-cols-2 lg:gap-8 lg:pb-20 lg:pt-20">
-          <div className="max-w-xl">
-            <h1 className="font-display text-[2.75rem] leading-[0.98] sm:text-6xl lg:text-[4.25rem]">
+      {/* Hero */}
+      <section className="border-b border-border">
+        <div className="mx-auto grid max-w-6xl items-center gap-12 px-4 pb-16 pt-14 sm:pt-20 lg:grid-cols-2 lg:gap-16 lg:pb-24 lg:pt-24">
+          {/* Text column */}
+          <div>
+            <h1 className="font-display text-[3rem] leading-[0.95] sm:text-[4rem] lg:text-[4.75rem]">
               {t.home.heroLead}
               <br />
-              <span className="relative inline-block">
-                <span
-                  aria-hidden="true"
-                  className="absolute inset-x-[-0.15em] inset-y-[0.08em] -z-10 -rotate-1 rounded-[0.15em] bg-blush"
-                />
-                {t.home.heroHighlight}
-              </span>
+              {t.home.heroHighlight}
             </h1>
-            <p className="mt-6 max-w-md text-base leading-relaxed text-muted-foreground sm:text-lg">
+            <p className="mt-6 max-w-sm text-base leading-relaxed text-muted-foreground sm:text-lg">
               {t.home.heroSubtitle}
             </p>
-
-            <div className="mt-8 flex flex-wrap items-center gap-5">
+            <div className="mt-8 flex flex-wrap gap-3">
               <Link
                 to="/$locale/products"
                 params={{ locale }}
                 search={{ type: "retail" }}
-                className={buttonVariants({ size: "pill" })}
+                className={cn(buttonVariants({ size: "pill" }))}
               >
                 {t.home.ctaShopRetail}
                 <ArrowUpRight className="size-4" aria-hidden="true" />
@@ -108,76 +92,32 @@ function HomePage() {
                 to="/$locale/products"
                 params={{ locale }}
                 search={{ type: "wholesale" }}
-                className="group inline-flex items-center gap-3 text-sm font-medium text-foreground focus-visible:outline-none"
+                className={cn(buttonVariants({ variant: "outline", size: "pill" }))}
               >
                 {t.home.ctaBuyWholesale}
-                <span className="flex size-11 items-center justify-center rounded-full border border-foreground/25 transition-colors group-hover:bg-foreground group-hover:text-background group-focus-visible:ring-2 group-focus-visible:ring-ring">
-                  <ArrowUpRight className="size-4" aria-hidden="true" />
-                </span>
+                <ArrowUpRight className="size-4" aria-hidden="true" />
               </Link>
             </div>
-
-            {/* Only surface live counts once there is real inventory — an
-                empty marketplace should never advertise "0 listings". */}
-            {totalListings > 0 && (
-              <dl className="mt-12 flex items-center gap-10">
-                <div className="flex items-center gap-3">
-                  <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-lilac/30 text-foreground">
-                    <ListChecks className="size-5" aria-hidden="true" />
-                  </span>
-                  <div>
-                    <dt className="font-display text-2xl leading-none">
-                      {totalListings}
-                    </dt>
-                    <dd className="mt-1 text-xs text-muted-foreground">
-                      {t.home.heroStatListingsLabel}
-                    </dd>
-                  </div>
-                </div>
-                {activeCategories > 0 && (
-                  <div className="flex items-center gap-3">
-                    <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-sage text-foreground">
-                      <Shapes className="size-5" aria-hidden="true" />
-                    </span>
-                    <div>
-                      <dt className="font-display text-2xl leading-none">
-                        {activeCategories}
-                      </dt>
-                      <dd className="mt-1 text-xs text-muted-foreground">
-                        {t.home.heroStatCategoriesLabel}
-                      </dd>
-                    </div>
-                  </div>
-                )}
-              </dl>
-            )}
           </div>
 
-          {/* Product stage: butter block + coral offset + discount sticker */}
-          <div className="relative mx-auto w-full max-w-md lg:max-w-none">
-            <div
-              aria-hidden="true"
-              className="absolute -bottom-4 -right-3 h-[92%] w-[85%] rounded-sm bg-coral"
-            />
-            <div className="relative aspect-[4/5] overflow-hidden rounded-sm bg-butter">
+          {/* Image column */}
+          <div className="relative mx-auto w-full max-w-sm lg:max-w-none">
+            <div className="aspect-[3/4] overflow-hidden rounded-2xl">
               <img
                 src={heroImg}
                 alt=""
-                className="size-full object-cover mix-blend-multiply"
+                className="size-full object-cover"
               />
             </div>
-            <Badge
-              variant="sticker"
-              className="absolute -left-3 bottom-10 flex-col items-start gap-0 px-4 py-3 text-left sm:bottom-16"
-            >
-              <span className="flex items-center gap-2 text-sm font-semibold">
-                <BadgePercent className="size-4" aria-hidden="true" />
+            <div className="absolute bottom-5 left-5 right-5 rounded-xl border border-border bg-background/90 px-5 py-4 backdrop-blur-sm">
+              <p className="text-xs text-muted-foreground">Sri Lanka</p>
+              <p className="font-display text-base leading-snug">
                 {t.home.stickerTitle}
-              </span>
-              <span className="pl-6 text-xs font-normal text-muted-foreground">
+              </p>
+              <p className="mt-0.5 text-xs text-muted-foreground">
                 {t.home.stickerSub}
-              </span>
-            </Badge>
+              </p>
+            </div>
           </div>
         </div>
       </section>
