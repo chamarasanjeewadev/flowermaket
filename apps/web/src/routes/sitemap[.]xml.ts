@@ -81,9 +81,9 @@ export const Route = createFileRoute("/sitemap.xml")({
             changefreq: "daily",
             priority: "0.9",
           }),
-          ...localizedSitemapUrls(base, "/products?type=wholesale", {
-            changefreq: "daily",
-            priority: "0.85",
+          ...localizedSitemapUrls(base, "/design", {
+            changefreq: "monthly",
+            priority: "0.75",
           }),
           ...localizedSitemapUrls(base, "/shops", {
             changefreq: "weekly",
