@@ -40,3 +40,13 @@ export const documentStatus = pgEnum("document_status", [
 ]);
 
 export const orderSource = pgEnum("order_source", ["whatsapp", "phone", "web", "walk_in"]);
+
+export const whatsappDirection = pgEnum("whatsapp_direction", ["inbound", "outbound"]);
+
+export const whatsappMessageKind = pgEnum("whatsapp_message_kind", [
+  "text", "image", "audio", "document", "other",
+]);
+
+export const whatsappMessageStatus = pgEnum("whatsapp_message_status", [
+  "received", "sent", "delivered", "read", "failed",
+]);
