@@ -189,6 +189,7 @@ export async function createShop(
   db: Db,
   ownerUserId: string,
   input: CreateShopInput,
+  opts?: { verificationStatus?: VerificationStatus },
 ): Promise<ActionResult<{ id: string; slug: string }>> {
   const errors = validateCreateShopInput(input);
   if (errors.length > 0) {
@@ -226,7 +227,8 @@ export async function createShop(
           district: input.district,
           city: input.city ?? null,
           shopType: input.shopType ?? "florist",
-          verificationStatus: "pending",
+          isAggregator: input.isAggregator ?? false,
+          verificationStatus: opts?.verificationStatus ?? "pending",
         })
         .returning({ id: schema.shops.id, slug: schema.shops.slug });
 
