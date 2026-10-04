@@ -20,6 +20,12 @@ import { DISTRICTS } from "../constants";
 
 export type ShopType = "florist" | "grower";
 
+export type VerificationStatus =
+  | "unverified"
+  | "pending"
+  | "verified"
+  | "rejected";
+
 export interface CreateShopInput {
   nameEn: string;
   nameSi?: string | null;
@@ -28,6 +34,7 @@ export interface CreateShopInput {
   district: string;
   city?: string | null;
   shopType?: ShopType | null;
+  isAggregator?: boolean | null;
 }
 
 export interface UpdateShopInput {
@@ -49,10 +56,30 @@ export interface ShopRow {
   descriptionSi: string | null;
   district: string;
   city: string | null;
-  verificationStatus: "unverified" | "pending" | "verified" | "rejected";
+  verificationStatus: VerificationStatus;
+  isAggregator: boolean;
+  plan: string;
+  verificationNotes: string | null;
+  verificationProof: unknown;
+  verificationSubmittedAt: Date | null;
+  verificationReviewedAt: Date | null;
+  verificationReviewedBy: string | null;
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
+}
+
+/**
+ * Single choke point for "may this shop list/sell?". Verification must be
+ * `verified` and the shop active. The `plan` seam is accepted for future
+ * gating but intentionally not enforced yet (everyone is on "free").
+ */
+export function canSellCheck(shop: {
+  verificationStatus: VerificationStatus;
+  isActive: boolean;
+  plan?: string;
+}): boolean {
+  return shop.verificationStatus === "verified" && shop.isActive;
 }
 
 // ---------------------------------------------------------------------------

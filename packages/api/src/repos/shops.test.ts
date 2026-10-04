@@ -1,8 +1,33 @@
 import { describe, expect, it } from "vitest";
 import {
+  canSellCheck,
   validateCreateShopInput,
   validateUpdateShopInput,
 } from "./shops";
+
+describe("canSellCheck", () => {
+  const base = { verificationStatus: "verified" as const, isActive: true, plan: "free" };
+
+  it("allows a verified, active shop", () => {
+    expect(canSellCheck(base)).toBe(true);
+  });
+
+  it("blocks a pending shop", () => {
+    expect(canSellCheck({ ...base, verificationStatus: "pending" })).toBe(false);
+  });
+
+  it("blocks an unverified shop", () => {
+    expect(canSellCheck({ ...base, verificationStatus: "unverified" })).toBe(false);
+  });
+
+  it("blocks a rejected shop", () => {
+    expect(canSellCheck({ ...base, verificationStatus: "rejected" })).toBe(false);
+  });
+
+  it("blocks a verified but inactive shop", () => {
+    expect(canSellCheck({ ...base, isActive: false })).toBe(false);
+  });
+});
 
 describe("validateCreateShopInput", () => {
   const valid = {
