@@ -99,6 +99,13 @@
       "when": 1791081600000,
       "tag": "0013_flower_species_rls",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1791168000000,
+      "tag": "0014_fix_new_user_role_cast",
+      "breakpoints": true
     }
   ]
 }

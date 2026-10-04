@@ -9,22 +9,30 @@ import {
 
 export type { FlowerVariantRow };
 
-export const listFeaturedVariants = createServerFn().handler(
+export const listFeaturedVariants = createServerFn({ method: "GET" }).handler(
   async (): Promise<FlowerVariantRow[]> => {
-    const db = tryCreateDb();
-    if (!db) return [];
-    const { SUPABASE_URL } = getEnv();
-    if (!SUPABASE_URL) return [];
-    return repoListFeatured(db, SUPABASE_URL);
+    try {
+      const db = tryCreateDb();
+      if (!db) return [];
+      const { SUPABASE_URL } = getEnv();
+      if (!SUPABASE_URL) return [];
+      return await repoListFeatured(db, SUPABASE_URL);
+    } catch {
+      return [];
+    }
   },
 );
 
-export const listFlowerVariants = createServerFn().handler(
+export const listFlowerVariants = createServerFn({ method: "GET" }).handler(
   async (): Promise<FlowerVariantRow[]> => {
-    const db = tryCreateDb();
-    if (!db) return [];
-    const { SUPABASE_URL } = getEnv();
-    if (!SUPABASE_URL) return [];
-    return repoListAll(db, SUPABASE_URL);
+    try {
+      const db = tryCreateDb();
+      if (!db) return [];
+      const { SUPABASE_URL } = getEnv();
+      if (!SUPABASE_URL) return [];
+      return await repoListAll(db, SUPABASE_URL);
+    } catch {
+      return [];
+    }
   },
 );
