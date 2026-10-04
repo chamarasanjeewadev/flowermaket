@@ -90,35 +90,43 @@ async function upsertConversation(
 
 /** Record an inbound message. Idempotent on evolutionKeyId (webhook retries). */
 export async function recordInboundMessage(db: Db, input: RecordInboundInput): Promise<void> {
-  if (input.evolutionKeyId) {
-    const [existing] = await db
-      .select({ id: schema.whatsappMessages.id })
-      .from(schema.whatsappMessages)
-      .where(eq(schema.whatsappMessages.evolutionKeyId, input.evolutionKeyId))
-      .limit(1);
-    if (existing) return; // retry — already stored, do not re-bump unread
-  }
-
   const preview = buildPreview(input.kind, input.text);
+
+  // Ensure the conversation exists + refresh preview/time. No unread bump here.
   const conversationId = await upsertConversation(db, {
     remoteJid: input.remoteJid,
     phone: input.phone,
     pushName: input.pushName,
     preview,
-    bumpUnread: true,
+    bumpUnread: false,
   });
 
-  await db.insert(schema.whatsappMessages).values({
-    conversationId,
-    evolutionKeyId: input.evolutionKeyId,
-    direction: "inbound",
-    kind: input.kind,
-    text: input.text,
-    mediaStoragePath: input.mediaStoragePath,
-    mediaMime: input.mediaMime,
-    status: "received",
-    remoteTimestamp: input.remoteTimestamp,
-  });
+  // Insert the message idempotently. A webhook retry (same evolutionKeyId)
+  // conflicts and returns no row — so we neither duplicate nor re-bump unread.
+  // (evolutionKeyId null never conflicts, which is correct — null can't be deduped.)
+  const inserted = await db
+    .insert(schema.whatsappMessages)
+    .values({
+      conversationId,
+      evolutionKeyId: input.evolutionKeyId,
+      direction: "inbound",
+      kind: input.kind,
+      text: input.text,
+      mediaStoragePath: input.mediaStoragePath,
+      mediaMime: input.mediaMime,
+      status: "received",
+      remoteTimestamp: input.remoteTimestamp,
+    })
+    .onConflictDoNothing({ target: schema.whatsappMessages.evolutionKeyId })
+    .returning({ id: schema.whatsappMessages.id });
+
+  // Only a genuinely new inbound message bumps the unread counter.
+  if (inserted.length > 0) {
+    await db
+      .update(schema.whatsappConversations)
+      .set({ unreadCount: sql`${schema.whatsappConversations.unreadCount} + 1` })
+      .where(eq(schema.whatsappConversations.id, conversationId));
+  }
 }
 
 /** Record an outbound message (reply or logged invite). Never bumps unread. */

@@ -130,7 +130,7 @@ interface RawUpsert {
 export function parseInboundMessage(event: unknown): ParsedInbound | null {
   const e = event as RawUpsert | null;
   if (!e || typeof e !== "object") return null;
-  if (e.event && e.event !== "messages.upsert") return null;
+  if (e.event !== "messages.upsert") return null;
   const d = e.data;
   if (!d || !d.key || !d.message) return null;
   if (d.key.fromMe) return null;

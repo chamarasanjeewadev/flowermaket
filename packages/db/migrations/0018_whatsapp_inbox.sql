@@ -46,3 +46,33 @@ CREATE INDEX IF NOT EXISTS "whatsapp_messages_conversation_idx" ON "whatsapp_mes
 -- RLS: deny anon; service-role (webhook + admin server fns) bypasses RLS.
 ALTER TABLE "whatsapp_conversations" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "whatsapp_messages" ENABLE ROW LEVEL SECURITY;
+
+-- Grant the postgres role (the app's DB connection user) full access.
+-- The postgres role on Supabase may not have BYPASSRLS (as documented in
+-- migrations 0009/0010/0011), so an explicit policy is required or all
+-- INSERT/SELECT/UPDATE operations return deny-all.
+-- Re-runnable: IF NOT EXISTS guards make this idempotent.
+
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public' AND tablename = 'whatsapp_conversations'
+      AND policyname = 'whatsapp_conversations_postgres_all'
+  ) THEN
+    EXECUTE 'CREATE POLICY "whatsapp_conversations_postgres_all" ON public.whatsapp_conversations FOR ALL TO postgres USING (true) WITH CHECK (true)';
+  END IF;
+END
+$$;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public' AND tablename = 'whatsapp_messages'
+      AND policyname = 'whatsapp_messages_postgres_all'
+  ) THEN
+    EXECUTE 'CREATE POLICY "whatsapp_messages_postgres_all" ON public.whatsapp_messages FOR ALL TO postgres USING (true) WITH CHECK (true)';
+  END IF;
+END
+$$;
