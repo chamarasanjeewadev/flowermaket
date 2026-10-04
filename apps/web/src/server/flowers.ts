@@ -4,8 +4,8 @@ import {
   listFeaturedVariants as repoListFeatured,
   listFlowerVariants as repoListAll,
   tryCreateDb,
-  type FlowerVariantRow,
 } from "@flowers/api";
+import type { FlowerVariantRow } from "@flowers/api/flowers";
 
 export type { FlowerVariantRow };
 

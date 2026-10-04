@@ -59,7 +59,7 @@ import { localizedName, type Locale } from "../../i18n";
 import { useT } from "../../i18n/react";
 import { jsonLdScript, localePath, socialMeta } from "../../lib/seo";
 import { absoluteUrl, hreflangLinks, siteUrl } from "../../lib/site";
-import { variantDisplayName, type FlowerVariantRow } from "@flowers/api";
+import { variantDisplayName, type FlowerVariantRow } from "@flowers/api/flowers";
 import { FlowerShowcase } from "../../components/catalog/FlowerShowcase";
 import {
   listFeaturedVariants,

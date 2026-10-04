@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
-import type { FlowerVariantRow } from "@flowers/api";
-import { variantDisplayName } from "@flowers/api";
+import type { FlowerVariantRow } from "@flowers/api/flowers";
+import { variantDisplayName } from "@flowers/api/flowers";
 import type { Locale } from "../../i18n";
 
 interface FlowerShowcaseProps {

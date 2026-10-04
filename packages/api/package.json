@@ -8,7 +8,8 @@
     "./redirect": "./src/redirect.ts",
     "./constants": "./src/constants.ts",
     "./money": "./src/money.ts",
-    "./pricing": "./src/pricing.ts"
+    "./pricing": "./src/pricing.ts",
+    "./flowers": "./src/flowers-client.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
