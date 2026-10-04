@@ -11,9 +11,15 @@ import {
   CardHeader,
   CardTitle,
 } from "@flowers/ui/components/card";
-import { Loader2, Plus, Trash2 } from "lucide-react";
+import { ImageOff, Loader2, Plus, Sparkles, Trash2, X } from "lucide-react";
 import { createOrderFn } from "../server/orders";
-import type { CreateOrderInput, OrderItemInput } from "@flowers/api";
+import { getAdminFlowers } from "../server/flowers";
+import { FlowerPicker, type PickedFlower } from "../components/FlowerPicker";
+import type {
+  CreateOrderInput,
+  OrderItemInput,
+  FlowerSpeciesWithVariants,
+} from "@flowers/api";
 import {
   DISTRICTS,
   ORDER_SOURCES,
@@ -27,6 +33,9 @@ import {
 // ---------------------------------------------------------------------------
 
 export const Route = createFileRoute("/orders/new")({
+  loader: async (): Promise<{ flowers: FlowerSpeciesWithVariants[] }> => ({
+    flowers: await getAdminFlowers(),
+  }),
   component: NewOrderPage,
 });
 
@@ -38,6 +47,8 @@ interface LineItem {
   descriptionEn: string;
   descriptionSi: string;
   variant: string;
+  flowerVariantId: string | null;
+  imageUrl: string | null;
   quantity: string;
   unit: (typeof ORDER_UNITS)[number];
   notes: string;
@@ -48,6 +59,8 @@ function emptyLine(): LineItem {
     descriptionEn: "",
     descriptionSi: "",
     variant: "",
+    flowerVariantId: null,
+    imageUrl: null,
     quantity: "",
     unit: "stem",
     notes: "",
@@ -70,6 +83,7 @@ interface LineItemRowProps {
   item: LineItem;
   onChange: (index: number, patch: Partial<LineItem>) => void;
   onRemove: (index: number) => void;
+  onPick: (index: number) => void;
   canRemove: boolean;
 }
 
@@ -78,6 +92,7 @@ function LineItemRow({
   item,
   onChange,
   onRemove,
+  onPick,
   canRemove,
 }: LineItemRowProps) {
   return (
@@ -131,16 +146,46 @@ function LineItemRow({
           />
         </div>
 
-        {/* Variant */}
-        <div className="space-y-1.5">
-          <Label htmlFor={`item-${index}-variant`}>Variant / colour</Label>
-          <Input
-            id={`item-${index}-variant`}
-            type="text"
-            placeholder="e.g. Red, 50 cm"
-            value={item.variant}
-            onChange={(e) => onChange(index, { variant: e.target.value })}
-          />
+        {/* Flower / variant — catalog picker + free text */}
+        <div className="space-y-1.5 sm:col-span-2">
+          <Label htmlFor={`item-${index}-variant`}>Flower / variant</Label>
+          <div className="flex items-center gap-2">
+            <div className="relative flex-1">
+              {item.flowerVariantId && (
+                <span className="pointer-events-none absolute left-1.5 top-1/2 flex size-6 -translate-y-1/2 items-center justify-center overflow-hidden rounded bg-muted">
+                  {item.imageUrl ? (
+                    <img src={item.imageUrl} alt="" className="size-full object-cover" />
+                  ) : (
+                    <ImageOff className="size-3.5 text-muted-foreground/50" />
+                  )}
+                </span>
+              )}
+              <Input
+                id={`item-${index}-variant`}
+                type="text"
+                placeholder="Pick from catalog or type (e.g. Red, 50 cm)"
+                className={item.flowerVariantId ? "pl-9" : undefined}
+                value={item.variant}
+                onChange={(e) =>
+                  onChange(index, { variant: e.target.value, flowerVariantId: null, imageUrl: null })
+                }
+              />
+            </div>
+            {item.flowerVariantId ? (
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                title="Clear catalog link"
+                onClick={() => onChange(index, { flowerVariantId: null, imageUrl: null })}
+              >
+                <X className="size-4" />
+              </Button>
+            ) : null}
+            <Button type="button" variant="outline" onClick={() => onPick(index)}>
+              <Sparkles className="size-4" /> Pick flower
+            </Button>
+          </div>
         </div>
 
         {/* Quantity + unit */}
@@ -203,8 +248,10 @@ function LineItemRow({
 
 function NewOrderPage() {
   const router = useRouter();
+  const { flowers } = Route.useLoaderData();
   const [busy, setBusy] = React.useState(false);
   const [serverError, setServerError] = React.useState<string | null>(null);
+  const [pickerIndex, setPickerIndex] = React.useState<number | null>(null);
 
   // Customer fields
   const [customerName, setCustomerName] = React.useState("");
@@ -238,6 +285,28 @@ function NewOrderPage() {
 
   function addItem() {
     setItems((prev) => [...prev, emptyLine()]);
+  }
+
+  function applyPick(picked: PickedFlower) {
+    if (pickerIndex === null) return;
+    const idx = pickerIndex;
+    // Flower units (arrangement/item) don't all map to order units (stem/bunch/box).
+    const orderUnit: (typeof ORDER_UNITS)[number] =
+      picked.unit === "bunch" ? "bunch" : "stem";
+    setItems((prev) =>
+      prev.map((item, i) =>
+        i === idx
+          ? {
+              ...item,
+              variant: picked.label,
+              flowerVariantId: picked.flowerVariantId,
+              imageUrl: picked.imageUrl,
+              descriptionEn: item.descriptionEn.trim() || picked.nameEn,
+              unit: orderUnit,
+            }
+          : item,
+      ),
+    );
   }
 
   // ---------------------------------------------------------------------------
@@ -279,6 +348,7 @@ function NewOrderPage() {
           descriptionEn: it.descriptionEn.trim(),
           descriptionSi: it.descriptionSi.trim() || null,
           variant: it.variant.trim() || null,
+          flowerVariantId: it.flowerVariantId,
           quantity: parseInt(it.quantity, 10),
           unit: it.unit,
           notes: it.notes.trim() || null,
@@ -474,6 +544,7 @@ function NewOrderPage() {
                 item={item}
                 onChange={updateItem}
                 onRemove={removeItem}
+                onPick={setPickerIndex}
                 canRemove={items.length > 1}
               />
             ))}
@@ -533,6 +604,14 @@ function NewOrderPage() {
           </Button>
         </div>
       </form>
+
+      <FlowerPicker
+        open={pickerIndex !== null}
+        onOpenChange={(o) => !o && setPickerIndex(null)}
+        flowers={flowers}
+        onSelect={applyPick}
+        onCreated={() => router.invalidate()}
+      />
     </div>
   );
 }
