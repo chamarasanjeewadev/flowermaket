@@ -52,6 +52,19 @@ export function validateInviteInput(input: {
   return errors;
 }
 
+/**
+ * Build the tokenized join URL from the supplier-portal origin. Returns null
+ * when the origin is missing/empty so callers can refuse to send a dead link.
+ */
+export function buildJoinUrl(
+  portalUrl: string | undefined | null,
+  token: string,
+): string | null {
+  const origin = (portalUrl ?? "").trim().replace(/\/$/, "");
+  if (!origin) return null;
+  return `${origin}/join/${token}`;
+}
+
 export interface BuildInviteMessageInput {
   nameEn?: string | null;
   shopType: ShopType;

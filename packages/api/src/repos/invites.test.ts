@@ -1,9 +1,32 @@
 import { describe, expect, it } from "vitest";
 import {
   buildInviteMessage,
+  buildJoinUrl,
   generateInviteToken,
   validateInviteInput,
 } from "./invites";
+
+describe("buildJoinUrl", () => {
+  it("builds a join URL from a configured portal origin", () => {
+    expect(buildJoinUrl("https://supplier.flowermarket.lk", "tok123")).toBe(
+      "https://supplier.flowermarket.lk/join/tok123",
+    );
+  });
+
+  it("strips a trailing slash from the origin", () => {
+    expect(buildJoinUrl("https://supplier.flowermarket.lk/", "tok123")).toBe(
+      "https://supplier.flowermarket.lk/join/tok123",
+    );
+  });
+
+  it("returns null when the portal URL is undefined", () => {
+    expect(buildJoinUrl(undefined, "tok123")).toBeNull();
+  });
+
+  it("returns null when the portal URL is empty", () => {
+    expect(buildJoinUrl("", "tok123")).toBeNull();
+  });
+});
 
 describe("generateInviteToken", () => {
   it("returns a non-empty url-safe token", () => {

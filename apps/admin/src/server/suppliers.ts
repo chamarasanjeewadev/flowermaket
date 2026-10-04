@@ -14,6 +14,7 @@ import {
   createInvite,
   generateInviteToken,
   buildInviteMessage,
+  buildJoinUrl,
   type ActionResult,
   type ReviewableShop,
   type VerificationStatus,
@@ -172,8 +173,19 @@ export const inviteSupplierFn = createServerFn({ method: "POST" })
       }
 
       const token = generateInviteToken();
-      const expiresAt = new Date(Date.now() + INVITE_TTL_DAYS * 24 * 60 * 60 * 1000);
+      const env = getEnv();
+      // Refuse before creating a dead invite if the portal origin is missing.
+      const joinUrl = buildJoinUrl(env.SUPPLIER_PORTAL_URL, token);
+      if (!joinUrl) {
+        return {
+          ok: false,
+          code: "db_unavailable",
+          message:
+            "Supplier portal URL (SUPPLIER_PORTAL_URL) is not configured; cannot build a join link.",
+        };
+      }
 
+      const expiresAt = new Date(Date.now() + INVITE_TTL_DAYS * 24 * 60 * 60 * 1000);
       const created = await createInvite(db, {
         phone: data.phone.trim(),
         nameEn: data.nameEn,
@@ -185,10 +197,6 @@ export const inviteSupplierFn = createServerFn({ method: "POST" })
         expiresAt,
       });
       if (!created.ok) return created;
-
-      const env = getEnv();
-      const origin = (env.SUPPLIER_PORTAL_URL ?? "").replace(/\/$/, "");
-      const joinUrl = `${origin}/join/${token}`;
 
       const message = buildInviteMessage({
         nameEn: data.nameEn,
