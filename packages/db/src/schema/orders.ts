@@ -5,6 +5,7 @@ import { awardStatus, language, orderSource, orderStatus, rfqStatus } from "./en
 import { users } from "./users";
 import { categories } from "./catalog";
 import { shops } from "./shops";
+import { flowerVariants } from "./flowers";
 
 export const orders = pgTable(
   "orders",
@@ -43,6 +44,8 @@ export const orderItems = pgTable(
     descriptionEn: text("description_en").notNull(),
     descriptionSi: text("description_si"),
     variant: text("variant"),
+    /** Optional link to a flower variant in the catalog (picker-selected). */
+    flowerVariantId: uuid("flower_variant_id").references(() => flowerVariants.id),
     quantity: integer("quantity").notNull(),
     unit: text("unit").notNull().default("stem"),
     notes: text("notes"),

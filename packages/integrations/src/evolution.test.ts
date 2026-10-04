@@ -1,5 +1,27 @@
 import { describe, expect, it } from "vitest";
-import { toWhatsappJid } from "./evolution";
+import { toWhatsappJid, buildWhatsappLink } from "./evolution";
+
+describe("buildWhatsappLink", () => {
+  it("builds a wa.me link from a 94 number", () => {
+    expect(buildWhatsappLink("94771234567")).toBe("https://wa.me/94771234567");
+  });
+
+  it("normalizes a local 0-prefixed number", () => {
+    expect(buildWhatsappLink("0771234567")).toBe("https://wa.me/94771234567");
+  });
+
+  it("appends a url-encoded prefilled message", () => {
+    expect(buildWhatsappLink("94771234567", "Hi there")).toBe(
+      "https://wa.me/94771234567?text=Hi%20there",
+    );
+  });
+
+  it("returns null for a missing/empty number", () => {
+    expect(buildWhatsappLink("")).toBeNull();
+    expect(buildWhatsappLink(null)).toBeNull();
+    expect(buildWhatsappLink("   ")).toBeNull();
+  });
+});
 
 describe("toWhatsappJid", () => {
   it("keeps a 94-prefixed number", () => {

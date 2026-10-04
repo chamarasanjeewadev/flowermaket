@@ -32,6 +32,20 @@ export function toWhatsappJid(phone: string): string {
 }
 
 /**
+ * Build a click-to-chat wa.me link for a Sri Lankan number, with an optional
+ * prefilled message. Returns null when no usable digits are present.
+ */
+export function buildWhatsappLink(
+  phone: string | null | undefined,
+  message?: string,
+): string | null {
+  if (!phone || !phone.replace(/\D/g, "")) return null;
+  const digits = toWhatsappJid(phone).replace("@s.whatsapp.net", "");
+  const base = `https://wa.me/${digits}`;
+  return message ? `${base}?text=${encodeURIComponent(message)}` : base;
+}
+
+/**
  * Send a WhatsApp text message via Evolution API.
  *
  * @param config Evolution API configuration (apiUrl, apiKey, instance)

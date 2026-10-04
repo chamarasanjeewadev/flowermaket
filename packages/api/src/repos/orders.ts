@@ -29,6 +29,8 @@ export interface OrderItemInput {
   descriptionEn: string;
   descriptionSi?: string | null;
   variant?: string | null;
+  /** Optional catalog link set by the flower picker. */
+  flowerVariantId?: string | null;
   quantity: number;
   unit: string;
   notes?: string | null;
@@ -145,6 +147,7 @@ export interface OrderItemDetail {
   descriptionEn: string;
   descriptionSi: string | null;
   variant: string | null;
+  flowerVariantId: string | null;
   quantity: number;
   unit: string;
   notes: string | null;
@@ -299,6 +302,7 @@ export async function createOrder(
             descriptionEn: it.descriptionEn.trim(),
             descriptionSi: it.descriptionSi ?? null,
             variant: it.variant ?? null,
+            flowerVariantId: it.flowerVariantId ?? null,
             quantity: it.quantity,
             unit: it.unit,
             notes: it.notes ?? null,
@@ -370,6 +374,7 @@ export async function getOrder(
       descriptionEn: schema.orderItems.descriptionEn,
       descriptionSi: schema.orderItems.descriptionSi,
       variant: schema.orderItems.variant,
+      flowerVariantId: schema.orderItems.flowerVariantId,
       quantity: schema.orderItems.quantity,
       unit: schema.orderItems.unit,
       notes: schema.orderItems.notes,

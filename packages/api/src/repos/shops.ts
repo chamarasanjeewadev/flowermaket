@@ -334,13 +334,20 @@ export interface ReviewableShop {
   id: string;
   slug: string;
   nameEn: string;
+  nameSi: string | null;
   shopType: ShopType;
   isAggregator: boolean;
   district: string;
   city: string | null;
+  descriptionEn: string | null;
+  descriptionSi: string | null;
   verificationStatus: VerificationStatus;
   verificationNotes: string | null;
+  verificationProof: unknown;
+  verificationSubmittedAt: Date | null;
   ownerEmail: string;
+  ownerFullName: string | null;
+  ownerPhone: string | null;
   createdAt: Date;
 }
 
@@ -358,13 +365,20 @@ export async function listShopsForReview(
       id: schema.shops.id,
       slug: schema.shops.slug,
       nameEn: schema.shops.nameEn,
+      nameSi: schema.shops.nameSi,
       shopType: schema.shops.shopType,
       isAggregator: schema.shops.isAggregator,
       district: schema.shops.district,
       city: schema.shops.city,
+      descriptionEn: schema.shops.descriptionEn,
+      descriptionSi: schema.shops.descriptionSi,
       verificationStatus: schema.shops.verificationStatus,
       verificationNotes: schema.shops.verificationNotes,
+      verificationProof: schema.shops.verificationProof,
+      verificationSubmittedAt: schema.shops.verificationSubmittedAt,
       ownerEmail: schema.users.email,
+      ownerFullName: schema.users.fullName,
+      ownerPhone: schema.users.phone,
       createdAt: schema.shops.createdAt,
     })
     .from(schema.shops)
