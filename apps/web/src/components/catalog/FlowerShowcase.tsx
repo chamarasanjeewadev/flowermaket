@@ -1,15 +1,16 @@
 import { Link } from "@tanstack/react-router";
-import type { FlowerType } from "../../lib/flower-catalog";
+import type { FlowerVariantRow } from "@flowers/api";
+import { variantDisplayName } from "@flowers/api";
 import type { Locale } from "../../i18n";
 
 interface FlowerShowcaseProps {
-  flowers: FlowerType[];
+  flowers: FlowerVariantRow[];
   locale: Locale;
   ctaLabel?: string;
   /** Render the CTA as a button with click handler. */
-  onEnquire?: (flower: FlowerType) => void;
+  onEnquire?: (flower: FlowerVariantRow) => void;
   /** Render the CTA as a link. Takes precedence over onEnquire. */
-  getHref?: (flower: FlowerType) => string;
+  getHref?: (flower: FlowerVariantRow) => string;
 }
 
 export function FlowerShowcase({
@@ -22,13 +23,13 @@ export function FlowerShowcase({
   return (
     <ul className="grid grid-cols-2 gap-x-6 gap-y-12 sm:grid-cols-3 lg:grid-cols-4">
       {flowers.map((flower) => {
-        const name = locale === "si" ? flower.name_si : flower.name_en;
+        const name = variantDisplayName(flower, locale);
         const href = getHref?.(flower);
         return (
           <li key={flower.id} className="flex flex-col">
             <div className="flex aspect-square items-center justify-center overflow-hidden">
               <img
-                src={flower.imageUrl}
+                src={flower.imageUrl ?? "/placeholder-flower.svg"}
                 alt={name}
                 loading="lazy"
                 decoding="async"

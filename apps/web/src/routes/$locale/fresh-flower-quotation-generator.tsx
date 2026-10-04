@@ -59,13 +59,14 @@ import { localizedName, type Locale } from "../../i18n";
 import { useT } from "../../i18n/react";
 import { jsonLdScript, localePath, socialMeta } from "../../lib/seo";
 import { absoluteUrl, hreflangLinks, siteUrl } from "../../lib/site";
-import {
-  FEATURED_FLOWERS,
-  FLOWER_CATALOG,
-  type FlowerCategory,
-  type FlowerType,
-} from "../../lib/flower-catalog";
+import { variantDisplayName, type FlowerVariantRow } from "@flowers/api";
 import { FlowerShowcase } from "../../components/catalog/FlowerShowcase";
+import {
+  listFeaturedVariants,
+  listFlowerVariants,
+} from "../../server/flowers";
+
+type FlowerCategory = "imported" | "tropical" | "local";
 import {
   listProducts,
   type ProductListItemDTO,
@@ -123,8 +124,12 @@ export const Route = createFileRoute(
     q: typeof search.q === "string" ? search.q : undefined,
   }),
   loader: async () => {
-    const result = await listProducts({ data: {} });
-    return { listings: result.items };
+    const [listings, featuredFlowers, allFlowers] = await Promise.all([
+      listProducts({ data: {} }).then((r) => r.items),
+      listFeaturedVariants(),
+      listFlowerVariants(),
+    ]);
+    return { listings, featuredFlowers, allFlowers };
   },
   head: ({ params }) => {
     const locale = params.locale as Locale;
@@ -185,7 +190,7 @@ export const Route = createFileRoute(
 // --- Main page ---
 
 function FlowerQuotationGeneratorPage() {
-  const { listings } = Route.useLoaderData();
+  const { listings, featuredFlowers, allFlowers } = Route.useLoaderData();
   const { q } = Route.useSearch();
   const { t, f, locale } = useT();
 
@@ -247,12 +252,11 @@ function FlowerQuotationGeneratorPage() {
     ]);
   }
 
-  function addFlowerFromCatalog(flower: FlowerType) {
+  function addFlowerFromCatalog(flower: FlowerVariantRow) {
     const matchedListing = listings.find(
-      (p) =>
+      (p) => p.flowerVariantId === flower.id ||
         localizedName(p, "en").toLowerCase() ===
-          flower.name_en.toLowerCase() ||
-        localizedName(p, "si") === flower.name_si,
+          variantDisplayName(flower, "en").toLowerCase(),
     );
     const unitPrice = matchedListing?.price ?? 0;
     setLines((current) => {
@@ -269,14 +273,14 @@ function FlowerQuotationGeneratorPage() {
         ...cleanedLines,
         {
           id: `catalog-${flower.id}`,
-          name: locale === "si" ? flower.name_si : flower.name_en,
+          name: variantDisplayName(flower, locale),
           quantity: 1,
           unitPrice,
           unit: flower.defaultUnit,
         },
       ];
     });
-    const displayName = locale === "si" ? flower.name_si : flower.name_en;
+    const displayName = variantDisplayName(flower, locale);
     toast.success(
       locale === "si"
         ? `${displayName} ගණනට එකතු කරන ලදී`
@@ -361,17 +365,17 @@ function FlowerQuotationGeneratorPage() {
   }
 
   const filteredFlowers = React.useMemo(() => {
-    return FLOWER_CATALOG.filter((f) => {
+    return allFlowers.filter((f) => {
       const catOk = activeCategory === "all" || f.category === activeCategory;
       const q = flowerSearch.toLowerCase();
       const nameOk =
         !q ||
-        f.name_en.toLowerCase().includes(q) ||
-        f.name_si.includes(q) ||
+        f.nameEn.toLowerCase().includes(q) ||
+        f.nameSi.includes(q) ||
         (f.localName?.toLowerCase().includes(q) ?? false);
       return catOk && nameOk;
     });
-  }, [activeCategory, flowerSearch]);
+  }, [allFlowers, activeCategory, flowerSearch]);
 
   const addedIds = new Set(
     lines.map((l) => l.id).filter((id) => id.startsWith("catalog-")),
@@ -437,7 +441,7 @@ function FlowerQuotationGeneratorPage() {
         <div className="mx-auto max-w-6xl px-4 py-8">
           <div className="flex flex-col gap-1">
             <h2 className="font-display text-2xl">
-              {f(t.quotation.flowerGallery, { count: FLOWER_CATALOG.length })}
+              {f(t.quotation.flowerGallery, { count: allFlowers.length })}
             </h2>
             <p className="text-sm text-muted-foreground">
               {t.quotation.flowerGalleryHint}
@@ -447,7 +451,7 @@ function FlowerQuotationGeneratorPage() {
           {/* Featured flowers — photo showcase */}
           <div className="mt-8 border-b border-border pb-10">
             <FlowerShowcase
-              flowers={FEATURED_FLOWERS}
+              flowers={featuredFlowers}
               locale={locale}
               onEnquire={addFlowerFromCatalog}
               ctaLabel="Add to quote"
@@ -495,8 +499,7 @@ function FlowerQuotationGeneratorPage() {
           >
             {filteredFlowers.map((flower) => {
               const isAdded = addedIds.has(`catalog-${flower.id}`);
-              const displayName =
-                locale === "si" ? flower.name_si : flower.name_en;
+              const displayName = variantDisplayName(flower, locale);
               return (
                 <li key={flower.id}>
                   <button
@@ -513,7 +516,7 @@ function FlowerQuotationGeneratorPage() {
                   >
                     <div className="relative aspect-[4/3] overflow-hidden bg-muted">
                       <img
-                        src={flower.imageUrl}
+                        src={flower.imageUrl ?? "/placeholder-flower.svg"}
                         alt={displayName}
                         loading="lazy"
                         decoding="async"
@@ -841,8 +844,8 @@ function FlowerQuotationGeneratorPage() {
         <div className="mx-auto max-w-6xl">
           <h2 className="font-display text-2xl">
             {locale === "si"
-              ? `ශ්‍රී ලංකාවේ ජනප්‍රිය මල් වර්ග ${FLOWER_CATALOG.length}ක් — මිල ගණනකට`
-              : `${FLOWER_CATALOG.length} popular flowers for Sri Lankan events`}
+              ? `ශ්‍රී ලංකාවේ ජනප්‍රිය මල් වර්ග ${allFlowers.length}ක් — මිල ගණනකට`
+              : `${allFlowers.length} popular flowers for Sri Lankan events`}
           </h2>
           <p className="mt-3 max-w-2xl text-sm leading-relaxed text-muted-foreground">
             {locale === "si"
@@ -850,10 +853,10 @@ function FlowerQuotationGeneratorPage() {
               : "Roses, gerbera, orchids, hydrangea, lotus and 23 more flowers commonly used in Sri Lankan weddings and events. Each flower card shows the Sinhala name, local name, and typical unit so you can build an accurate quotation instantly."}
           </p>
           <ul className="mt-6 grid grid-cols-2 gap-x-6 gap-y-1 text-sm sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-            {FLOWER_CATALOG.map((flower) => (
+            {allFlowers.map((flower) => (
               <li key={flower.id} className="text-muted-foreground">
                 <span className="text-foreground font-medium">
-                  {flower.name_en}
+                  {variantDisplayName(flower, "en")}
                 </span>
                 {flower.localName ? ` (${flower.localName})` : ""}
               </li>

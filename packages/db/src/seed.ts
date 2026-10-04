@@ -549,6 +549,89 @@ async function main() {
     }
   }
 
+  // ---- Flower species --------------------------------------------------------
+  console.log("Seeding flower species…");
+
+  const SPECIES_SEED = [
+    { id: "rose", nameEn: "Rose", nameSi: "රෝස", localName: null, category: "imported" as const, defaultUnit: "stem" as const, sortOrder: 10 },
+    { id: "chrysanthemum", nameEn: "Chrysanthemum", nameSi: "ක්‍රිසෑන්තිමම්", localName: null, category: "imported" as const, defaultUnit: "stem" as const, sortOrder: 20 },
+    { id: "lily", nameEn: "Lily", nameSi: "ලිලී", localName: null, category: "imported" as const, defaultUnit: "stem" as const, sortOrder: 30 },
+    { id: "hydrangea", nameEn: "Hydrangea", nameSi: "හයිඩ්‍රේන්ජියා", localName: null, category: "imported" as const, defaultUnit: "stem" as const, sortOrder: 40 },
+    { id: "statice", nameEn: "Statice", nameSi: "ස්ටැටිස්", localName: "Limonium", category: "imported" as const, defaultUnit: "bunch" as const, sortOrder: 50 },
+    { id: "gerbera-daisy", nameEn: "Gerbera Daisy", nameSi: "ජර්බෙරා ඩේසි", localName: null, category: "imported" as const, defaultUnit: "stem" as const, sortOrder: 60 },
+    { id: "carnation", nameEn: "Carnation", nameSi: "කාර්නේෂන්", localName: null, category: "imported" as const, defaultUnit: "stem" as const, sortOrder: 70 },
+    { id: "orchid", nameEn: "Orchid", nameSi: "ඕකිඩ්", localName: null, category: "tropical" as const, defaultUnit: "stem" as const, sortOrder: 80 },
+    { id: "alstroemeria", nameEn: "Alstroemeria", nameSi: "ඇස්ටොමාරිය", localName: "Astomariya", category: "imported" as const, defaultUnit: "stem" as const, sortOrder: 90 },
+    { id: "michaelmas-daisy", nameEn: "Michaelmas Daisy", nameSi: "මිකේල් ඩේසි", localName: null, category: "imported" as const, defaultUnit: "stem" as const, sortOrder: 100 },
+    { id: "super-daisy", nameEn: "Super Daisy", nameSi: "සුපර් ඩේසි", localName: null, category: "imported" as const, defaultUnit: "stem" as const, sortOrder: 110 },
+    { id: "macrum-daisy", nameEn: "Macrum Daisy", nameSi: "මැක්‍රම් ඩේසි", localName: null, category: "imported" as const, defaultUnit: "stem" as const, sortOrder: 120 },
+    { id: "babys-breath", nameEn: "Baby's Breath", nameSi: "බේබිස් බ්‍රෙත්", localName: null, category: "imported" as const, defaultUnit: "bunch" as const, sortOrder: 130 },
+    { id: "goldenrod", nameEn: "Goldenrod", nameSi: "ගෝල්ඩ්නරොඩ්", localName: "Solidago", category: "imported" as const, defaultUnit: "bunch" as const, sortOrder: 140 },
+    { id: "gladiolus", nameEn: "Gladiolus", nameSi: "ග්ලැඩියෝලස්", localName: null, category: "imported" as const, defaultUnit: "stem" as const, sortOrder: 150 },
+    { id: "snapdragon", nameEn: "Snapdragon", nameSi: "ස්නෑප්ඩ්‍රැගන්", localName: null, category: "imported" as const, defaultUnit: "stem" as const, sortOrder: 160 },
+    { id: "china-aster", nameEn: "China Aster", nameSi: "චයිනා ඇස්ටර්", localName: null, category: "imported" as const, defaultUnit: "stem" as const, sortOrder: 170 },
+    { id: "star-of-bethlehem", nameEn: "Star of Bethlehem", nameSi: "ස්ටාර් ඔෆ් බෙත්ලෙහෙම්", localName: null, category: "imported" as const, defaultUnit: "stem" as const, sortOrder: 180 },
+    { id: "anthurium", nameEn: "Anthurium", nameSi: "ඇන්තූරියම්", localName: null, category: "tropical" as const, defaultUnit: "stem" as const, sortOrder: 190 },
+    { id: "calla-lily", nameEn: "Arum / Calla Lily", nameSi: "ආරම් / කල්ලා ලිලී", localName: null, category: "imported" as const, defaultUnit: "stem" as const, sortOrder: 200 },
+    { id: "heliconia", nameEn: "Heliconia", nameSi: "හෙලිකෝනියා", localName: "Crab Claw", category: "tropical" as const, defaultUnit: "stem" as const, sortOrder: 210 },
+    { id: "ginger-flower", nameEn: "Ginger Flower", nameSi: "ඉඟුරු මල", localName: null, category: "tropical" as const, defaultUnit: "stem" as const, sortOrder: 220 },
+    { id: "lotus", nameEn: "Lotus", nameSi: "නෙළුම්", localName: "Nelum", category: "local" as const, defaultUnit: "stem" as const, sortOrder: 230 },
+    { id: "blue-water-lily", nameEn: "Blue Water Lily", nameSi: "නිල් මානෙල්", localName: "Nil Manel", category: "local" as const, defaultUnit: "stem" as const, sortOrder: 240 },
+    { id: "white-water-lily", nameEn: "White Water Lily", nameSi: "ඔළු", localName: "Olu", category: "local" as const, defaultUnit: "stem" as const, sortOrder: 250 },
+    { id: "jasmine", nameEn: "Jasmine", nameSi: "පිච්ච", localName: "Pichcha / Saman Pichcha", category: "local" as const, defaultUnit: "bunch" as const, sortOrder: 260 },
+    { id: "frangipani", nameEn: "Frangipani", nameSi: "අරලිය", localName: "Araliya", category: "local" as const, defaultUnit: "item" as const, sortOrder: 270 },
+    { id: "marigold", nameEn: "Marigold", nameSi: "දාස් පෙතිය", localName: "Das Pethiya", category: "local" as const, defaultUnit: "bunch" as const, sortOrder: 280 },
+  ] satisfies Array<typeof schema.flowerSpecies.$inferInsert>;
+
+  await db.insert(schema.flowerSpecies).values(SPECIES_SEED).onConflictDoNothing();
+  console.log(`  ${SPECIES_SEED.length} flower species seeded (skipped if already exist).`);
+
+  // ---- Flower variants -------------------------------------------------------
+  console.log("Seeding flower variants…");
+
+  const VARIANTS_SEED = [
+    // Rose — 2 colors
+    { id: "red-rose", speciesId: "rose", colorEn: "Red", colorSi: "රතු", imagePath: "flowers/Red-Rose.webp", isFeatured: true, sortOrder: 10 },
+    { id: "white-rose", speciesId: "rose", colorEn: "White", colorSi: "සුදු", imagePath: "flowers/White-Rose.webp", isFeatured: true, sortOrder: 11 },
+    // Chrysanthemum — 2 colors
+    { id: "white-chrysanthemum", speciesId: "chrysanthemum", colorEn: "White", colorSi: "සුදු", imagePath: "flowers/White-Chrysanthemum.webp", isFeatured: true, sortOrder: 20 },
+    { id: "purple-chrysanthemum", speciesId: "chrysanthemum", colorEn: "Purple", colorSi: "දම්", imagePath: "flowers/Purple-Chrysanthemum.webp", isFeatured: true, sortOrder: 21 },
+    // Lily
+    { id: "pink-lily", speciesId: "lily", colorEn: "Pink", colorSi: "රෝස", imagePath: "flowers/Pink-Lily.webp", isFeatured: true, sortOrder: 30 },
+    // Hydrangea
+    { id: "green-hydrangea", speciesId: "hydrangea", colorEn: "Green", colorSi: "කොළ", imagePath: "flowers/Green-Hydrangea.webp", isFeatured: true, sortOrder: 40 },
+    // Statice
+    { id: "purple-statice", speciesId: "statice", colorEn: "Purple", colorSi: "දම්", imagePath: "flowers/Purple-Statice.webp", isFeatured: true, sortOrder: 50 },
+    // Gerbera Daisy
+    { id: "white-gerbera-daisy", speciesId: "gerbera-daisy", colorEn: "White", colorSi: "සුදු", imagePath: "flowers/White-Gerbera-Daisy.webp", isFeatured: true, sortOrder: 60 },
+    // Single-variant species (no distinct color)
+    { id: "carnation", speciesId: "carnation", colorEn: null, colorSi: null, imagePath: null, isFeatured: false, sortOrder: 70 },
+    { id: "orchid", speciesId: "orchid", colorEn: null, colorSi: null, imagePath: null, isFeatured: false, sortOrder: 80 },
+    { id: "alstroemeria", speciesId: "alstroemeria", colorEn: null, colorSi: null, imagePath: null, isFeatured: false, sortOrder: 90 },
+    { id: "michaelmas-daisy", speciesId: "michaelmas-daisy", colorEn: null, colorSi: null, imagePath: null, isFeatured: false, sortOrder: 100 },
+    { id: "super-daisy", speciesId: "super-daisy", colorEn: null, colorSi: null, imagePath: null, isFeatured: false, sortOrder: 110 },
+    { id: "macrum-daisy", speciesId: "macrum-daisy", colorEn: null, colorSi: null, imagePath: null, isFeatured: false, sortOrder: 120 },
+    { id: "babys-breath", speciesId: "babys-breath", colorEn: null, colorSi: null, imagePath: null, isFeatured: false, sortOrder: 130 },
+    { id: "goldenrod", speciesId: "goldenrod", colorEn: null, colorSi: null, imagePath: null, isFeatured: false, sortOrder: 140 },
+    { id: "gladiolus", speciesId: "gladiolus", colorEn: null, colorSi: null, imagePath: null, isFeatured: false, sortOrder: 150 },
+    { id: "snapdragon", speciesId: "snapdragon", colorEn: null, colorSi: null, imagePath: null, isFeatured: false, sortOrder: 160 },
+    { id: "china-aster", speciesId: "china-aster", colorEn: null, colorSi: null, imagePath: null, isFeatured: false, sortOrder: 170 },
+    { id: "star-of-bethlehem", speciesId: "star-of-bethlehem", colorEn: null, colorSi: null, imagePath: null, isFeatured: false, sortOrder: 180 },
+    { id: "anthurium", speciesId: "anthurium", colorEn: null, colorSi: null, imagePath: null, isFeatured: false, sortOrder: 190 },
+    { id: "calla-lily", speciesId: "calla-lily", colorEn: null, colorSi: null, imagePath: null, isFeatured: false, sortOrder: 200 },
+    { id: "heliconia", speciesId: "heliconia", colorEn: null, colorSi: null, imagePath: null, isFeatured: false, sortOrder: 210 },
+    { id: "ginger-flower", speciesId: "ginger-flower", colorEn: null, colorSi: null, imagePath: null, isFeatured: false, sortOrder: 220 },
+    { id: "lotus", speciesId: "lotus", colorEn: null, colorSi: null, imagePath: null, isFeatured: false, sortOrder: 230 },
+    { id: "blue-water-lily", speciesId: "blue-water-lily", colorEn: null, colorSi: null, imagePath: null, isFeatured: false, sortOrder: 240 },
+    { id: "white-water-lily", speciesId: "white-water-lily", colorEn: null, colorSi: null, imagePath: null, isFeatured: false, sortOrder: 250 },
+    { id: "jasmine", speciesId: "jasmine", colorEn: null, colorSi: null, imagePath: null, isFeatured: false, sortOrder: 260 },
+    { id: "frangipani", speciesId: "frangipani", colorEn: null, colorSi: null, imagePath: null, isFeatured: false, sortOrder: 270 },
+    { id: "marigold", speciesId: "marigold", colorEn: null, colorSi: null, imagePath: null, isFeatured: false, sortOrder: 280 },
+  ] satisfies Array<typeof schema.flowerVariants.$inferInsert>;
+
+  await db.insert(schema.flowerVariants).values(VARIANTS_SEED).onConflictDoNothing();
+  console.log(`  ${VARIANTS_SEED.length} flower variants seeded (skipped if already exist).`);
+
   console.log("Seed complete.");
 }
 

@@ -47,14 +47,18 @@ export const generateBouquetImage = createServerFn({ method: "POST" })
 
     const db = tryCreateDb();
     if (db) {
-      const check = await checkBouquetRateLimit(db, { userId, ipAddress });
-      if (!check.allowed) {
-        return {
-          ok: false,
-          reason: "rate_limited",
-          limitKind: check.reason,
-          resetAt: check.resetAt?.toISOString(),
-        };
+      try {
+        const check = await checkBouquetRateLimit(db, { userId, ipAddress });
+        if (!check.allowed) {
+          return {
+            ok: false,
+            reason: "rate_limited",
+            limitKind: check.reason,
+            resetAt: check.resetAt?.toISOString(),
+          };
+        }
+      } catch {
+        // DB unavailable — skip rate limiting rather than blocking generation
       }
     }
 

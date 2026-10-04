@@ -41,6 +41,7 @@ export interface ProductListItem {
   shopNameEn: string;
   shopNameSi: string | null;
   categorySlug: string;
+  flowerVariantId: string | null;
 }
 
 export interface ProductImageRow {
@@ -161,6 +162,7 @@ async function selectListItems(
       shopNameEn: schema.shops.nameEn,
       shopNameSi: schema.shops.nameSi,
       categorySlug: schema.categories.slug,
+      flowerVariantId: schema.products.flowerVariantId,
     })
     .from(schema.products)
     .innerJoin(schema.shops, eq(schema.products.shopId, schema.shops.id))

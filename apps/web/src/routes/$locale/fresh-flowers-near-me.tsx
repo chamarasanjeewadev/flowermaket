@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 import { FlowerShowcase } from "../../components/catalog/FlowerShowcase";
 import { ProductGrid } from "../../components/catalog/ProductGrid";
-import { FEATURED_FLOWERS } from "../../lib/flower-catalog";
+import { listFeaturedVariants } from "../../server/flowers";
 import type { Locale } from "../../i18n";
 import { useT } from "../../i18n/react";
 import { absoluteUrl, hreflangLinks } from "../../lib/site";
@@ -26,8 +26,11 @@ const SEO_PATH = "/fresh-flowers-near-me";
 
 export const Route = createFileRoute("/$locale/fresh-flowers-near-me")({
   loader: async () => {
-    const result = await listProducts({ data: {} });
-    return { products: result.items.slice(0, 8) };
+    const [products, featuredFlowers] = await Promise.all([
+      listProducts({ data: {} }).then((r) => r.items.slice(0, 8)),
+      listFeaturedVariants(),
+    ]);
+    return { products, featuredFlowers };
   },
   head: ({ loaderData, params }) => {
     const locale = params.locale as Locale;
@@ -86,7 +89,7 @@ export const Route = createFileRoute("/$locale/fresh-flowers-near-me")({
 });
 
 function FreshFlowersNearMePage() {
-  const { products } = Route.useLoaderData();
+  const { products, featuredFlowers } = Route.useLoaderData();
   const { locale, t, f } = useT();
   const steps = [
     {
@@ -153,7 +156,7 @@ function FreshFlowersNearMePage() {
         </p>
         <div className="mt-10">
           <FlowerShowcase
-            flowers={FEATURED_FLOWERS}
+            flowers={featuredFlowers}
             locale={locale}
             getHref={() => `/${locale}/fresh-flower-quotation-generator`}
             ctaLabel="Enquire"
