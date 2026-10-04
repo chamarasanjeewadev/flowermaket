@@ -11,13 +11,21 @@ import {
   getUserByEmail,
   listShopsForReview,
   reviewShop,
+  createInvite,
+  generateInviteToken,
+  buildInviteMessage,
   type ActionResult,
   type ReviewableShop,
   type VerificationStatus,
   type CreateShopInput,
+  type ShopType,
+  type InviteLanguage,
 } from "@flowers/api";
 import { createSupabaseAdminClient } from "@flowers/auth";
+import { sendWhatsappText } from "@flowers/integrations";
 import { resolveAdminSession } from "./session";
+
+const INVITE_TTL_DAYS = 30;
 
 async function requireAdmin() {
   const session = await resolveAdminSession();
@@ -139,3 +147,71 @@ export const reviewSupplierFn = createServerFn({ method: "POST" })
     }
     return reviewShop(db, data.shopId, reviewerId, data.status, data.notes ?? null);
   });
+
+export interface InvitePayload {
+  phone: string;
+  nameEn: string | null;
+  shopType: ShopType;
+  isAggregator: boolean;
+  language: InviteLanguage;
+}
+
+/**
+ * Create a tokenized invite and send a bilingual benefits message over WhatsApp.
+ * The invite row is created first; a WhatsApp send failure is reported but does
+ * not roll back the invite (admin can resend / copy the link).
+ */
+export const inviteSupplierFn = createServerFn({ method: "POST" })
+  .validator((input: InvitePayload) => input)
+  .handler(
+    async ({ data }): Promise<ActionResult<{ token: string; joinUrl: string; whatsappSent: boolean }>> => {
+      const session = await requireAdmin();
+      const db = tryCreateDb();
+      if (!db) {
+        return { ok: false, code: "db_unavailable", message: "Database is not configured." };
+      }
+
+      const token = generateInviteToken();
+      const expiresAt = new Date(Date.now() + INVITE_TTL_DAYS * 24 * 60 * 60 * 1000);
+
+      const created = await createInvite(db, {
+        phone: data.phone.trim(),
+        nameEn: data.nameEn,
+        shopType: data.shopType,
+        isAggregator: data.isAggregator,
+        language: data.language,
+        token,
+        sentBy: session.kind === "admin" ? session.userId : null,
+        expiresAt,
+      });
+      if (!created.ok) return created;
+
+      const env = getEnv();
+      const origin = (env.SUPPLIER_PORTAL_URL ?? "").replace(/\/$/, "");
+      const joinUrl = `${origin}/join/${token}`;
+
+      const message = buildInviteMessage({
+        nameEn: data.nameEn,
+        shopType: data.shopType,
+        isAggregator: data.isAggregator,
+        language: data.language,
+        joinUrl,
+      });
+
+      let whatsappSent = false;
+      if (env.EVOLUTION_API_URL && env.EVOLUTION_API_KEY && env.EVOLUTION_INSTANCE) {
+        const res = await sendWhatsappText(
+          {
+            apiUrl: env.EVOLUTION_API_URL,
+            apiKey: env.EVOLUTION_API_KEY,
+            instance: env.EVOLUTION_INSTANCE,
+          },
+          data.phone.trim(),
+          message,
+        );
+        whatsappSent = res.ok;
+      }
+
+      return { ok: true, data: { token, joinUrl, whatsappSent } };
+    },
+  );

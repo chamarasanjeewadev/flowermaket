@@ -1,6 +1,6 @@
 import * as React from "react";
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
-import { Plus, Store } from "lucide-react";
+import { MessageCircle, Plus, Store } from "lucide-react";
 import { Button } from "@flowers/ui/components/button";
 import { Badge } from "@flowers/ui/components/badge";
 import { listSuppliersForReview, reviewSupplierFn } from "../server/suppliers";
@@ -43,11 +43,18 @@ function SuppliersPage() {
           <h1 className="font-display text-3xl">Suppliers</h1>
           <p className="text-sm text-muted-foreground">{suppliers.length} shops</p>
         </div>
-        <Button asChild>
-          <Link to="/suppliers/new">
-            <Plus className="size-4" /> Create supplier
-          </Link>
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button asChild variant="outline">
+            <Link to="/suppliers/invite">
+              <MessageCircle className="size-4" /> Invite via WhatsApp
+            </Link>
+          </Button>
+          <Button asChild>
+            <Link to="/suppliers/new">
+              <Plus className="size-4" /> Create supplier
+            </Link>
+          </Button>
+        </div>
       </div>
 
       {suppliers.length === 0 ? (
