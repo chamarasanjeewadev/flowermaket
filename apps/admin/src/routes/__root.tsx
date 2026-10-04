@@ -38,12 +38,14 @@ export const Route = createRootRouteWithContext<RouterContext>()({
   beforeLoad: async ({ location }) => {
     const session = await getAdminSession();
 
+    const isPublicPath =
+      location.pathname === "/login" || location.pathname === "/auth/callback";
     // Misconfigured server (Supabase env absent, AUTH_DISABLED not set) — fail closed.
-    if (session.kind === "config_error" && location.pathname !== "/login") {
+    if (session.kind === "config_error" && !isPublicPath) {
       throw redirect({ to: "/login" });
     }
     // Unauthenticated → /login
-    if (session.kind === "anonymous" && location.pathname !== "/login") {
+    if (session.kind === "anonymous" && !isPublicPath) {
       throw redirect({ to: "/login" });
     }
     // Admin → skip login
