@@ -343,7 +343,6 @@ export interface ReviewableShop {
   descriptionSi: string | null;
   verificationStatus: VerificationStatus;
   verificationNotes: string | null;
-  verificationProof: unknown;
   verificationSubmittedAt: Date | null;
   ownerEmail: string;
   ownerFullName: string | null;
@@ -374,7 +373,6 @@ export async function listShopsForReview(
       descriptionSi: schema.shops.descriptionSi,
       verificationStatus: schema.shops.verificationStatus,
       verificationNotes: schema.shops.verificationNotes,
-      verificationProof: schema.shops.verificationProof,
       verificationSubmittedAt: schema.shops.verificationSubmittedAt,
       ownerEmail: schema.users.email,
       ownerFullName: schema.users.fullName,
