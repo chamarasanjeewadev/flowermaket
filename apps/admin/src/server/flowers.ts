@@ -60,7 +60,7 @@ export const uploadVariantImage = createServerFn({ method: "POST" })
   .validator(
     (d: { variantId: string; fileName: string; base64: string; mimeType: string }) => d,
   )
-  .handler(async ({ data }): Promise<{ imagePath: string }> => {
+  .handler(async ({ data }): Promise<{ imagePath: string; imageUrl: string }> => {
     await requireAdmin();
     const db = tryCreateDb();
     if (!db) throw new Error("DB unavailable");
@@ -79,5 +79,6 @@ export const uploadVariantImage = createServerFn({ method: "POST" })
       });
     if (error) throw new Error(`Upload failed: ${error.message}`);
     await patchVariantImagePath(db, data.variantId, imagePath);
-    return { imagePath };
+    const imageUrl = `${env.SUPABASE_URL}/storage/v1/object/public/flower-images/${imagePath}`;
+    return { imagePath, imageUrl };
   });

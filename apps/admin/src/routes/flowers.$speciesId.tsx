@@ -255,9 +255,7 @@ function VariantCard({ variant, speciesId }: { variant: VariantShape; speciesId:
           mimeType: file.type,
         },
       });
-      // Optimistically show the new image using the imagePath + storage URL
-      // The full URL will be available on next page reload; for now show the path
-      setImageUrl(result.imagePath);
+      setImageUrl(result.imageUrl);
       toast.success("Image uploaded.");
     } catch {
       toast.error("Upload failed.");
@@ -272,32 +270,38 @@ function VariantCard({ variant, speciesId }: { variant: VariantShape; speciesId:
 
   return (
     <div className="flex items-start gap-4 rounded-lg border border-border bg-card p-4">
-      {/* Image thumbnail */}
-      <div className="relative size-20 shrink-0 overflow-hidden rounded-md bg-muted">
-        {imageUrl ? (
-          <img
-            src={imageUrl.startsWith("flowers/") ? `/flowers/${imageUrl.replace("flowers/", "")}` : imageUrl}
-            alt={displayName}
-            className="size-full object-cover"
-          />
-        ) : (
-          <div className="flex size-full items-center justify-center text-muted-foreground/40">
-            <ImagePlus className="size-6" />
-          </div>
-        )}
+      {/* Image thumbnail + upload */}
+      <div className="flex shrink-0 flex-col items-center gap-2">
+        <div className="relative size-24 overflow-hidden rounded-md bg-muted">
+          {imageUrl ? (
+            <img
+              src={imageUrl}
+              alt={displayName}
+              className="size-full object-cover"
+            />
+          ) : (
+            <div className="flex size-full items-center justify-center text-muted-foreground/40">
+              <ImagePlus className="size-7" />
+            </div>
+          )}
+          {uploading && (
+            <div className="absolute inset-0 flex items-center justify-center bg-background/70 text-xs font-medium">
+              Uploading…
+            </div>
+          )}
+        </div>
         <button
           type="button"
           onClick={() => fileRef.current?.click()}
           disabled={uploading}
-          className="absolute inset-0 flex items-center justify-center bg-foreground/0 opacity-0 transition-opacity hover:bg-foreground/20 hover:opacity-100"
-          aria-label="Upload image"
+          className="text-xs font-medium text-brand hover:underline disabled:opacity-50"
         >
-          <ImagePlus className="size-5 text-white drop-shadow" />
+          {imageUrl ? "Replace photo" : "Upload photo"}
         </button>
         <input
           ref={fileRef}
           type="file"
-          accept="image/*"
+          accept="image/webp,image/jpeg,image/png"
           className="sr-only"
           onChange={handleImageUpload}
         />
