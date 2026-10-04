@@ -2,8 +2,29 @@ import { describe, expect, it } from "vitest";
 import {
   canSellCheck,
   validateCreateShopInput,
+  validateReviewInput,
   validateUpdateShopInput,
 } from "./shops";
+
+describe("validateReviewInput", () => {
+  it("accepts verified", () => {
+    expect(validateReviewInput({ status: "verified" })).toEqual([]);
+  });
+  it("accepts rejected", () => {
+    expect(validateReviewInput({ status: "rejected" })).toEqual([]);
+  });
+  it("accepts pending", () => {
+    expect(validateReviewInput({ status: "pending" })).toEqual([]);
+  });
+  it("rejects an unknown status", () => {
+    const errors = validateReviewInput({ status: "banished" });
+    expect(errors.some((e) => e.field === "status")).toBe(true);
+  });
+  it("rejects an empty status", () => {
+    const errors = validateReviewInput({ status: "" });
+    expect(errors.some((e) => e.field === "status")).toBe(true);
+  });
+});
 
 describe("canSellCheck", () => {
   const base = { verificationStatus: "verified" as const, isActive: true, plan: "free" };

@@ -7,7 +7,7 @@
  * - Pure validation helpers are exported separately so they are unit-testable
  *   without a database (see shops.test.ts).
  */
-import { eq } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 import { schema } from "@flowers/db/client";
 import type { Db } from "../db";
 import { err, ok, isPgError, type ActionResult } from "../errors";
@@ -88,10 +88,28 @@ export function canSellCheck(shop: {
 
 const DISTRICT_SLUGS = new Set(DISTRICTS.map((d) => d.slug));
 const SHOP_TYPES = new Set<ShopType>(["florist", "grower"]);
+const VERIFICATION_STATUSES = new Set<VerificationStatus>([
+  "unverified",
+  "pending",
+  "verified",
+  "rejected",
+]);
 
 export interface ValidationError {
   field: string;
   message: string;
+}
+
+/** Validates a verification-review status without touching the database. */
+export function validateReviewInput(input: { status: string }): ValidationError[] {
+  const errors: ValidationError[] = [];
+  if (!VERIFICATION_STATUSES.has(input.status as VerificationStatus)) {
+    errors.push({
+      field: "status",
+      message: "Status must be a valid verification status.",
+    });
+  }
+  return errors;
 }
 
 /**
@@ -304,6 +322,90 @@ export async function updateShop(
     return err(
       "unknown",
       e instanceof Error ? e.message : "Could not update shop.",
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Verification review (admin)
+// ---------------------------------------------------------------------------
+
+export interface ReviewableShop {
+  id: string;
+  slug: string;
+  nameEn: string;
+  shopType: ShopType;
+  isAggregator: boolean;
+  district: string;
+  city: string | null;
+  verificationStatus: VerificationStatus;
+  verificationNotes: string | null;
+  ownerEmail: string;
+  createdAt: Date;
+}
+
+/** List shops for the admin verification queue, newest first; optional status filter. */
+export async function listShopsForReview(
+  db: Db,
+  filter?: { status?: VerificationStatus },
+): Promise<ReviewableShop[]> {
+  const where = filter?.status
+    ? eq(schema.shops.verificationStatus, filter.status)
+    : undefined;
+
+  const rows = await db
+    .select({
+      id: schema.shops.id,
+      slug: schema.shops.slug,
+      nameEn: schema.shops.nameEn,
+      shopType: schema.shops.shopType,
+      isAggregator: schema.shops.isAggregator,
+      district: schema.shops.district,
+      city: schema.shops.city,
+      verificationStatus: schema.shops.verificationStatus,
+      verificationNotes: schema.shops.verificationNotes,
+      ownerEmail: schema.users.email,
+      createdAt: schema.shops.createdAt,
+    })
+    .from(schema.shops)
+    .innerJoin(schema.users, eq(schema.users.id, schema.shops.ownerUserId))
+    .where(where)
+    .orderBy(desc(schema.shops.createdAt));
+
+  return rows as ReviewableShop[];
+}
+
+/** Flip a shop's verification status and record the reviewer + notes. */
+export async function reviewShop(
+  db: Db,
+  shopId: string,
+  reviewerId: string | null,
+  status: VerificationStatus,
+  notes?: string | null,
+): Promise<ActionResult<{ id: string }>> {
+  const errors = validateReviewInput({ status });
+  if (errors.length > 0) {
+    return err("validation", errors.map((e) => e.message).join(" "));
+  }
+  try {
+    const [row] = await db
+      .update(schema.shops)
+      .set({
+        verificationStatus: status,
+        verificationNotes: notes ?? null,
+        verificationReviewedBy: reviewerId,
+        verificationReviewedAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .where(eq(schema.shops.id, shopId))
+      .returning({ id: schema.shops.id });
+
+    if (!row) return err("not_found", "Shop not found.");
+    return ok({ id: row.id });
+  } catch (e) {
+    return err(
+      "unknown",
+      e instanceof Error ? e.message : "Could not update verification.",
     );
   }
 }
