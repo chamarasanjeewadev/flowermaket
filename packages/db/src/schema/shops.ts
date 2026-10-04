@@ -34,6 +34,22 @@ export const shops = pgTable(
     /** Commission in basis points; null = use platform default. */
     commissionRateBps: integer("commission_rate_bps"),
     bankDetails: jsonb("bank_details"),
+    /** Middleman/aggregator flag: a grower who sources from multiple farmers. */
+    isAggregator: boolean("is_aggregator").notNull().default(false),
+    /** Subscription seam. "free" for everyone today; gated features read this later. */
+    plan: text("plan").notNull().default("free"),
+    verificationNotes: text("verification_notes"),
+    /** Submitted proof: { phoneVerified?, idPhotoPath?, businessRegNo?, ... }. */
+    verificationProof: jsonb("verification_proof"),
+    verificationSubmittedAt: timestamp("verification_submitted_at", {
+      withTimezone: true,
+    }),
+    verificationReviewedAt: timestamp("verification_reviewed_at", {
+      withTimezone: true,
+    }),
+    verificationReviewedBy: uuid("verification_reviewed_by").references(
+      () => users.id,
+    ),
     isActive: boolean("is_active").notNull().default(true),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
