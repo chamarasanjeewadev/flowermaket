@@ -149,10 +149,10 @@ export function FlowerPicker({
                 <div className="col-span-full flex flex-col items-center gap-2 py-10 text-center">
                   <Flower2 className="size-7 text-muted-foreground/40" />
                   <p className="text-sm text-muted-foreground">
-                    No match for “{query}”.
+                    {query ? `No match for “${query}”.` : "No flowers in the catalog yet."}
                   </p>
                   <Button size="sm" variant="outline" onClick={() => setMode("add")}>
-                    <Plus className="size-4" /> Add “{query || "new flower"}”
+                    <Plus className="size-4" /> {query ? `Add “${query}”` : "Add a flower"}
                   </Button>
                 </div>
               ) : (
