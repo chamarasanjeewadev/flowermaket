@@ -93,3 +93,99 @@ export async function sendWhatsappText(
     };
   }
 }
+
+/** Strip a WhatsApp JID (e.g. "9477...@s.whatsapp.net") to its digits. */
+export function jidToPhone(jid: string): string {
+  return (jid ?? "").split("@")[0]?.replace(/\D/g, "") ?? "";
+}
+
+export interface ParsedInbound {
+  remoteJid: string;
+  phone: string;
+  keyId: string | null;
+  pushName: string | null;
+  kind: "text" | "image" | "audio" | "document" | "other";
+  text: string | null;
+  mediaBase64: string | null;
+  mediaMime: string | null;
+  timestamp: number | null;
+}
+
+interface RawUpsert {
+  event?: string;
+  data?: {
+    key?: { remoteJid?: string; fromMe?: boolean; id?: string };
+    pushName?: string;
+    messageTimestamp?: number | string;
+    message?: Record<string, unknown> | null;
+    base64?: string;
+  };
+}
+
+/**
+ * Normalize a single Evolution `messages.upsert` event. Returns null when the
+ * event is not an inbound message we handle (wrong event, fromMe echo, no
+ * message body). Tolerant of extra/unknown fields.
+ */
+export function parseInboundMessage(event: unknown): ParsedInbound | null {
+  const e = event as RawUpsert | null;
+  if (!e || typeof e !== "object") return null;
+  if (e.event && e.event !== "messages.upsert") return null;
+  const d = e.data;
+  if (!d || !d.key || !d.message) return null;
+  if (d.key.fromMe) return null;
+
+  const remoteJid = d.key.remoteJid ?? "";
+  if (!remoteJid) return null;
+
+  const msg = d.message;
+  let kind: ParsedInbound["kind"] = "other";
+  let text: string | null = null;
+  let mediaMime: string | null = null;
+
+  if (typeof msg.conversation === "string") {
+    kind = "text";
+    text = msg.conversation;
+  } else if (isObj(msg.extendedTextMessage)) {
+    kind = "text";
+    text = strOrNull(msg.extendedTextMessage.text);
+  } else if (isObj(msg.imageMessage)) {
+    kind = "image";
+    text = strOrNull(msg.imageMessage.caption);
+    mediaMime = strOrNull(msg.imageMessage.mimetype);
+  } else if (isObj(msg.audioMessage)) {
+    kind = "audio";
+    mediaMime = strOrNull(msg.audioMessage.mimetype);
+  } else if (isObj(msg.documentMessage)) {
+    kind = "document";
+    text = strOrNull(msg.documentMessage.fileName);
+    mediaMime = strOrNull(msg.documentMessage.mimetype);
+  }
+
+  const tsRaw = d.messageTimestamp;
+  const timestamp =
+    typeof tsRaw === "number"
+      ? tsRaw
+      : typeof tsRaw === "string" && tsRaw.trim()
+        ? Number(tsRaw)
+        : null;
+
+  return {
+    remoteJid,
+    phone: jidToPhone(remoteJid),
+    keyId: d.key.id ?? null,
+    pushName: strOrNull(d.pushName),
+    kind,
+    text,
+    mediaBase64: kind === "image" ? strOrNull(d.base64) : null,
+    mediaMime,
+    timestamp: timestamp !== null && Number.isFinite(timestamp) ? timestamp : null,
+  };
+}
+
+function isObj(v: unknown): v is Record<string, unknown> {
+  return !!v && typeof v === "object";
+}
+function strOrNull(v: unknown): string | null {
+  return typeof v === "string" && v.length > 0 ? v : null;
+}
