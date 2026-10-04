@@ -40,6 +40,11 @@ export interface AppEnv {
   /** Origin of the supplier portal (e.g. https://supplier.flowermarket.lk). */
   SUPPLIER_PORTAL_URL: string | undefined;
   // ---------------------------------------------------------------------------
+  // WhatsApp webhook — inbound message authentication (Task 5)
+  // ---------------------------------------------------------------------------
+  /** Shared secret in the WhatsApp webhook URL path; guards the admin receive endpoint. */
+  WHATSAPP_WEBHOOK_SECRET: string | undefined;
+  // ---------------------------------------------------------------------------
   // Document access — OTP + signed cookie (Task 18)
   // ---------------------------------------------------------------------------
   /**
@@ -78,6 +83,7 @@ export function getEnv(): AppEnv {
     EVOLUTION_API_KEY: read("EVOLUTION_API_KEY"),
     EVOLUTION_INSTANCE: read("EVOLUTION_INSTANCE"),
     SUPPLIER_PORTAL_URL: read("SUPPLIER_PORTAL_URL"),
+    WHATSAPP_WEBHOOK_SECRET: read("WHATSAPP_WEBHOOK_SECRET"),
     DOC_ACCESS_SECRET: read("DOC_ACCESS_SECRET"),
     WEB_PUBLIC_URL: read("WEB_PUBLIC_URL"),
   };
