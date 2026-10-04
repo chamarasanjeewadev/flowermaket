@@ -25,3 +25,16 @@ export async function getUserRole(
 
   return row ? (row.role as AppRoleValue) : null;
 }
+
+/** Find a user by email (Supabase stores emails lowercased). */
+export async function getUserByEmail(
+  db: Db,
+  email: string,
+): Promise<{ id: string; email: string } | null> {
+  const [row] = await db
+    .select({ id: schema.users.id, email: schema.users.email })
+    .from(schema.users)
+    .where(eq(schema.users.email, email))
+    .limit(1);
+  return row ?? null;
+}

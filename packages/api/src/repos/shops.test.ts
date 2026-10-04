@@ -1,10 +1,55 @@
 import { describe, expect, it } from "vitest";
 import {
   canSellCheck,
+  validateAdminCreateSupplierInput,
   validateCreateShopInput,
   validateReviewInput,
   validateUpdateShopInput,
 } from "./shops";
+
+describe("validateAdminCreateSupplierInput", () => {
+  const valid = {
+    email: "farmer@example.com",
+    phone: "94771234567",
+    shop: { nameEn: "Green Fields", district: "nuwara-eliya", shopType: "grower" as const },
+    verificationStatus: "verified" as const,
+  };
+
+  it("passes for valid input with email + phone", () => {
+    expect(validateAdminCreateSupplierInput(valid)).toEqual([]);
+  });
+
+  it("passes with only an email (no phone)", () => {
+    expect(validateAdminCreateSupplierInput({ ...valid, phone: null })).toEqual([]);
+  });
+
+  it("passes with only a phone (no email)", () => {
+    expect(
+      validateAdminCreateSupplierInput({ ...valid, email: null, phone: "94771234567" }),
+    ).toEqual([]);
+  });
+
+  it("rejects when both email and phone are missing", () => {
+    const errors = validateAdminCreateSupplierInput({ ...valid, email: null, phone: null });
+    expect(errors.some((e) => e.field === "contact")).toBe(true);
+  });
+
+  it("rejects a bad shop (invalid district)", () => {
+    const errors = validateAdminCreateSupplierInput({
+      ...valid,
+      shop: { nameEn: "X", district: "mars" },
+    });
+    expect(errors.length).toBeGreaterThan(0);
+  });
+
+  it("rejects an invalid verification status", () => {
+    const errors = validateAdminCreateSupplierInput({
+      ...valid,
+      verificationStatus: "nope" as never,
+    });
+    expect(errors.some((e) => e.field === "verificationStatus")).toBe(true);
+  });
+});
 
 describe("validateReviewInput", () => {
   it("accepts verified", () => {

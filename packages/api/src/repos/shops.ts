@@ -409,3 +409,107 @@ export async function reviewShop(
     );
   }
 }
+
+// ---------------------------------------------------------------------------
+// Admin provisioning (create a supplier on behalf of a farmer/florist)
+// ---------------------------------------------------------------------------
+
+export interface AdminCreateSupplierInput {
+  /** The already-provisioned auth user id (from Supabase service-role createUser). */
+  userId?: string;
+  email: string | null;
+  phone?: string | null;
+  fullName?: string | null;
+  shop: CreateShopInput;
+  verificationStatus: VerificationStatus;
+}
+
+export function validateAdminCreateSupplierInput(
+  input: AdminCreateSupplierInput,
+): ValidationError[] {
+  const errors: ValidationError[] = [];
+  const hasEmail = !!input.email?.trim();
+  const hasPhone = !!input.phone?.trim();
+  if (!hasEmail && !hasPhone) {
+    errors.push({ field: "contact", message: "An email or a phone number is required." });
+  }
+  errors.push(...validateCreateShopInput(input.shop));
+  if (!VERIFICATION_STATUSES.has(input.verificationStatus)) {
+    errors.push({ field: "verificationStatus", message: "Invalid verification status." });
+  }
+  return errors;
+}
+
+/**
+ * Provision a supplier shop for an auth user the admin already created via the
+ * service-role client. Upserts the `users` row (role → supplier) and inserts
+ * the shop in one transaction. Returns `conflict` if the user already owns a shop.
+ */
+export async function adminCreateSupplier(
+  db: Db,
+  params: AdminCreateSupplierInput & { userId: string; email: string },
+): Promise<ActionResult<{ shopId: string; slug: string }>> {
+  const errors = validateAdminCreateSupplierInput(params);
+  if (errors.length > 0) {
+    return err("validation", errors.map((e) => e.message).join(" "));
+  }
+
+  const nameEn = params.shop.nameEn.trim();
+  const base = slugify(nameEn) || "shop";
+  const suffix = Math.random().toString(36).slice(2, 8);
+  const slug = `${base}-${suffix}`;
+
+  try {
+    return await db.transaction(async (tx) => {
+      const [existing] = await tx
+        .select({ id: schema.shops.id })
+        .from(schema.shops)
+        .where(eq(schema.shops.ownerUserId, params.userId))
+        .limit(1);
+      if (existing) return err("conflict", "This user already owns a shop.");
+
+      // Upsert the users row (the handle_new_user trigger usually created it).
+      await tx
+        .insert(schema.users)
+        .values({
+          id: params.userId,
+          email: params.email,
+          role: "supplier",
+          fullName: params.fullName ?? null,
+          phone: params.phone ?? null,
+        })
+        .onConflictDoUpdate({
+          target: schema.users.id,
+          set: {
+            role: "supplier",
+            fullName: params.fullName ?? null,
+            phone: params.phone ?? null,
+            updatedAt: new Date(),
+          },
+        });
+
+      const [shop] = await tx
+        .insert(schema.shops)
+        .values({
+          ownerUserId: params.userId,
+          slug,
+          nameEn,
+          nameSi: params.shop.nameSi ?? null,
+          descriptionEn: params.shop.descriptionEn ?? null,
+          descriptionSi: params.shop.descriptionSi ?? null,
+          district: params.shop.district,
+          city: params.shop.city ?? null,
+          shopType: params.shop.shopType ?? "florist",
+          isAggregator: params.shop.isAggregator ?? false,
+          verificationStatus: params.verificationStatus,
+          verificationReviewedAt: new Date(),
+        })
+        .returning({ id: schema.shops.id, slug: schema.shops.slug });
+
+      return ok({ shopId: shop.id, slug: shop.slug });
+    });
+  } catch (e) {
+    if (isPgError(e, "23505")) return err("conflict", "This user already owns a shop.");
+    return err("unknown", e instanceof Error ? e.message : "Could not create supplier.");
+  }
+}
