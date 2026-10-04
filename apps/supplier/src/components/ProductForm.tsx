@@ -50,6 +50,8 @@ interface ProductFormProps {
   showStatus?: boolean;
   submitLabel: string;
   submittingLabel: string;
+  /** Optional content rendered just above the submit button (e.g. image picker). */
+  beforeSubmit?: React.ReactNode;
   onSubmit: (
     payload: ProductFormPayload,
   ) => Promise<{ ok: boolean; message?: string }>;
@@ -85,6 +87,7 @@ export function ProductForm({
   showStatus,
   submitLabel,
   submittingLabel,
+  beforeSubmit,
   onSubmit,
   onSuccess,
 }: ProductFormProps) {
@@ -470,6 +473,8 @@ export function ProductForm({
           )}
         </form.Field>
       )}
+
+      {beforeSubmit}
 
       <form.Subscribe selector={(state) => [state.canSubmit, state.isSubmitting]}>
         {([canSubmit, isSubmitting]) => (

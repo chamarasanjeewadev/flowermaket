@@ -1,9 +1,27 @@
 import { describe, expect, it } from "vitest";
 import {
+  canAddProductImage,
+  MAX_PRODUCT_IMAGES,
   validateCreateProductInput,
   validateUpdateProductInput,
   type CreateProductInput,
 } from "./products";
+
+describe("canAddProductImage", () => {
+  it("allows adding when under the limit", () => {
+    expect(canAddProductImage(0)).toBe(true);
+    expect(canAddProductImage(MAX_PRODUCT_IMAGES - 1)).toBe(true);
+  });
+
+  it("blocks adding at or above the limit", () => {
+    expect(canAddProductImage(MAX_PRODUCT_IMAGES)).toBe(false);
+    expect(canAddProductImage(MAX_PRODUCT_IMAGES + 1)).toBe(false);
+  });
+
+  it("caps at 5", () => {
+    expect(MAX_PRODUCT_IMAGES).toBe(5);
+  });
+});
 
 describe("validateCreateProductInput", () => {
   const valid: CreateProductInput = {

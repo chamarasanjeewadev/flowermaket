@@ -200,6 +200,14 @@ function pushFieldErrors(
   }
 }
 
+/** Maximum photos per product. */
+export const MAX_PRODUCT_IMAGES = 5;
+
+/** Whether another image may be added given the current image count. */
+export function canAddProductImage(currentCount: number): boolean {
+  return currentCount < MAX_PRODUCT_IMAGES;
+}
+
 /**
  * Validates CreateProductInput without touching the database.
  * Returns an array of validation errors (empty = valid).
@@ -569,6 +577,13 @@ export async function addProductImage(
         })
         .from(schema.productImages)
         .where(eq(schema.productImages.productId, productId));
+
+      if (!canAddProductImage(existing.length)) {
+        return err(
+          "validation",
+          `A product can have at most ${MAX_PRODUCT_IMAGES} images.`,
+        );
+      }
 
       const isFirst = existing.length === 0;
       const makePrimary = input.isPrimary === true || isFirst;
