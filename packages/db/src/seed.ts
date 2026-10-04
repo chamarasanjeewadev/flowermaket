@@ -591,19 +591,19 @@ async function main() {
 
   const VARIANTS_SEED = [
     // Rose — 2 colors
-    { id: "red-rose", speciesId: "rose", colorEn: "Red", colorSi: "රතු", imagePath: "flowers/Red-Rose.webp", isFeatured: true, sortOrder: 10 },
-    { id: "white-rose", speciesId: "rose", colorEn: "White", colorSi: "සුදු", imagePath: "flowers/White-Rose.webp", isFeatured: true, sortOrder: 11 },
+    { id: "red-rose", speciesId: "rose", colorEn: "Red", colorSi: "රතු", imagePath: "Red-Rose.webp", isFeatured: true, sortOrder: 10 },
+    { id: "white-rose", speciesId: "rose", colorEn: "White", colorSi: "සුදු", imagePath: "White-Rose.webp", isFeatured: true, sortOrder: 11 },
     // Chrysanthemum — 2 colors
-    { id: "white-chrysanthemum", speciesId: "chrysanthemum", colorEn: "White", colorSi: "සුදු", imagePath: "flowers/White-Chrysanthemum.webp", isFeatured: true, sortOrder: 20 },
-    { id: "purple-chrysanthemum", speciesId: "chrysanthemum", colorEn: "Purple", colorSi: "දම්", imagePath: "flowers/Purple-Chrysanthemum.webp", isFeatured: true, sortOrder: 21 },
+    { id: "white-chrysanthemum", speciesId: "chrysanthemum", colorEn: "White", colorSi: "සුදු", imagePath: "White-Chrysanthemum.webp", isFeatured: true, sortOrder: 20 },
+    { id: "purple-chrysanthemum", speciesId: "chrysanthemum", colorEn: "Purple", colorSi: "දම්", imagePath: "Purple-Chrysanthemum.webp", isFeatured: true, sortOrder: 21 },
     // Lily
-    { id: "pink-lily", speciesId: "lily", colorEn: "Pink", colorSi: "රෝස", imagePath: "flowers/Pink-Lily.webp", isFeatured: true, sortOrder: 30 },
+    { id: "pink-lily", speciesId: "lily", colorEn: "Pink", colorSi: "රෝස", imagePath: "Pink-Lily.webp", isFeatured: true, sortOrder: 30 },
     // Hydrangea
-    { id: "green-hydrangea", speciesId: "hydrangea", colorEn: "Green", colorSi: "කොළ", imagePath: "flowers/Green-Hydrangea.webp", isFeatured: true, sortOrder: 40 },
+    { id: "green-hydrangea", speciesId: "hydrangea", colorEn: "Green", colorSi: "කොළ", imagePath: "Green-Hydrangea.webp", isFeatured: true, sortOrder: 40 },
     // Statice
-    { id: "purple-statice", speciesId: "statice", colorEn: "Purple", colorSi: "දම්", imagePath: "flowers/Purple-Statice.webp", isFeatured: true, sortOrder: 50 },
+    { id: "purple-statice", speciesId: "statice", colorEn: "Purple", colorSi: "දම්", imagePath: "Purple-Statice.webp", isFeatured: true, sortOrder: 50 },
     // Gerbera Daisy
-    { id: "white-gerbera-daisy", speciesId: "gerbera-daisy", colorEn: "White", colorSi: "සුදු", imagePath: "flowers/White-Gerbera-Daisy.webp", isFeatured: true, sortOrder: 60 },
+    { id: "white-gerbera-daisy", speciesId: "gerbera-daisy", colorEn: "White", colorSi: "සුදු", imagePath: "White-Gerbera-Daisy.webp", isFeatured: true, sortOrder: 60 },
     // Single-variant species (no distinct color)
     { id: "carnation", speciesId: "carnation", colorEn: null, colorSi: null, imagePath: null, isFeatured: false, sortOrder: 70 },
     { id: "orchid", speciesId: "orchid", colorEn: null, colorSi: null, imagePath: null, isFeatured: false, sortOrder: 80 },

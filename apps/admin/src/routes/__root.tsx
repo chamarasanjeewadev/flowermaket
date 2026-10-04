@@ -11,10 +11,56 @@ import {
   useRouterState,
 } from "@tanstack/react-router";
 import { Button } from "@flowers/ui/components/button";
-import { LogOut, ShieldAlert } from "lucide-react";
+import {
+  Sheet,
+  SheetContent,
+  SheetTitle,
+  SheetTrigger,
+} from "@flowers/ui/components/sheet";
+import { LogOut, Menu, ShieldAlert } from "lucide-react";
 import { getAdminSession, signOut, type AdminSession } from "../server/auth";
 import { Toaster } from "../components/toaster";
 import appCss from "../styles.css?url";
+
+const NAV_ITEMS = [
+  { to: "/", label: "Dashboard", exact: true },
+  { to: "/orders", label: "Orders", exact: false },
+  { to: "/suppliers", label: "Suppliers", exact: false },
+  { to: "/flowers", label: "Flowers", exact: false },
+  { to: "/bouquet-usage", label: "Bouquet AI", exact: false },
+] as const;
+
+function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
+  return (
+    <nav className="flex flex-col gap-1 text-sm">
+      {NAV_ITEMS.map((item) => (
+        <Link
+          key={item.to}
+          to={item.to}
+          onClick={onNavigate}
+          className="rounded-md px-3 py-2 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+          activeProps={{ className: "bg-accent font-medium text-brand" }}
+          activeOptions={item.exact ? { exact: true } : undefined}
+        >
+          {item.label}
+        </Link>
+      ))}
+    </nav>
+  );
+}
+
+/** Thin top progress bar shown while the router is loading a new route. */
+function RouteProgress() {
+  const isLoading = useRouterState({ select: (s) => s.status === "pending" });
+  if (!isLoading) return null;
+  return (
+    <div
+      className="fixed inset-x-0 top-0 z-50 h-0.5 animate-pulse bg-brand"
+      role="progressbar"
+      aria-label="Loading"
+    />
+  );
+}
 
 interface RouterContext {
   queryClient: QueryClient;
@@ -177,52 +223,50 @@ function RootLayout() {
 
   return (
     <div className="flex min-h-dvh">
+      <RouteProgress />
+
+      {/* Desktop sidebar */}
       <aside className="sticky top-0 hidden h-dvh w-56 shrink-0 flex-col border-r border-border bg-card p-4 sm:flex">
         <Logo />
-        <nav className="mt-6 flex flex-col gap-1 text-sm">
-          <Link
-            to="/"
-            className="rounded-md px-3 py-2 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-            activeProps={{ className: "bg-accent font-medium text-brand" }}
-            activeOptions={{ exact: true }}
-          >
-            Dashboard
-          </Link>
-          <Link
-            to="/orders"
-            className="rounded-md px-3 py-2 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-            activeProps={{ className: "bg-accent font-medium text-brand" }}
-          >
-            Orders
-          </Link>
-          <Link
-            to="/suppliers"
-            className="rounded-md px-3 py-2 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-            activeProps={{ className: "bg-accent font-medium text-brand" }}
-          >
-            Suppliers
-          </Link>
-          <Link
-            to="/flowers"
-            className="rounded-md px-3 py-2 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-            activeProps={{ className: "bg-accent font-medium text-brand" }}
-          >
-            Flowers
-          </Link>
-          <Link
-            to="/bouquet-usage"
-            className="rounded-md px-3 py-2 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-            activeProps={{ className: "bg-accent font-medium text-brand" }}
-          >
-            Bouquet AI
-          </Link>
-        </nav>
+        <div className="mt-6">
+          <NavLinks />
+        </div>
         <SessionFooter session={session} />
       </aside>
-      <main className="flex-1 p-6">
-        <Outlet />
-      </main>
+
+      <div className="flex min-w-0 flex-1 flex-col">
+        {/* Mobile top bar with hamburger */}
+        <header className="sticky top-0 z-30 flex items-center gap-3 border-b border-border bg-card/95 px-4 py-3 backdrop-blur sm:hidden">
+          <MobileNav session={session} />
+          <Logo />
+        </header>
+
+        <main className="min-w-0 flex-1 p-4 sm:p-6">
+          <Outlet />
+        </main>
+      </div>
       <Toaster />
     </div>
+  );
+}
+
+function MobileNav({ session }: { session: AdminSession }) {
+  const [open, setOpen] = React.useState(false);
+  return (
+    <Sheet open={open} onOpenChange={setOpen}>
+      <SheetTrigger asChild>
+        <Button variant="ghost" size="icon" aria-label="Open menu">
+          <Menu className="size-5" />
+        </Button>
+      </SheetTrigger>
+      <SheetContent side="left" className="flex w-64 flex-col p-4">
+        <SheetTitle className="sr-only">Navigation</SheetTitle>
+        <Logo />
+        <div className="mt-6">
+          <NavLinks onNavigate={() => setOpen(false)} />
+        </div>
+        <SessionFooter session={session} />
+      </SheetContent>
+    </Sheet>
   );
 }

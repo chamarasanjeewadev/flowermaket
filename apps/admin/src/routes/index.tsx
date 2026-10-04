@@ -1,37 +1,196 @@
-import { createFileRoute } from "@tanstack/react-router";
+import * as React from "react";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from "@flowers/ui/components/card";
+import { Badge } from "@flowers/ui/components/badge";
+import { Button } from "@flowers/ui/components/button";
+import { ArrowRight, Clock, Flower2, ShoppingBag, Store } from "lucide-react";
+import { listOrdersFn } from "../server/orders";
+import { listSuppliersForReview } from "../server/suppliers";
+import { getAdminFlowers } from "../server/flowers";
+import type { OrderSummary, ReviewableShop } from "@flowers/api";
+
+interface DashboardData {
+  orders: OrderSummary[];
+  suppliers: ReviewableShop[];
+  speciesCount: number;
+  variantCount: number;
+}
 
 export const Route = createFileRoute("/")({
+  loader: async (): Promise<DashboardData> => {
+    const [ordersRes, suppliers, flowers] = await Promise.all([
+      listOrdersFn(),
+      listSuppliersForReview({ data: {} }),
+      getAdminFlowers(),
+    ]);
+    return {
+      orders: ordersRes.ok ? ordersRes.data : [],
+      suppliers,
+      speciesCount: flowers.length,
+      variantCount: flowers.reduce((n, s) => n + s.variants.length, 0),
+    };
+  },
   component: DashboardPage,
 });
 
-function DashboardPage() {
+const OPEN_STATUSES = new Set([
+  "draft",
+  "sourcing",
+  "quoted",
+  "confirmed",
+  "invoiced",
+  "paid",
+  "fulfilling",
+]);
+
+const STATUS_VARIANT: Record<string, React.ComponentProps<typeof Badge>["variant"]> = {
+  completed: "success",
+  cancelled: "destructive",
+  draft: "outline",
+  sourcing: "info",
+  quoted: "info",
+  confirmed: "info",
+  invoiced: "warning",
+  paid: "success",
+  fulfilling: "warning",
+};
+
+function StatCard({
+  icon: Icon,
+  label,
+  value,
+  sub,
+  to,
+}: {
+  icon: typeof ShoppingBag;
+  label: string;
+  value: number | string;
+  sub?: React.ReactNode;
+  to: string;
+}) {
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
+    <Link to={to} className="group">
+      <Card className="transition-colors group-hover:border-brand/40">
+        <CardContent className="flex items-center gap-4 p-5">
+          <div className="flex size-11 shrink-0 items-center justify-center rounded-lg bg-brand/10 text-brand">
+            <Icon className="size-5" />
+          </div>
+          <div className="min-w-0">
+            <div className="text-2xl font-semibold leading-none">{value}</div>
+            <div className="mt-1 text-sm text-muted-foreground">{label}</div>
+            {sub ? <div className="mt-0.5 text-xs">{sub}</div> : null}
+          </div>
+        </CardContent>
+      </Card>
+    </Link>
+  );
+}
+
+function DashboardPage() {
+  const { orders, suppliers, speciesCount, variantCount } = Route.useLoaderData();
+
+  const openOrders = orders.filter((o) => OPEN_STATUSES.has(o.status)).length;
+  const pendingSuppliers = suppliers.filter(
+    (s) => s.verificationStatus === "pending",
+  ).length;
+  const verifiedSuppliers = suppliers.filter(
+    (s) => s.verificationStatus === "verified",
+  ).length;
+  const recent = orders.slice(0, 6);
+
+  return (
+    <div className="mx-auto max-w-5xl space-y-6">
       <div className="space-y-1">
         <h1 className="font-display text-3xl sm:text-4xl">Admin dashboard</h1>
-        <p className="text-muted-foreground">
-          Platform management for FlowerMarket.lk.
-        </p>
+        <p className="text-muted-foreground">Platform management for FlowerMarket.lk.</p>
       </div>
+
+      {/* Stat cards */}
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <StatCard
+          icon={ShoppingBag}
+          label="Orders"
+          value={orders.length}
+          to="/orders"
+          sub={<span className="text-muted-foreground">{openOrders} open</span>}
+        />
+        <StatCard
+          icon={Store}
+          label="Suppliers"
+          value={suppliers.length}
+          to="/suppliers"
+          sub={
+            pendingSuppliers > 0 ? (
+              <span className="text-warning">{pendingSuppliers} pending review</span>
+            ) : (
+              <span className="text-muted-foreground">{verifiedSuppliers} verified</span>
+            )
+          }
+        />
+        <StatCard
+          icon={Clock}
+          label="Awaiting review"
+          value={pendingSuppliers}
+          to="/suppliers"
+          sub={<span className="text-muted-foreground">supplier verifications</span>}
+        />
+        <StatCard
+          icon={Flower2}
+          label="Flowers"
+          value={speciesCount}
+          to="/flowers"
+          sub={<span className="text-muted-foreground">{variantCount} variants</span>}
+        />
+      </div>
+
+      {/* Recent orders */}
       <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Coming soon</CardTitle>
-          <CardDescription>
-            Platform management tools will be available in Phase 1.
-          </CardDescription>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle className="text-lg">Recent orders</CardTitle>
+          <Button asChild variant="ghost" size="sm">
+            <Link to="/orders">
+              View all <ArrowRight className="size-4" />
+            </Link>
+          </Button>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-muted-foreground">
-            Shop verification, product moderation, and order oversight will
-            appear here as they ship.
-          </p>
+          {recent.length === 0 ? (
+            <div className="flex flex-col items-center gap-2 py-10 text-center">
+              <ShoppingBag className="size-7 text-muted-foreground/40" />
+              <p className="text-sm text-muted-foreground">No orders yet.</p>
+              <Button asChild size="sm" className="mt-1">
+                <Link to="/orders/new">Create the first order</Link>
+              </Button>
+            </div>
+          ) : (
+            <ul className="divide-y divide-border">
+              {recent.map((o) => (
+                <li key={o.id}>
+                  <Link
+                    to="/orders/$orderId"
+                    params={{ orderId: o.id }}
+                    className="flex items-center justify-between gap-3 py-3 transition-colors hover:text-brand"
+                  >
+                    <div className="min-w-0">
+                      <div className="truncate font-medium">{o.customerName}</div>
+                      <div className="text-xs text-muted-foreground">
+                        {o.orderNo}
+                        {o.neededByDate ? ` · needed ${o.neededByDate}` : ""}
+                      </div>
+                    </div>
+                    <Badge variant={STATUS_VARIANT[o.status] ?? "secondary"}>
+                      {o.status}
+                    </Badge>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
         </CardContent>
       </Card>
     </div>

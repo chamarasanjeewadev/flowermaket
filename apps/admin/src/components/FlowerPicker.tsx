@@ -256,16 +256,21 @@ function AddFlowerForm({
 
       let imageUrl: string | null = null;
       if (file) {
-        const base64 = await fileToBase64(file);
-        const res = await uploadVariantImage({
-          data: {
-            variantId,
-            fileName: `${variantId}-${file.name}`,
-            base64,
-            mimeType: file.type || "image/jpeg",
-          },
-        });
-        imageUrl = res.imageUrl;
+        // Image is optional — a failed upload must not block flower creation.
+        try {
+          const base64 = await fileToBase64(file);
+          const res = await uploadVariantImage({
+            data: {
+              variantId,
+              fileName: `${variantId}-${file.name}`,
+              base64,
+              mimeType: file.type || "image/jpeg",
+            },
+          });
+          imageUrl = res.imageUrl;
+        } catch {
+          // Keep the flower; it just won't have a photo yet.
+        }
       }
 
       const label = colorEn.trim() ? `${colorEn.trim()} ${nameEn.trim()}` : nameEn.trim();

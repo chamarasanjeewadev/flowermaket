@@ -32,8 +32,34 @@ import {
 import { Separator } from "@flowers/ui/components/separator";
 import { Textarea } from "@flowers/ui/components/textarea";
 import { buildWhatsappLink } from "@flowers/integrations";
+import { DISTRICTS } from "@flowers/api/constants";
 import { listSuppliersForReview, reviewSupplierFn } from "../server/suppliers";
 import type { ReviewableShop, VerificationStatus } from "@flowers/api";
+
+// --- formatting helpers ----------------------------------------------------
+
+const DISTRICT_NAME = new Map(DISTRICTS.map((d) => [d.slug, d.nameEn]));
+
+/** Title-case a raw string ("chamara sanjeewa" → "Chamara Sanjeewa"). */
+function titleCase(s: string | null | undefined): string {
+  if (!s) return "";
+  return s
+    .trim()
+    .split(/\s+/)
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(" ");
+}
+
+/** Human district name from a slug ("nuwara-eliya" → "Nuwara Eliya"). */
+function districtName(slug: string): string {
+  return DISTRICT_NAME.get(slug) ?? titleCase(slug.replace(/-/g, " "));
+}
+
+function locationLabel(shop: Pick<ReviewableShop, "city" | "district">): string {
+  return [titleCase(shop.city), districtName(shop.district)]
+    .filter(Boolean)
+    .join(", ");
+}
 
 export const Route = createFileRoute("/suppliers/")({
   loader: async (): Promise<{ suppliers: ReviewableShop[] }> => ({
@@ -166,8 +192,7 @@ function SuppliersPage() {
                     </TableCell>
                     <TableCell><TypeBadge shop={s} /></TableCell>
                     <TableCell className="text-sm text-muted-foreground">
-                      {s.city ? `${s.city}, ` : ""}
-                      {s.district}
+                      {locationLabel(s)}
                     </TableCell>
                     <TableCell>
                       <Badge variant={STATUS_VARIANT[s.verificationStatus]}>
@@ -274,15 +299,15 @@ function SupplierSheet({
 
             <div className="flex-1 space-y-5 overflow-y-auto px-4 py-2">
               <div className="grid grid-cols-2 gap-4">
-                <Field label="District">{shop.district}</Field>
-                <Field label="City">{shop.city}</Field>
+                <Field label="District">{districtName(shop.district)}</Field>
+                <Field label="City">{titleCase(shop.city)}</Field>
               </div>
               <Field label="Description">{shop.descriptionEn}</Field>
               {shop.descriptionSi && <Field label="Description (Sinhala)">{shop.descriptionSi}</Field>}
 
               <Separator />
 
-              <Field label="Owner">{shop.ownerFullName}</Field>
+              <Field label="Owner">{titleCase(shop.ownerFullName)}</Field>
               <div className="grid grid-cols-1 gap-3">
                 <Field label="Email">{shop.ownerEmail}</Field>
                 <Field label="Phone">

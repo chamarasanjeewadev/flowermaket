@@ -10,7 +10,7 @@ import {
   type UpsertSpeciesInput,
   type UpsertVariantInput,
 } from "@flowers/api";
-import { createSupabaseServerClient } from "@flowers/auth";
+import { createSupabaseAdminClient } from "@flowers/auth";
 import { resolveAdminSession } from "./session";
 
 export type { FlowerSpeciesWithVariants };
@@ -66,12 +66,19 @@ export const uploadVariantImage = createServerFn({ method: "POST" })
     const db = tryCreateDb();
     if (!db) throw new Error("DB unavailable");
     const env = getEnv();
-    if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
-      throw new Error("Supabase not configured");
+    if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE_KEY) {
+      throw new Error(
+        "Image upload needs SUPABASE_SERVICE_ROLE_KEY set on the admin app.",
+      );
     }
-    const supabase = createSupabaseServerClient(env.SUPABASE_URL, env.SUPABASE_ANON_KEY);
+    // Storage writes require the service-role client (bypasses storage RLS).
+    const supabase = createSupabaseAdminClient({
+      url: env.SUPABASE_URL,
+      serviceRoleKey: env.SUPABASE_SERVICE_ROLE_KEY,
+    });
     const bytes = Uint8Array.from(atob(data.base64), (c) => c.charCodeAt(0));
-    const imagePath = `flowers/${data.fileName}`;
+    // Files live at the bucket root — no "flowers/" prefix (that broke image URLs).
+    const imagePath = data.fileName;
     const { error } = await supabase.storage
       .from("flower-images")
       .upload(imagePath, bytes, {
