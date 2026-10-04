@@ -2,7 +2,8 @@ import { and, asc, eq, inArray, isNotNull } from "drizzle-orm";
 import { schema } from "@flowers/db/client";
 import { DESIGNER_CATEGORY_SLUGS } from "../constants";
 import type { Db } from "../db";
-export type { FlowerVariantRow } from "../flowers-client";
+import type { FlowerVariantRow } from "../flowers-client";
+export type { FlowerVariantRow };
 export { variantDisplayName } from "../flowers-client";
 
 export type FlowerSpeciesWithVariants = {
