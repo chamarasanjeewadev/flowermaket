@@ -157,6 +157,13 @@ export const en = {
     deleteImage: "Delete",
     deleteImageConfirm: "Delete this photo?",
     saveFirst: "Save the product first, then add photos.",
+    imagesAdd: "Add photo",
+    imagesCoverNote: "first photo is the cover",
+    imagesLimitHint: "Up to 5 photos, 5 MB each (JPEG, PNG, or WebP).",
+    imagesErrType: "Images must be JPEG, PNG, or WebP.",
+    imagesErrSize: "That image is larger than 5 MB.",
+    imagesErrCount: "You can add up to 5 photos.",
+    imagesUploadWarn: "Product created, but some photos failed to upload. You can add them from the product page.",
     // Publish
     publish: "Publish",
     unpublish: "Unpublish",

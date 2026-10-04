@@ -1,5 +1,6 @@
 import * as React from "react";
 import { ImagePlus, X } from "lucide-react";
+import { useT } from "../i18n/react";
 
 // Mirror the server limits (enforced authoritatively in uploadProductImageFn +
 // addProductImage). Kept as local constants so this client file never imports
@@ -21,6 +22,7 @@ export function ProductImagePicker({
   onChange: (files: File[]) => void;
   disabled?: boolean;
 }) {
+  const { t } = useT();
   const [error, setError] = React.useState<string | null>(null);
   const inputRef = React.useRef<HTMLInputElement>(null);
 
@@ -31,18 +33,18 @@ export function ProductImagePicker({
     const accepted: File[] = [];
     for (const f of incoming) {
       if (!ACCEPTED.includes(f.type)) {
-        setError("Images must be JPEG, PNG, or WebP.");
+        setError(t.products.imagesErrType);
         continue;
       }
       if (f.size > MAX_BYTES) {
-        setError(`"${f.name}" is larger than 5 MB.`);
+        setError(t.products.imagesErrSize);
         continue;
       }
       accepted.push(f);
     }
     const combined = [...files, ...accepted];
     if (combined.length > MAX_IMAGES) {
-      setError(`You can add up to ${MAX_IMAGES} photos.`);
+      setError(t.products.imagesErrCount);
     }
     onChange(combined.slice(0, MAX_IMAGES));
     if (inputRef.current) inputRef.current.value = "";
@@ -57,9 +59,9 @@ export function ProductImagePicker({
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
-        <span className="text-sm font-medium">Photos</span>
+        <span className="text-sm font-medium">{t.products.imagesTitle}</span>
         <span className="text-xs text-muted-foreground">
-          {files.length}/{MAX_IMAGES} · first photo is the cover
+          {files.length}/{MAX_IMAGES} · {t.products.imagesCoverNote}
         </span>
       </div>
 
@@ -77,7 +79,7 @@ export function ProductImagePicker({
             />
             {i === 0 && (
               <span className="absolute left-1 top-1 rounded bg-brand px-1.5 py-0.5 text-[10px] font-medium text-brand-foreground">
-                Cover
+                {t.products.primary}
               </span>
             )}
             <button
@@ -100,7 +102,7 @@ export function ProductImagePicker({
             className="flex size-24 flex-col items-center justify-center gap-1 rounded-lg border border-dashed border-border text-muted-foreground transition-colors hover:border-brand/50 hover:text-foreground disabled:opacity-50"
           >
             <ImagePlus className="size-5" />
-            <span className="text-xs">Add photo</span>
+            <span className="text-xs">{t.products.imagesAdd}</span>
           </button>
         )}
       </div>
@@ -115,9 +117,7 @@ export function ProductImagePicker({
       />
 
       {error && <p className="text-xs text-destructive">{error}</p>}
-      <p className="text-xs text-muted-foreground">
-        Up to {MAX_IMAGES} photos, 5 MB each (JPEG, PNG, or WebP).
-      </p>
+      <p className="text-xs text-muted-foreground">{t.products.imagesLimitHint}</p>
     </div>
   );
 }

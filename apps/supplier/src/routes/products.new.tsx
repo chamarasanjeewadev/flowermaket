@@ -96,9 +96,7 @@ function NewProductPage() {
                 ? await uploadImages(result.data.id, images)
                 : 0;
               if (failed > 0) {
-                toast.error(
-                  `Product created, but ${failed} photo${failed > 1 ? "s" : ""} failed to upload. You can add them from the product page.`,
-                );
+                toast.error(t.products.imagesUploadWarn);
               } else {
                 toast.success(t.products.created);
               }
