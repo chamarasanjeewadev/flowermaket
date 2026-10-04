@@ -1,8 +1,9 @@
 import * as React from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Plus, Flower2 } from "lucide-react";
+import { Plus, Flower2, Search } from "lucide-react";
 import { Button } from "@flowers/ui/components/button";
 import { Badge } from "@flowers/ui/components/badge";
+import { Input } from "@flowers/ui/components/input";
 import { getAdminFlowers } from "../server/flowers";
 
 export const Route = createFileRoute("/flowers/")({
@@ -21,10 +22,21 @@ const CATEGORY_LABELS: Record<string, string> = {
 
 function FlowersPage() {
   const { species } = Route.useLoaderData();
+  const [query, setQuery] = React.useState("");
+
+  const filtered = React.useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return species;
+    return species.filter((s) =>
+      [s.nameEn, s.nameSi, s.localName ?? "", s.category].some((t) =>
+        t.toLowerCase().includes(q),
+      ),
+    );
+  }, [species, query]);
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="space-y-1">
           <h1 className="font-display text-3xl">Flower Species</h1>
           <p className="text-sm text-muted-foreground">
@@ -32,21 +44,37 @@ function FlowersPage() {
           </p>
         </div>
         <Button asChild>
-          <Link to="/flowers/new">
+          <Link to="/flowers/$speciesId" params={{ speciesId: "new" }}>
             <Plus className="size-4" />
             Add species
           </Link>
         </Button>
       </div>
 
+      {species.length > 0 && (
+        <div className="relative max-w-sm">
+          <Search className="absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            className="pl-8"
+            placeholder="Search species, colour, category…"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+          />
+        </div>
+      )}
+
       {species.length === 0 ? (
         <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed border-border py-16 text-center">
           <Flower2 className="size-8 text-muted-foreground/40" />
           <p className="text-sm text-muted-foreground">No flower species yet.</p>
         </div>
+      ) : filtered.length === 0 ? (
+        <p className="py-8 text-center text-sm text-muted-foreground">
+          No species match “{query}”.
+        </p>
       ) : (
         <div className="space-y-2">
-          {species.map((s) => (
+          {filtered.map((s) => (
             <Link
               key={s.id}
               to="/flowers/$speciesId"

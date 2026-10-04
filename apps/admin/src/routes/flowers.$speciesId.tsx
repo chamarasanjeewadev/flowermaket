@@ -85,7 +85,7 @@ function FlowerSpeciesPage() {
     <div className="space-y-8 max-w-2xl">
       <div className="flex items-center gap-3">
         <Button asChild variant="ghost" size="icon">
-          <Link to="/flowers/">
+          <Link to="/flowers">
             <ArrowLeft className="size-4" />
           </Link>
         </Button>
@@ -101,13 +101,21 @@ function FlowerSpeciesPage() {
         </h2>
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label="ID (slug)" htmlFor="sp-id">
-            <Input
-              id="sp-id"
-              value={id}
-              onChange={(e) => setId(e.target.value)}
-              placeholder="rose"
-              disabled={!isNew}
-            />
+            {isNew ? (
+              <Input
+                id="sp-id"
+                value={id}
+                onChange={(e) => setId(e.target.value)}
+                placeholder="rose"
+              />
+            ) : (
+              <div
+                id="sp-id"
+                className="flex h-9 items-center rounded-md border border-input bg-muted/50 px-3 font-mono text-sm text-foreground"
+              >
+                {id}
+              </div>
+            )}
           </Field>
           <Field label="English name" htmlFor="sp-name-en">
             <Input
@@ -211,7 +219,7 @@ function VariantCard({ variant, speciesId }: { variant: VariantShape; speciesId:
   const [uploading, setUploading] = React.useState(false);
   const [imageUrl, setImageUrl] = React.useState(variant.imageUrl);
   const [isFeatured, setIsFeatured] = React.useState(variant.isFeatured);
-  const [sortOrder, setSortOrder] = React.useState(String(variant.sortOrder));
+  const sortOrder = String(variant.sortOrder);
   const fileRef = React.useRef<HTMLInputElement>(null);
 
   async function handleToggleFeatured() {
@@ -386,31 +394,36 @@ function AddVariantButton({ speciesId }: { speciesId: string }) {
   }
 
   return (
-    <form onSubmit={handleAdd} className="flex items-end gap-2">
-      <Field label="Color (EN)" htmlFor="v-color-en">
-        <Input
-          id="v-color-en"
-          value={colorEn}
-          onChange={(e) => setColorEn(e.target.value)}
-          placeholder="Red"
-          className="w-28"
-        />
-      </Field>
-      <Field label="Color (SI)" htmlFor="v-color-si">
-        <Input
-          id="v-color-si"
-          value={colorSi}
-          onChange={(e) => setColorSi(e.target.value)}
-          placeholder="රතු"
-          className="w-28"
-        />
-      </Field>
-      <Button type="submit" size="sm" disabled={saving}>
-        {saving ? "Adding…" : "Add"}
-      </Button>
-      <Button type="button" variant="ghost" size="sm" onClick={() => setOpen(false)}>
-        Cancel
-      </Button>
+    <form
+      onSubmit={handleAdd}
+      className="w-full space-y-3 rounded-lg border border-border bg-muted/20 p-4 sm:w-auto"
+    >
+      <div className="grid gap-3 sm:grid-cols-2">
+        <Field label="Colour (English)" htmlFor="v-color-en">
+          <Input
+            id="v-color-en"
+            value={colorEn}
+            onChange={(e) => setColorEn(e.target.value)}
+            placeholder="Red"
+          />
+        </Field>
+        <Field label="Colour (Sinhala)" htmlFor="v-color-si">
+          <Input
+            id="v-color-si"
+            value={colorSi}
+            onChange={(e) => setColorSi(e.target.value)}
+            placeholder="රතු"
+          />
+        </Field>
+      </div>
+      <div className="flex justify-end gap-2">
+        <Button type="button" variant="ghost" size="sm" onClick={() => setOpen(false)}>
+          Cancel
+        </Button>
+        <Button type="submit" size="sm" disabled={saving}>
+          {saving ? "Adding…" : "Add variant"}
+        </Button>
+      </div>
     </form>
   );
 }
