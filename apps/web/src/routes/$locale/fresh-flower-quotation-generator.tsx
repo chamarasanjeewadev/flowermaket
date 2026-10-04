@@ -40,12 +40,20 @@ import {
 } from "@flowers/ui/components/select";
 import { Textarea } from "@flowers/ui/components/textarea";
 import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+} from "@flowers/ui/components/sheet";
+import {
   ArrowUpRight,
   Calculator,
   Check,
   ChevronDown,
   ChevronUp,
   CircleAlert,
+  Flower2,
   GripVertical,
   Plus,
   Printer,
@@ -53,6 +61,7 @@ import {
   Send,
   Share2,
   Trash2,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
 import { localizedName, type Locale } from "../../i18n";
@@ -60,17 +69,13 @@ import { useT } from "../../i18n/react";
 import { jsonLdScript, localePath, socialMeta } from "../../lib/seo";
 import { absoluteUrl, hreflangLinks, siteUrl } from "../../lib/site";
 import { variantDisplayName, type FlowerVariantRow } from "@flowers/api/flowers";
-import { FlowerShowcase } from "../../components/catalog/FlowerShowcase";
 import {
   listFeaturedVariants,
   listFlowerVariants,
 } from "../../server/flowers";
 
 type FlowerCategory = "imported" | "tropical" | "local";
-import {
-  listProducts,
-  type ProductListItemDTO,
-} from "../../server/catalog";
+import { listProducts } from "../../server/catalog";
 
 const SEO_PATH = "/fresh-flower-quotation-generator";
 let customLineSequence = 1;
@@ -84,7 +89,6 @@ interface QuotationState {
 
 function encodeState(state: QuotationState): string {
   const json = JSON.stringify(state);
-  // encodeURIComponent first makes it safe for any Unicode (Sinhala, etc.)
   return btoa(encodeURIComponent(json))
     .replace(/\+/g, "-")
     .replace(/\//g, "_")
@@ -190,7 +194,7 @@ export const Route = createFileRoute(
 // --- Main page ---
 
 function FlowerQuotationGeneratorPage() {
-  const { listings, featuredFlowers, allFlowers } = Route.useLoaderData();
+  const { listings, allFlowers } = Route.useLoaderData();
   const { q } = Route.useSearch();
   const { t, f, locale } = useT();
 
@@ -205,14 +209,12 @@ function FlowerQuotationGeneratorPage() {
   const [details, setDetails] = React.useState<QuotationDetails>(
     () => preloaded?.details ?? {},
   );
-  const [selectedListing, setSelectedListing] = React.useState(
-    listings[0]?.id ?? "none",
-  );
   const [copyState, setCopyState] = React.useState<"idle" | "copied">("idle");
   const [qrImageUrl, setQrImageUrl] = React.useState<string | null>(null);
   const [activeCategory, setActiveCategory] =
     React.useState<FlowerCategory | "all">("all");
   const [flowerSearch, setFlowerSearch] = React.useState("");
+  const [flowerSheetOpen, setFlowerSheetOpen] = React.useState(false);
 
   const pricedLines = lines.filter(
     (l) => l.name.trim() && l.quantity > 0 && l.unitPrice > 0,
@@ -284,32 +286,9 @@ function FlowerQuotationGeneratorPage() {
     toast.success(
       locale === "si"
         ? `${displayName} ගණනට එකතු කරන ලදී`
-        : `${displayName} added to your quote`,
-      { duration: 2000 },
+        : `${displayName} added`,
+      { duration: 1500 },
     );
-  }
-
-  function addPublishedListing() {
-    const product = listings.find((p) => p.id === selectedListing);
-    if (!product) return;
-    setLines((current) => {
-      const existing = current.find((l) => l.productSlug === product.slug);
-      if (existing) {
-        return current.map((l) =>
-          l.id === existing.id
-            ? {
-                ...l,
-                quantity:
-                  l.quantity + Math.max(1, product.minOrderQty ?? 1),
-              }
-            : l,
-        );
-      }
-      return [
-        ...current.filter((l) => l.name.trim() || l.unitPrice > 0),
-        listingToLine(product, locale),
-      ];
-    });
   }
 
   function removeLine(id: string) {
@@ -406,17 +385,17 @@ function FlowerQuotationGeneratorPage() {
         <p className="text-xs text-muted-foreground">flowermarket.lk</p>
       </div>
 
-      {/* Hero */}
+      {/* Hero — compact on mobile */}
       <section className="grid-paper border-b border-border">
-        <div className="mx-auto max-w-6xl px-4 py-10 sm:py-14">
+        <div className="mx-auto max-w-6xl px-4 py-6 sm:py-10">
           <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-brand">
             <Calculator className="size-4" aria-hidden="true" />
             {t.quotation.eyebrow}
           </p>
-          <h1 className="mt-3 max-w-4xl font-display text-4xl leading-tight sm:text-5xl">
+          <h1 className="mt-2 max-w-4xl font-display text-3xl leading-tight sm:text-4xl lg:text-5xl">
             {t.quotation.title}
           </h1>
-          <p className="mt-4 max-w-3xl text-base leading-relaxed text-muted-foreground">
+          <p className="mt-3 max-w-3xl text-sm leading-relaxed text-muted-foreground sm:text-base">
             {t.quotation.intro}
           </p>
         </div>
@@ -436,267 +415,133 @@ function FlowerQuotationGeneratorPage() {
         </div>
       )}
 
-      {/* Flower Gallery */}
-      <section className="quotation-screen-only border-b border-border bg-accent/10">
-        <div className="mx-auto max-w-6xl px-4 py-8">
-          <div className="flex flex-col gap-1">
-            <h2 className="font-display text-2xl">
-              {f(t.quotation.flowerGallery, { count: allFlowers.length })}
-            </h2>
-            <p className="text-sm text-muted-foreground">
-              {t.quotation.flowerGalleryHint}
-            </p>
-          </div>
+      {/* Main grid — quotation builder + summary */}
+      <main className="mx-auto grid max-w-6xl gap-6 px-4 py-6 pb-28 sm:py-8 sm:pb-28 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start lg:pb-10">
 
-          {/* Featured flowers — photo showcase */}
-          <div className="mt-8 border-b border-border pb-10">
-            <FlowerShowcase
-              flowers={featuredFlowers}
-              locale={locale}
-              onEnquire={addFlowerFromCatalog}
-              ctaLabel="Add to quote"
-            />
-          </div>
+        {/* Left column: event details + line items */}
+        <div className="space-y-5">
 
-          {/* Search + Category tabs */}
-          <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
-            <div className="relative flex-1 max-w-xs">
-              <Input
-                value={flowerSearch}
-                onChange={(e) => setFlowerSearch(e.target.value)}
-                placeholder={t.quotation.searchFlowers}
-                className="pl-3"
-                aria-label={t.quotation.searchFlowers}
-              />
-            </div>
-            <div
-              className="flex flex-wrap gap-2"
-              role="group"
-              aria-label="Filter by category"
-            >
-              {CATEGORY_TABS.map((tab) => (
-                <button
-                  key={tab.key}
-                  type="button"
-                  onClick={() => setActiveCategory(tab.key)}
-                  className={[
-                    "rounded-full px-3 py-1 text-xs font-medium transition-colors cursor-pointer",
-                    activeCategory === tab.key
-                      ? "bg-brand text-white"
-                      : "bg-muted text-muted-foreground hover:bg-muted/80",
-                  ].join(" ")}
-                >
-                  {tab.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Flower grid */}
-          <ul
-            className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6"
-            role="list"
-          >
-            {filteredFlowers.map((flower) => {
-              const isAdded = addedIds.has(`catalog-${flower.id}`);
-              const displayName = variantDisplayName(flower, locale);
-              return (
-                <li key={flower.id}>
-                  <button
-                    type="button"
-                    onClick={() => addFlowerFromCatalog(flower)}
-                    aria-label={`${t.quotation.addToQuote}: ${displayName}`}
-                    aria-pressed={isAdded}
-                    className={[
-                      "group relative w-full overflow-hidden rounded-xl border transition-all duration-200 cursor-pointer text-left",
-                      isAdded
-                        ? "border-brand/50 bg-brand/5 ring-1 ring-brand/30"
-                        : "border-border bg-card hover:border-brand/30 hover:shadow-md",
-                    ].join(" ")}
-                  >
-                    <div className="relative aspect-[4/3] overflow-hidden bg-muted">
-                      <img
-                        src={flower.imageUrl ?? "/placeholder-flower.svg"}
-                        alt={displayName}
-                        loading="lazy"
-                        decoding="async"
-                        className="size-full object-cover transition-transform duration-300 group-hover:scale-105"
-                        onError={(e) => {
-                          (e.currentTarget as HTMLImageElement).src =
-                            "/placeholder-flower.svg";
-                        }}
-                      />
-                      {isAdded && (
-                        <div className="absolute inset-0 flex items-center justify-center bg-brand/20">
-                          <div className="rounded-full bg-brand p-1">
-                            <Check className="size-3 text-white" aria-hidden="true" />
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                    <div className="p-2">
-                      <p className="text-xs font-semibold leading-tight">
-                        {displayName}
-                      </p>
-                      {flower.localName && (
-                        <p className="mt-0.5 text-[10px] text-muted-foreground leading-tight">
-                          {flower.localName}
-                        </p>
-                      )}
-                      <p className="mt-1 text-[10px] text-muted-foreground">
-                        {isAdded ? t.quotation.alreadyAdded : `+ ${t.quotation.addToQuote}`}
-                      </p>
-                    </div>
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
-        </div>
-      </section>
-
-      {/* Event details */}
-      <section className="border-b border-border bg-accent/25">
-        <div className="mx-auto max-w-6xl px-4 py-8">
-          <div className="flex flex-col gap-1">
-            <h2 className="font-display text-2xl">{t.quotation.eventDetails}</h2>
-            <p className="text-sm text-muted-foreground">
-              {t.quotation.eventDetailsHint}
-            </p>
-          </div>
-          <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <QuoteField label={t.quotation.plannerName} htmlFor="quote-planner">
-              <Input
-                id="quote-planner"
-                value={details.plannerName ?? ""}
-                onChange={(e) => patchDetails("plannerName", e.target.value)}
-                placeholder={t.quotation.plannerPlaceholder}
-              />
-            </QuoteField>
-            <QuoteField label={t.quotation.clientName} htmlFor="quote-client">
-              <Input
-                id="quote-client"
-                value={details.clientName ?? ""}
-                onChange={(e) => patchDetails("clientName", e.target.value)}
-                placeholder={t.quotation.clientPlaceholder}
-              />
-            </QuoteField>
-            <QuoteField label={t.quotation.eventDate} htmlFor="quote-date">
-              <Input
-                id="quote-date"
-                type="date"
-                value={details.eventDate ?? ""}
-                onChange={(e) => patchDetails("eventDate", e.target.value)}
-              />
-            </QuoteField>
-            <QuoteField label={t.quotation.venue} htmlFor="quote-venue">
-              <Input
-                id="quote-venue"
-                value={details.venue ?? ""}
-                onChange={(e) => patchDetails("venue", e.target.value)}
-                placeholder={t.quotation.venuePlaceholder}
-              />
-            </QuoteField>
-            <div className="sm:col-span-2 lg:col-span-4">
-              <QuoteField label={t.quotation.notes} htmlFor="quote-notes">
-                <Textarea
-                  id="quote-notes"
-                  rows={2}
-                  value={details.notes ?? ""}
-                  onChange={(e) => patchDetails("notes", e.target.value)}
-                  placeholder={t.quotation.notesPlaceholder}
+          {/* Event details */}
+          <section aria-label={t.quotation.eventDetails} className="rounded-xl border border-border bg-accent/20 p-4">
+            <h2 className="font-display text-lg">{t.quotation.eventDetails}</h2>
+            <p className="mt-0.5 text-xs text-muted-foreground">{t.quotation.eventDetailsHint}</p>
+            <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              <QuoteField label={t.quotation.plannerName} htmlFor="quote-planner">
+                <Input
+                  id="quote-planner"
+                  value={details.plannerName ?? ""}
+                  onChange={(e) => patchDetails("plannerName", e.target.value)}
+                  placeholder={t.quotation.plannerPlaceholder}
                 />
               </QuoteField>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Main grid */}
-      <main className="mx-auto grid max-w-6xl gap-8 px-4 py-10 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start">
-        <section aria-labelledby="quote-items-heading">
-          <div className="flex flex-col gap-1">
-            <h2 id="quote-items-heading" className="font-display text-3xl">
-              {t.quotation.flowerItems}
-            </h2>
-            <p className="text-sm text-muted-foreground">
-              {t.quotation.flowerItemsHint}
-            </p>
-          </div>
-
-          {/* Add from catalog dropdown */}
-          {listings.length > 0 && (
-            <div className="quotation-screen-only mt-6 border-y border-border py-5">
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
-                <div className="min-w-0 flex-1 space-y-1.5">
-                  <Label>{t.quotation.chooseListing}</Label>
-                  <Select
-                    value={selectedListing}
-                    onValueChange={setSelectedListing}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder={t.quotation.chooseListing} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {listings.map((product) => (
-                        <SelectItem key={product.id} value={product.id}>
-                          {localizedName(product, locale)} —{" "}
-                          {formatQuotationRupees(product.price)}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={addPublishedListing}
-                >
-                  <Plus className="size-4" aria-hidden="true" />
-                  {t.quotation.addListing}
-                </Button>
-              </div>
-            </div>
-          )}
-
-          {/* Sortable line items */}
-          <DndContext
-            sensors={sensors}
-            collisionDetection={closestCenter}
-            onDragEnd={handleDragEnd}
-          >
-            <SortableContext
-              items={lines.map((l) => l.id)}
-              strategy={verticalListSortingStrategy}
-            >
-              <div className="mt-6 space-y-3">
-                {lines.map((line, index) => (
-                  <SortableQuoteLineEditor
-                    key={line.id}
-                    line={line}
-                    index={index}
-                    units={units}
-                    locale={locale}
-                    totalLines={lines.length}
-                    onPatch={(patch) => patchLine(line.id, patch)}
-                    onRemove={() => removeLine(line.id)}
-                    onMove={(dir) => moveLine(line.id, dir)}
+              <QuoteField label={t.quotation.clientName} htmlFor="quote-client">
+                <Input
+                  id="quote-client"
+                  value={details.clientName ?? ""}
+                  onChange={(e) => patchDetails("clientName", e.target.value)}
+                  placeholder={t.quotation.clientPlaceholder}
+                />
+              </QuoteField>
+              <QuoteField label={t.quotation.eventDate} htmlFor="quote-date">
+                <Input
+                  id="quote-date"
+                  type="date"
+                  value={details.eventDate ?? ""}
+                  onChange={(e) => patchDetails("eventDate", e.target.value)}
+                />
+              </QuoteField>
+              <QuoteField label={t.quotation.venue} htmlFor="quote-venue">
+                <Input
+                  id="quote-venue"
+                  value={details.venue ?? ""}
+                  onChange={(e) => patchDetails("venue", e.target.value)}
+                  placeholder={t.quotation.venuePlaceholder}
+                />
+              </QuoteField>
+              <div className="sm:col-span-2 lg:col-span-4">
+                <QuoteField label={t.quotation.notes} htmlFor="quote-notes">
+                  <Textarea
+                    id="quote-notes"
+                    rows={2}
+                    value={details.notes ?? ""}
+                    onChange={(e) => patchDetails("notes", e.target.value)}
+                    placeholder={t.quotation.notesPlaceholder}
                   />
-                ))}
+                </QuoteField>
               </div>
-            </SortableContext>
-          </DndContext>
+            </div>
+          </section>
 
-          <Button
-            type="button"
-            variant="outline"
-            onClick={addCustomLine}
-            className="quotation-screen-only mt-5"
-          >
-            <Plus className="size-4" aria-hidden="true" />
-            {t.quotation.addCustom}
-          </Button>
-        </section>
+          {/* Flower items */}
+          <section aria-labelledby="quote-items-heading">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <h2 id="quote-items-heading" className="font-display text-2xl">
+                  {t.quotation.flowerItems}
+                </h2>
+                <p className="mt-0.5 text-xs text-muted-foreground">
+                  {t.quotation.flowerItemsHint}
+                </p>
+              </div>
+            </div>
+
+            {/* Browse flowers button — opens sheet */}
+            <button
+              type="button"
+              onClick={() => setFlowerSheetOpen(true)}
+              className="quotation-screen-only mt-4 flex w-full items-center gap-3 rounded-xl border border-dashed border-brand/40 bg-brand/5 px-4 py-3.5 text-left transition-colors hover:border-brand/60 hover:bg-brand/10 cursor-pointer"
+            >
+              <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-brand/10">
+                <Flower2 className="size-4 text-brand" aria-hidden="true" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold text-foreground">
+                  {f(t.quotation.flowerGallery, { count: allFlowers.length })}
+                </p>
+                <p className="text-xs text-muted-foreground">{t.quotation.flowerGalleryHint}</p>
+              </div>
+              <ArrowUpRight className="size-4 shrink-0 text-brand" aria-hidden="true" />
+            </button>
+
+            {/* Sortable line items */}
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={handleDragEnd}
+            >
+              <SortableContext
+                items={lines.map((l) => l.id)}
+                strategy={verticalListSortingStrategy}
+              >
+                <div className="mt-4 space-y-2">
+                  {lines.map((line, index) => (
+                    <SortableQuoteLineEditor
+                      key={line.id}
+                      line={line}
+                      index={index}
+                      units={units}
+                      locale={locale}
+                      totalLines={lines.length}
+                      onPatch={(patch) => patchLine(line.id, patch)}
+                      onRemove={() => removeLine(line.id)}
+                      onMove={(dir) => moveLine(line.id, dir)}
+                    />
+                  ))}
+                </div>
+              </SortableContext>
+            </DndContext>
+
+            <Button
+              type="button"
+              variant="outline"
+              onClick={addCustomLine}
+              className="quotation-screen-only mt-4"
+            >
+              <Plus className="size-4" aria-hidden="true" />
+              {t.quotation.addCustom}
+            </Button>
+          </section>
+        </div>
 
         {/* Summary sidebar */}
         <aside className="rounded-xl border border-border bg-card p-5 lg:sticky lg:top-24">
@@ -705,11 +550,9 @@ function FlowerQuotationGeneratorPage() {
             {f(t.quotation.itemCount, { count: pricedLines.length })}
           </p>
 
-          <div className="my-5 border-y border-border py-5">
-            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              {t.quotation.estimatedTotal}
-            </p>
-            <p className="mt-2 font-display text-4xl tabular-nums">
+          <div className="my-4 border-y border-border py-4">
+            <p className="text-xs text-muted-foreground">{t.quotation.estimatedTotal}</p>
+            <p className="mt-1 font-display text-4xl tabular-nums">
               {formatQuotationRupees(total)}
             </p>
             {pricedLines.length === 0 && (
@@ -728,7 +571,19 @@ function FlowerQuotationGeneratorPage() {
           </p>
 
           {/* Action buttons */}
-          <div className="quotation-screen-only mt-5 space-y-2.5">
+          <div className="quotation-screen-only mt-5 space-y-2">
+            {/* Browse flowers */}
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full"
+              onClick={() => setFlowerSheetOpen(true)}
+            >
+              <Flower2 className="size-4" aria-hidden="true" />
+              {f(t.quotation.flowerGallery, { count: allFlowers.length })}
+            </Button>
+
+            {/* WhatsApp */}
             {pricedLines.length > 0 ? (
               <Button
                 asChild
@@ -805,6 +660,188 @@ function FlowerQuotationGeneratorPage() {
         </aside>
       </main>
 
+      {/* Flower catalog bottom sheet */}
+      <Sheet open={flowerSheetOpen} onOpenChange={setFlowerSheetOpen}>
+        <SheetContent
+          side="bottom"
+          className="quotation-screen-only flex max-h-[90dvh] flex-col gap-0 p-0"
+        >
+          {/* Sticky sheet header */}
+          <SheetHeader className="border-b border-border px-4 pb-3 pt-4">
+            <div className="flex items-center justify-between">
+              <SheetTitle className="font-display text-xl">
+                {f(t.quotation.flowerGallery, { count: allFlowers.length })}
+              </SheetTitle>
+              {pricedLines.length > 0 && (
+                <span className="rounded-full bg-brand px-2.5 py-0.5 text-xs font-semibold text-white">
+                  {pricedLines.length} in quote
+                </span>
+              )}
+            </div>
+            <SheetDescription className="text-left text-xs">
+              {t.quotation.flowerGalleryHint}
+            </SheetDescription>
+            {/* Search + category tabs */}
+            <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
+              <Input
+                value={flowerSearch}
+                onChange={(e) => setFlowerSearch(e.target.value)}
+                placeholder={t.quotation.searchFlowers}
+                className="sm:max-w-xs"
+                aria-label={t.quotation.searchFlowers}
+              />
+              <div
+                className="flex flex-wrap gap-1.5"
+                role="group"
+                aria-label="Filter by category"
+              >
+                {CATEGORY_TABS.map((tab) => (
+                  <button
+                    key={tab.key}
+                    type="button"
+                    onClick={() => setActiveCategory(tab.key)}
+                    className={[
+                      "rounded-full px-3 py-1 text-xs font-medium transition-colors cursor-pointer",
+                      activeCategory === tab.key
+                        ? "bg-brand text-white"
+                        : "bg-muted text-muted-foreground hover:bg-muted/80",
+                    ].join(" ")}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </SheetHeader>
+
+          {/* Scrollable flower grid */}
+          <div className="flex-1 overflow-y-auto p-4">
+            {filteredFlowers.length === 0 ? (
+              <div className="flex flex-col items-center gap-2 py-12 text-center">
+                <Flower2 className="size-8 text-muted-foreground/40" />
+                <p className="text-sm text-muted-foreground">No flowers match your search</p>
+              </div>
+            ) : (
+              <ul
+                className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8"
+                role="list"
+              >
+                {filteredFlowers.map((flower) => {
+                  const isAdded = addedIds.has(`catalog-${flower.id}`);
+                  const displayName = variantDisplayName(flower, locale);
+                  return (
+                    <li key={flower.id}>
+                      <button
+                        type="button"
+                        onClick={() => addFlowerFromCatalog(flower)}
+                        aria-label={`${t.quotation.addToQuote}: ${displayName}`}
+                        aria-pressed={isAdded}
+                        className={[
+                          "group relative w-full overflow-hidden rounded-xl border transition-all duration-200 cursor-pointer text-left",
+                          isAdded
+                            ? "border-brand/50 bg-brand/5 ring-1 ring-brand/30"
+                            : "border-border bg-card hover:border-brand/30 hover:shadow-md",
+                        ].join(" ")}
+                      >
+                        <div className="relative aspect-[4/3] overflow-hidden bg-muted">
+                          <img
+                            src={flower.imageUrl ?? "/placeholder-flower.svg"}
+                            alt={displayName}
+                            loading="lazy"
+                            decoding="async"
+                            className="size-full object-cover transition-transform duration-300 group-hover:scale-105"
+                            onError={(e) => {
+                              (e.currentTarget as HTMLImageElement).src =
+                                "/placeholder-flower.svg";
+                            }}
+                          />
+                          {isAdded && (
+                            <div className="absolute inset-0 flex items-center justify-center bg-brand/20">
+                              <div className="rounded-full bg-brand p-1">
+                                <Check className="size-3 text-white" aria-hidden="true" />
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                        <div className="p-1.5">
+                          <p className="text-[11px] font-semibold leading-tight">
+                            {displayName}
+                          </p>
+                          {flower.localName && (
+                            <p className="mt-0.5 text-[10px] text-muted-foreground leading-tight">
+                              {flower.localName}
+                            </p>
+                          )}
+                        </div>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </div>
+
+          {/* Sheet footer — close + item count */}
+          <div className="border-t border-border bg-background px-4 py-3">
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-sm text-muted-foreground">
+                {pricedLines.length > 0
+                  ? f(t.quotation.itemCount, { count: pricedLines.length })
+                  : t.quotation.emptyTotal}
+              </p>
+              <Button
+                type="button"
+                onClick={() => setFlowerSheetOpen(false)}
+                className="shrink-0"
+              >
+                {locale === "si" ? "සිදු කරන්න" : "Done"}
+              </Button>
+            </div>
+          </div>
+        </SheetContent>
+      </Sheet>
+
+      {/* Mobile sticky bottom bar (hidden on lg+) */}
+      <div className="quotation-screen-only fixed bottom-0 inset-x-0 z-40 lg:hidden border-t border-border bg-background/95 shadow-lg backdrop-blur-sm">
+        <div className="flex items-center gap-2 px-4 py-3">
+          <div className="min-w-0 flex-1">
+            <p className="text-[11px] text-muted-foreground leading-none">
+              {f(t.quotation.itemCount, { count: pricedLines.length })}
+            </p>
+            <p className="mt-0.5 font-display text-xl tabular-nums leading-none">
+              {formatQuotationRupees(total)}
+            </p>
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => setFlowerSheetOpen(true)}
+            className="shrink-0"
+          >
+            <Flower2 className="size-3.5" aria-hidden="true" />
+            {locale === "si" ? "මල්" : "Flowers"}
+          </Button>
+          {pricedLines.length > 0 ? (
+            <Button
+              asChild
+              size="sm"
+              className="shrink-0 bg-[#25D366] text-white hover:bg-[#1fb457]"
+            >
+              <a href={whatsappUrl} target="_blank" rel="noopener noreferrer">
+                <Send className="size-3.5" aria-hidden="true" />
+                {locale === "si" ? "යවන්න" : "Send"}
+              </a>
+            </Button>
+          ) : (
+            <Button size="sm" disabled className="shrink-0">
+              <Send className="size-3.5" aria-hidden="true" />
+              {locale === "si" ? "යවන්න" : "Send"}
+            </Button>
+          )}
+        </div>
+      </div>
+
       {/* QR code overlay */}
       {qrImageUrl && (
         <div
@@ -840,7 +877,7 @@ function FlowerQuotationGeneratorPage() {
       )}
 
       {/* SEO content — flower types reference */}
-      <section className="quotation-screen-only border-t border-border bg-muted/30 px-4 py-12">
+      <section className="quotation-screen-only border-t border-border bg-muted/30 px-4 py-10">
         <div className="mx-auto max-w-6xl">
           <h2 className="font-display text-2xl">
             {locale === "si"
@@ -887,17 +924,6 @@ function QuoteField({
   );
 }
 
-function listingToLine(product: ProductListItemDTO, locale: Locale): QuotationLine {
-  return {
-    id: `listing-${product.id}`,
-    name: localizedName(product, locale),
-    quantity: Math.max(1, product.minOrderQty ?? 1),
-    unitPrice: product.price,
-    unit: product.listingType === "wholesale" ? "stem" : "item",
-    productSlug: product.slug,
-  };
-}
-
 function SortableQuoteLineEditor({
   line,
   index,
@@ -940,9 +966,98 @@ function SortableQuoteLineEditor({
     <article
       ref={setNodeRef}
       style={style}
-      className="rounded-xl border border-border bg-card p-4"
+      className="rounded-xl border border-border bg-card p-3"
     >
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-[auto_minmax(160px,2fr)_1fr_1fr_1.25fr_auto]">
+      {/* Mobile layout (< lg) */}
+      <div className="lg:hidden space-y-2">
+        {/* Row 1: Name + Remove */}
+        <div className="flex gap-2">
+          <Input
+            id={`${prefix}-name`}
+            value={line.name}
+            onChange={(e) => onPatch({ name: e.target.value })}
+            placeholder={t.quotation.flowerNamePlaceholder}
+            aria-label={t.quotation.flowerName}
+            className="flex-1 min-w-0"
+          />
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            onClick={onRemove}
+            aria-label={t.quotation.removeLine}
+            className="quotation-screen-only shrink-0 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+          >
+            <X className="size-4" aria-hidden="true" />
+          </Button>
+        </div>
+        {/* Row 2: Qty + Unit + Price */}
+        <div className="grid grid-cols-3 gap-2">
+          <Input
+            id={`${prefix}-qty`}
+            type="number"
+            min="1"
+            step="1"
+            inputMode="numeric"
+            value={line.quantity || ""}
+            onChange={(e) =>
+              onPatch({ quantity: Math.max(0, Number(e.target.value)) })
+            }
+            aria-label={t.quotation.quantity}
+            className="text-center"
+          />
+          <Select
+            value={line.unit}
+            onValueChange={(value) => onPatch({ unit: value as QuotationUnit })}
+          >
+            <SelectTrigger aria-label={t.quotation.unit}>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {units.map((u) => (
+                <SelectItem key={u.value} value={u.value}>
+                  {u.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Input
+            id={`${prefix}-price`}
+            type="number"
+            min="0"
+            step="0.01"
+            inputMode="decimal"
+            value={line.unitPrice > 0 ? line.unitPrice / 100 : ""}
+            onChange={(e) =>
+              onPatch({
+                unitPrice: Math.max(0, Math.round(Number(e.target.value) * 100)),
+              })
+            }
+            placeholder="0.00"
+            aria-label={t.quotation.unitPrice}
+          />
+        </div>
+        {/* Row 3: Line total */}
+        <div className="flex items-center justify-between border-t border-border pt-2 text-xs">
+          {line.productSlug ? (
+            <Link
+              to="/$locale/products/$slug"
+              params={{ locale, slug: line.productSlug }}
+              className="quotation-screen-only font-medium text-brand hover:underline"
+            >
+              {t.quotation.listedItem}
+            </Link>
+          ) : (
+            <span className="text-muted-foreground">{t.quotation.addCustom}</span>
+          )}
+          <p className="text-sm font-semibold tabular-nums">
+            {formatQuotationRupees(quotationLineTotal(line))}
+          </p>
+        </div>
+      </div>
+
+      {/* Desktop layout (lg+) */}
+      <div className="hidden lg:grid lg:gap-4 lg:grid-cols-[auto_minmax(160px,2fr)_1fr_1fr_1.25fr_auto]">
         {/* Drag handle + move buttons */}
         <div className="quotation-screen-only flex flex-col items-center gap-0.5 pt-6">
           <button
@@ -974,9 +1089,9 @@ function SortableQuoteLineEditor({
           </button>
         </div>
 
-        <QuoteField label={t.quotation.flowerName} htmlFor={`${prefix}-name`}>
+        <QuoteField label={t.quotation.flowerName} htmlFor={`${prefix}-name-lg`}>
           <Input
-            id={`${prefix}-name`}
+            id={`${prefix}-name-lg`}
             value={line.name}
             onChange={(e) => onPatch({ name: e.target.value })}
             placeholder={t.quotation.flowerNamePlaceholder}
@@ -1002,9 +1117,9 @@ function SortableQuoteLineEditor({
           </Select>
         </div>
 
-        <QuoteField label={t.quotation.quantity} htmlFor={`${prefix}-qty`}>
+        <QuoteField label={t.quotation.quantity} htmlFor={`${prefix}-qty-lg`}>
           <Input
-            id={`${prefix}-qty`}
+            id={`${prefix}-qty-lg`}
             type="number"
             min="1"
             step="1"
@@ -1016,9 +1131,9 @@ function SortableQuoteLineEditor({
           />
         </QuoteField>
 
-        <QuoteField label={t.quotation.unitPrice} htmlFor={`${prefix}-price`}>
+        <QuoteField label={t.quotation.unitPrice} htmlFor={`${prefix}-price-lg`}>
           <Input
-            id={`${prefix}-price`}
+            id={`${prefix}-price-lg`}
             type="number"
             min="0"
             step="0.01"
@@ -1045,7 +1160,8 @@ function SortableQuoteLineEditor({
         </Button>
       </div>
 
-      <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-border pt-3">
+      {/* Desktop footer: listed item link + line total */}
+      <div className="hidden lg:flex mt-3 items-center justify-between gap-2 border-t border-border pt-3">
         <div className="text-xs text-muted-foreground">
           {line.productSlug ? (
             <Link

@@ -12,19 +12,18 @@ import { Search } from "lucide-react";
 import { localizedName } from "../../i18n";
 import { useT } from "../../i18n/react";
 
+
 export const ALL = "all";
 
 export interface CatalogFilterValue {
   category?: string;
   type?: "retail" | "wholesale";
-  district?: string;
   q?: string;
 }
 
 export interface CatalogFilterPatch {
   category?: string;
   type?: string;
-  district?: string;
   q?: string;
 }
 
@@ -35,12 +34,10 @@ export interface CatalogFilterPatch {
  */
 export function CatalogFilters({
   categories,
-  districts,
   value,
   onChange,
 }: {
   categories: Array<{ slug: string; nameEn: string; nameSi: string | null }>;
-  districts: Array<{ slug: string; nameEn: string; nameSi: string }>;
   value: CatalogFilterValue;
   onChange: (patch: CatalogFilterPatch) => void;
 }) {
@@ -65,7 +62,7 @@ export function CatalogFilters({
         </TabsList>
       </Tabs>
 
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-[1fr_1fr_2fr]">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-[1fr_2fr]">
         <Select
           value={value.category ?? ALL}
           onValueChange={(v) => onChange({ category: v })}
@@ -78,23 +75,6 @@ export function CatalogFilters({
             {categories.map((c) => (
               <SelectItem key={c.slug} value={c.slug}>
                 {localizedName(c, locale)}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
-        <Select
-          value={value.district ?? ALL}
-          onValueChange={(v) => onChange({ district: v })}
-        >
-          <SelectTrigger aria-label={t.catalog.filterDistrict}>
-            <SelectValue placeholder={t.catalog.filterDistrict} />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value={ALL}>{t.catalog.allDistricts}</SelectItem>
-            {districts.map((d) => (
-              <SelectItem key={d.slug} value={d.slug}>
-                {localizedName(d, locale)}
               </SelectItem>
             ))}
           </SelectContent>

@@ -29,6 +29,7 @@ const NAV_ITEMS = [
   { to: "/whatsapp", label: "WhatsApp", exact: false },
   { to: "/flowers", label: "Flowers", exact: false },
   { to: "/bouquet-usage", label: "Bouquet AI", exact: false },
+  { to: "/bouquet-design", label: "Design Bouquet", exact: false },
 ] as const;
 
 function NavLinks({ onNavigate }: { onNavigate?: () => void }) {

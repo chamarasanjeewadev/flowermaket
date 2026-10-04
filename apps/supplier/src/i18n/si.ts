@@ -86,6 +86,7 @@ export const si: Dict = {
     products: "නිෂ්පාදන",
     rfqs: "RFQ එළිකඩ",
     shopSettings: "සාප්පු සැකසීම්",
+    designBouquet: "කළඹ නිර්මාණය",
     changeLanguage: "භාෂාව වෙනස් කරන්න",
   },
   common: {

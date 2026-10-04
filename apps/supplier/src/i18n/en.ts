@@ -88,6 +88,7 @@ export const en = {
     products: "Products",
     rfqs: "RFQ Inbox",
     shopSettings: "Shop settings",
+    designBouquet: "Design Bouquet",
     changeLanguage: "Change language",
   },
   common: {

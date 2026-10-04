@@ -176,6 +176,15 @@ function SidebarNav() {
       >
         {t.nav.shopSettings}
       </Link>
+      <Link
+        to="/bouquet-design"
+        className="rounded-md border-l-2 border-transparent px-3 py-2 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        activeProps={{
+          className: "border-brand bg-accent font-medium text-brand",
+        }}
+      >
+        {t.nav.designBouquet}
+      </Link>
     </nav>
   );
 }

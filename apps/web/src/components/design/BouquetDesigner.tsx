@@ -114,6 +114,12 @@ export default function BouquetDesigner({ flowers }: { flowers: ProductListItemD
   // so we can show the sign-in nudge. We derive this from whether the server
   // returned an imageUrl (storage only works when Supabase is configured).
   const showSignInNudge = status === "rate_limited" && rateLimitReason === "anon_limit";
+  const showMoreDesignsWa = status === "rate_limited" && rateLimitReason === "user_limit";
+
+  const moreDesignsWaHref = buildWhatsappUrl(
+    "Hi, I've reached my daily bouquet design limit on FlowerMarket.lk. Can I get more designs?",
+    WHATSAPP_NUMBER,
+  );
 
   return (
     <div className="grid gap-8 lg:grid-cols-[1fr_380px]">
@@ -158,6 +164,15 @@ export default function BouquetDesigner({ flowers }: { flowers: ProductListItemD
           {showSignInNudge && (
             <Button asChild variant="outline" size="sm">
               <Link to="/$locale/login" params={{ locale }}>{t.design.signInToGenerate}</Link>
+            </Button>
+          )}
+
+          {showMoreDesignsWa && (
+            <Button asChild size="sm" className="bg-[#25D366] text-white hover:bg-[#1fb457]">
+              <a href={moreDesignsWaHref} target="_blank" rel="noopener noreferrer">
+                <Send className="size-4" aria-hidden="true" />
+                Want more designs? Message us
+              </a>
             </Button>
           )}
 

@@ -185,6 +185,11 @@ function UserMenu({
             {t.nav.myAccount}
           </Link>
         </DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <Link to="/$locale/design" params={{ locale }}>
+            {t.nav.design}
+          </Link>
+        </DropdownMenuItem>
         <DropdownMenuItem
           onSelect={() => void handleSignOut()}
           disabled={signingOut}
@@ -343,6 +348,14 @@ export function Header({ session }: { session: SessionUser }) {
                   className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-accent"
                 >
                   {t.nav.quotation}
+                </Link>
+                <Link
+                  to="/$locale/design"
+                  params={{ locale }}
+                  onClick={() => setMobileOpen(false)}
+                  className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-accent"
+                >
+                  {t.nav.design}
                 </Link>
                 <Link
                   to="/$locale/blog"

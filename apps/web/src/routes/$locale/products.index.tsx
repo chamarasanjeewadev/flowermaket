@@ -1,5 +1,4 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { DISTRICTS } from "@flowers/api/constants";
 import {
   Pagination,
   PaginationButton,
@@ -150,12 +149,6 @@ function BrowsePage() {
               ? patch.category
               : undefined;
         }
-        if ("district" in patch) {
-          next.district =
-            patch.district && patch.district !== ALL
-              ? patch.district
-              : undefined;
-        }
         if ("type" in patch) {
           next.type =
             patch.type === "retail" || patch.type === "wholesale"
@@ -190,11 +183,9 @@ function BrowsePage() {
       <div className="mb-6">
         <CatalogFilters
           categories={categories}
-          districts={[...DISTRICTS]}
           value={{
             category: search.category,
             type: search.type,
-            district: search.district,
             q: search.q,
           }}
           onChange={applyPatch}
