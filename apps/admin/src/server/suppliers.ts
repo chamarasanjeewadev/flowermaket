@@ -15,6 +15,7 @@ import {
   generateInviteToken,
   buildInviteMessage,
   buildJoinUrl,
+  recordOutboundMessage,
   type ActionResult,
   type ReviewableShop,
   type VerificationStatus,
@@ -218,6 +219,13 @@ export const inviteSupplierFn = createServerFn({ method: "POST" })
           message,
         );
         whatsappSent = res.ok;
+        if (res.ok) {
+          try {
+            await recordOutboundMessage(db, { phone: data.phone.trim(), text: message });
+          } catch {
+            // logging into the inbox is best-effort; never fail the invite
+          }
+        }
       }
 
       return { ok: true, data: { token, joinUrl, whatsappSent } };
