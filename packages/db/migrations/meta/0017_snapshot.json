@@ -1,5 +1,5 @@
 {
-  "id": "40a70a19-5a4a-4753-8838-f223ecfb7538",
+  "id": "e4706916-78b8-42e5-bd94-76643c82a670",
   "prevId": "6b8d84ed-dd5b-4806-8e61-9967154ae4bd",
   "version": "7",
   "dialect": "postgresql",
@@ -999,7 +999,7 @@
         },
         "flower_variant_id": {
           "name": "flower_variant_id",
-          "type": "uuid",
+          "type": "text",
           "primaryKey": false,
           "notNull": false
         },

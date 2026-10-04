@@ -44,8 +44,8 @@ export const orderItems = pgTable(
     descriptionEn: text("description_en").notNull(),
     descriptionSi: text("description_si"),
     variant: text("variant"),
-    /** Optional link to a flower variant in the catalog (picker-selected). */
-    flowerVariantId: uuid("flower_variant_id").references(() => flowerVariants.id),
+    /** Optional link to a flower variant in the catalog (picker-selected). flower_variants.id is text. */
+    flowerVariantId: text("flower_variant_id").references(() => flowerVariants.id),
     quantity: integer("quantity").notNull(),
     unit: text("unit").notNull().default("stem"),
     notes: text("notes"),

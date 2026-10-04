@@ -1,2 +1,2 @@
-ALTER TABLE "order_items" ADD COLUMN "flower_variant_id" uuid;--> statement-breakpoint
+ALTER TABLE "order_items" ADD COLUMN "flower_variant_id" text;--> statement-breakpoint
 ALTER TABLE "order_items" ADD CONSTRAINT "order_items_flower_variant_id_flower_variants_id_fk" FOREIGN KEY ("flower_variant_id") REFERENCES "public"."flower_variants"("id") ON DELETE no action ON UPDATE no action;
