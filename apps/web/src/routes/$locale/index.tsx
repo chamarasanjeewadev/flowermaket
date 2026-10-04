@@ -102,7 +102,7 @@ function HomePage() {
           {/* Image column */}
           <div className="relative mx-auto w-full max-w-sm lg:max-w-none">
             <img
-              src="/flowers/hero-bouquet.png"
+              src="/flowers/hero-bouquet.webp"
               alt="Fresh gerbera bouquet"
               className="w-full drop-shadow-2xl"
             />
