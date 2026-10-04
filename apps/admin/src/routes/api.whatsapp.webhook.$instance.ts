@@ -26,14 +26,23 @@ function b64ToBytes(b64: string): Uint8Array {
   return bytes;
 }
 
-export const Route = createFileRoute("/api/whatsapp/webhook/$secret")({
+/**
+ * Inbound WhatsApp webhook. URL shape matches the sibling Evolution integrations:
+ *   POST /api/whatsapp/webhook/<instance>?token=<WHATSAPP_WEBHOOK_SECRET>
+ * The instance path segment identifies the sending Evolution instance; auth is
+ * the `token` query param, constant-time compared against WHATSAPP_WEBHOOK_SECRET.
+ * A missing/wrong token (or unset secret) returns 404 with no leak.
+ */
+export const Route = createFileRoute("/api/whatsapp/webhook/$instance")({
   server: {
     handlers: {
-      POST: async ({ params, request }) => {
+      POST: async ({ request }) => {
         const env = getEnv();
+        const token = new URL(request.url).searchParams.get("token");
         if (
           !env.WHATSAPP_WEBHOOK_SECRET ||
-          !timingSafeEqualStr(params.secret, env.WHATSAPP_WEBHOOK_SECRET)
+          !token ||
+          !timingSafeEqualStr(token, env.WHATSAPP_WEBHOOK_SECRET)
         ) {
           return new Response("Not found", { status: 404 });
         }

@@ -47,10 +47,16 @@ Common (Evolution v2):
 curl -X POST "$EVOLUTION_API_URL/webhook/set/$EVOLUTION_INSTANCE" \
   -H "apikey: $EVOLUTION_API_KEY" -H "Content-Type: application/json" \
   -d '{"webhook":{"enabled":true,
-       "url":"https://admin.flowermarket.lk/api/whatsapp/webhook/<WHATSAPP_WEBHOOK_SECRET>",
+       "url":"https://admin.flowermarket.lk/api/whatsapp/webhook/<EVOLUTION_INSTANCE>?token=<WHATSAPP_WEBHOOK_SECRET>",
        "webhookByEvents":false,"base64":true,
        "events":["MESSAGES_UPSERT"]}}'
 ```
+
+Webhook URL shape: `/api/whatsapp/webhook/<instance>?token=<secret>` — the
+instance is a path segment, the secret is the `token` query param (matches the
+sibling driver-tours integration). Admin is behind Cloudflare Access, so add an
+Access **Bypass** policy for path `/api/whatsapp/webhook/*` or Evolution's POST
+is challenged and never reaches the Worker.
 
 Verify:
 
