@@ -6,14 +6,17 @@ import {
   requireDb,
   createShop,
   updateShop,
+  markInviteAccepted,
   type CreateShopInput,
   type UpdateShopInput,
   type ActionResult,
 } from "@flowers/api";
 import { resolveSupplierSession } from "./session";
 
+type CreateShopPayload = CreateShopInput & { inviteToken?: string | null };
+
 export const createShopFn = createServerFn({ method: "POST" })
-  .validator((input: CreateShopInput) => input)
+  .validator((input: CreateShopPayload) => input)
   .handler(async ({ data }): Promise<ActionResult<{ id: string; slug: string }>> => {
     const session = await resolveSupplierSession();
     if (session.kind === "anonymous" || session.kind === "config_error") {
@@ -24,8 +27,14 @@ export const createShopFn = createServerFn({ method: "POST" })
       return { ok: true, data: { id: "dev-shop-id", slug: "dev-shop" } };
     }
 
+    const { inviteToken, ...shopInput } = data;
     const db = requireDb();
-    return createShop(db, session.userId, data);
+    const result = await createShop(db, session.userId, shopInput);
+    // Link the invite (best-effort) so acceptance is tracked for attribution.
+    if (result.ok && inviteToken) {
+      await markInviteAccepted(db, inviteToken, result.data.id);
+    }
+    return result;
   });
 
 export const updateShopFn = createServerFn({ method: "POST" })

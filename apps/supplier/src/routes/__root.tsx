@@ -50,7 +50,11 @@ export const Route = createRootRouteWithContext<RouterContext>()({
     ]);
 
     const path = location.pathname;
-    const isPublicPath = path === "/login" || path === "/auth/callback";
+    const isPublicPath =
+      path === "/login" ||
+      path === "/register" ||
+      path === "/auth/callback" ||
+      path.startsWith("/join");
 
     // Misconfigured server (Supabase env absent, AUTH_DISABLED not set) — fail closed.
     if (session.kind === "config_error" && !isPublicPath) {

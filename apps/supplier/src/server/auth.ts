@@ -3,11 +3,19 @@
  */
 import { createServerFn } from "@tanstack/react-start";
 import { getCookies, setCookie, getRequestUrl } from "@tanstack/react-start/server";
-import { getEnv } from "@flowers/api";
+import { getEnv, tryCreateDb, getInviteByToken } from "@flowers/api";
 import { isLocale, type Locale, DEFAULT_LOCALE } from "../i18n";
 import { getSupabase, resolveSupplierSession, type SupplierSession } from "./session";
 
 export type { SupplierSession };
+
+/** Normalize a Sri Lankan phone number to E.164 (+94…). */
+function toE164(phone: string): string {
+  let d = phone.replace(/\D/g, "");
+  if (d.startsWith("0")) d = `94${d.slice(1)}`;
+  if (!d.startsWith("94")) d = `94${d}`;
+  return `+${d}`;
+}
 
 export interface SignInResult {
   ok: boolean;
@@ -51,6 +59,87 @@ export const signOut = createServerFn({ method: "POST" }).handler(
     return { ok: true };
   },
 );
+
+/** Self-serve sign-up with email + password. */
+export const signUp = createServerFn({ method: "POST" })
+  .validator((input: { email: string; password: string }) => input)
+  .handler(async ({ data }): Promise<SignInResult> => {
+    const supabase = getSupabase();
+    if (!supabase) {
+      return {
+        ok: false,
+        message:
+          'Supabase is not configured — the portal is running in dev mode. Use "Continue to dashboard".',
+      };
+    }
+    const { error } = await supabase.auth.signUp({
+      email: data.email,
+      password: data.password,
+    });
+    if (error) return { ok: false, message: error.message };
+    return { ok: true };
+  });
+
+export interface InviteDetails {
+  valid: boolean;
+  reason?: "not_found" | "used" | "expired";
+  nameEn?: string | null;
+  shopType?: "florist" | "grower" | null;
+  isAggregator?: boolean;
+}
+
+/** Validate an invite token and return its pre-fill details (public, pre-auth). */
+export const getInvite = createServerFn({ method: "GET" })
+  .validator((input: { token: string }) => input)
+  .handler(async ({ data }): Promise<InviteDetails> => {
+    const db = tryCreateDb();
+    if (!db) return { valid: false, reason: "not_found" };
+    const invite = await getInviteByToken(db, data.token);
+    if (!invite) return { valid: false, reason: "not_found" };
+    if (invite.status === "accepted") return { valid: false, reason: "used" };
+    if (invite.expiresAt && invite.expiresAt.getTime() < Date.now()) {
+      return { valid: false, reason: "expired" };
+    }
+    return {
+      valid: true,
+      nameEn: invite.nameEn,
+      shopType: invite.shopType,
+      isAggregator: invite.isAggregator,
+    };
+  });
+
+/** Phase 3 — request an SMS OTP for email-less (handed-over) suppliers. */
+export const requestPhoneOtp = createServerFn({ method: "POST" })
+  .validator((input: { phone: string }) => input)
+  .handler(async ({ data }): Promise<SignInResult> => {
+    const supabase = getSupabase();
+    if (!supabase) {
+      return { ok: false, message: "Supabase is not configured." };
+    }
+    // Normalize to E.164-ish digits (reuse the WhatsApp JID normalizer, strip suffix).
+    const phone = toE164(data.phone);
+    const { error } = await supabase.auth.signInWithOtp({ phone });
+    if (error) return { ok: false, message: error.message };
+    return { ok: true };
+  });
+
+/** Phase 3 — verify the SMS OTP and establish a session. */
+export const verifyPhoneOtp = createServerFn({ method: "POST" })
+  .validator((input: { phone: string; token: string }) => input)
+  .handler(async ({ data }): Promise<SignInResult> => {
+    const supabase = getSupabase();
+    if (!supabase) {
+      return { ok: false, message: "Supabase is not configured." };
+    }
+    const phone = toE164(data.phone);
+    const { error } = await supabase.auth.verifyOtp({
+      phone,
+      token: data.token,
+      type: "sms",
+    });
+    if (error) return { ok: false, message: error.message };
+    return { ok: true };
+  });
 
 /**
  * Build the Google OAuth URL server-side (PKCE verifier lands in a cookie via

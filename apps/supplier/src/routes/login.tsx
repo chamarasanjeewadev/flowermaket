@@ -12,7 +12,7 @@ import {
 import { Input } from "@flowers/ui/components/input";
 import { Label } from "@flowers/ui/components/label";
 import { Loader2 } from "lucide-react";
-import { signIn } from "../server/auth";
+import { signIn, requestPhoneOtp, verifyPhoneOtp } from "../server/auth";
 import { GoogleButton } from "../components/GoogleButton";
 import { useT } from "../i18n/react";
 
@@ -34,6 +34,49 @@ function LoginPage() {
   const [password, setPassword] = React.useState("");
   const [error, setError] = React.useState<string | null>(searchError ?? null);
   const [busy, setBusy] = React.useState(false);
+
+  // Phone-OTP handover login (for email-less suppliers).
+  const [phoneMode, setPhoneMode] = React.useState(false);
+  const [phone, setPhone] = React.useState("");
+  const [otp, setOtp] = React.useState("");
+  const [otpSent, setOtpSent] = React.useState(false);
+  const [phoneBusy, setPhoneBusy] = React.useState(false);
+
+  async function handleSendOtp() {
+    setError(null);
+    if (!phone.trim()) {
+      setError("Enter your phone number.");
+      return;
+    }
+    setPhoneBusy(true);
+    try {
+      const result = await requestPhoneOtp({ data: { phone: phone.trim() } });
+      if (result.ok) setOtpSent(true);
+      else setError(result.message ?? "Could not send the code.");
+    } finally {
+      setPhoneBusy(false);
+    }
+  }
+
+  async function handleVerifyOtp() {
+    setError(null);
+    if (!otp.trim()) {
+      setError("Enter the code you received.");
+      return;
+    }
+    setPhoneBusy(true);
+    try {
+      const result = await verifyPhoneOtp({ data: { phone: phone.trim(), token: otp.trim() } });
+      if (result.ok) {
+        await router.invalidate();
+        await router.navigate({ to: "/" });
+      } else {
+        setError(result.message ?? "Invalid code.");
+      }
+    } finally {
+      setPhoneBusy(false);
+    }
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -139,6 +182,63 @@ function LoginPage() {
                   {busy ? t.auth.signingIn : t.auth.signIn}
                 </Button>
               </form>
+
+              <div className="rounded-lg border border-border p-3">
+                {!phoneMode ? (
+                  <button
+                    type="button"
+                    className="w-full text-center text-sm text-muted-foreground underline hover:text-foreground"
+                    onClick={() => setPhoneMode(true)}
+                  >
+                    Sign in with your phone number
+                  </button>
+                ) : (
+                  <div className="space-y-3">
+                    <div>
+                      <Label htmlFor="phone">Phone (94…)</Label>
+                      <Input
+                        id="phone"
+                        inputMode="tel"
+                        className="mt-1.5"
+                        placeholder="94771234567"
+                        value={phone}
+                        onChange={(e) => setPhone(e.target.value)}
+                        disabled={otpSent}
+                      />
+                    </div>
+                    {otpSent && (
+                      <div>
+                        <Label htmlFor="otp">Code</Label>
+                        <Input
+                          id="otp"
+                          inputMode="numeric"
+                          className="mt-1.5"
+                          placeholder="123456"
+                          value={otp}
+                          onChange={(e) => setOtp(e.target.value)}
+                        />
+                      </div>
+                    )}
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="w-full"
+                      disabled={phoneBusy}
+                      onClick={() => void (otpSent ? handleVerifyOtp() : handleSendOtp())}
+                    >
+                      {phoneBusy ? <Loader2 className="animate-spin" /> : null}
+                      {otpSent ? "Verify code" : "Send code"}
+                    </Button>
+                  </div>
+                )}
+              </div>
+
+              <p className="text-center text-sm text-muted-foreground">
+                New supplier?{" "}
+                <Link to="/register" className="underline hover:text-foreground">
+                  Create an account
+                </Link>
+              </p>
             </div>
           )}
         </CardContent>

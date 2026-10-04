@@ -19,12 +19,16 @@ import { createShopFn } from "../server/shops";
 import { useT } from "../i18n/react";
 
 export const Route = createFileRoute("/onboarding")({
+  validateSearch: (search: Record<string, unknown>): { invite?: string } => ({
+    invite: typeof search.invite === "string" ? search.invite : undefined,
+  }),
   component: OnboardingPage,
 });
 
 function OnboardingPage() {
   const { t } = useT();
   const router = useRouter();
+  const { invite } = Route.useSearch();
   const [serverError, setServerError] = React.useState<string | null>(null);
 
   const form = useForm({
@@ -48,6 +52,7 @@ function OnboardingPage() {
           shopType: value.shopType || "florist",
           district: value.district,
           city: value.city || null,
+          inviteToken: invite ?? null,
         },
       });
       if (!result.ok) {
