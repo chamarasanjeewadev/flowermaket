@@ -9,6 +9,7 @@ import {
 } from "drizzle-orm/pg-core";
 import { listingType, productStatus } from "./enums";
 import { shops } from "./shops";
+import { flowerVariants } from "./flowers";
 
 export const categories = pgTable("categories", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -43,6 +44,10 @@ export const products = pgTable(
     listingType: listingType("listing_type").notNull().default("retail"),
     minOrderQty: integer("min_order_qty"),
     status: productStatus("status").notNull().default("draft"),
+    flowerVariantId: text("flower_variant_id").references(
+      () => flowerVariants.id,
+      { onDelete: "set null" },
+    ),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
