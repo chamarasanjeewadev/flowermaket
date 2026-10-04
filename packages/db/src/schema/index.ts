@@ -1,6 +1,7 @@
 export * from "./enums";
 export * from "./users";
 export * from "./shops";
+export * from "./supplier-invites";
 export * from "./catalog";
 export * from "./orders";
 export * from "./documents";
