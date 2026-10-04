@@ -170,6 +170,9 @@ export function FlowerPicker({
                           alt={o.label}
                           loading="lazy"
                           className="size-full object-cover"
+                          onError={(e) => {
+                            e.currentTarget.style.display = "none";
+                          }}
                         />
                       ) : (
                         <ImageOff className="size-6 text-muted-foreground/40" />

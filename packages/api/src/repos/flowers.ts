@@ -57,7 +57,7 @@ function flowerImageUrl(
   imagePath: string | null,
   supabaseUrl: string,
 ): string | null {
-  if (!imagePath) return null;
+  if (!imagePath || !supabaseUrl) return null;
   return `${supabaseUrl}/storage/v1/object/public/flower-images/${imagePath}`;
 }
 

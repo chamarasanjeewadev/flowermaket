@@ -44,12 +44,14 @@ export function getSupabase() {
 }
 
 export async function resolveSupplierSession(): Promise<SupplierSession> {
+  // Explicit dev opt-in wins even when Supabase IS configured, so local dev can
+  // point at a real DB (for data) without needing a login. Never set in prod.
+  if (getEnv().AUTH_DISABLED) return { kind: "auth_disabled" };
+
   const supabase = getSupabase();
   if (!supabase) {
-    // Only treat missing Supabase env as intentional when AUTH_DISABLED=1.
-    // Otherwise fail closed — the supplier portal must not grant access.
-    const { AUTH_DISABLED } = getEnv();
-    return AUTH_DISABLED ? { kind: "auth_disabled" } : { kind: "config_error" };
+    // Supabase env absent and not AUTH_DISABLED — fail closed.
+    return { kind: "config_error" };
   }
 
   const { data } = await supabase.auth.getUser();

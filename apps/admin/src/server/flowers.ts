@@ -32,9 +32,10 @@ export const getAdminFlowers = createServerFn({ method: "GET" }).handler(
     await requireAdmin();
     const db = tryCreateDb();
     if (!db) return [];
+    // A missing SUPABASE_URL only breaks image URLs — still list the catalog
+    // (image fields fall back to null) rather than hiding every flower.
     const { SUPABASE_URL } = getEnv();
-    if (!SUPABASE_URL) return [];
-    return listAdminSpeciesWithVariants(db, SUPABASE_URL);
+    return listAdminSpeciesWithVariants(db, SUPABASE_URL ?? "");
   },
 );
 
