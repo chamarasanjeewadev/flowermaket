@@ -11,7 +11,7 @@ describe("validateAdminCreateSupplierInput", () => {
   const valid = {
     email: "farmer@example.com",
     phone: "94771234567",
-    shop: { nameEn: "Green Fields", district: "nuwara-eliya", shopType: "grower" as const },
+    shop: { nameEn: "Green Fields", district: "nuwara-eliya", sellerTypes: ["farmer" as const] },
     verificationStatus: "verified" as const,
   };
 
@@ -209,5 +209,35 @@ describe("validateUpdateShopInput", () => {
     expect(
       validateUpdateShopInput({ nameSi: null, descriptionEn: null, city: null }),
     ).toEqual([]);
+  });
+});
+
+describe("seller types validation", () => {
+  const base = { nameEn: "Rose Garden", district: "colombo" };
+
+  it("accepts any non-empty combination", () => {
+    expect(
+      validateCreateShopInput({ ...base, sellerTypes: ["florist", "farmer"] }),
+    ).toEqual([]);
+    expect(validateUpdateShopInput({ sellerTypes: ["supplier"] })).toEqual([]);
+  });
+
+  it("rejects an empty list on create and update", () => {
+    expect(
+      validateCreateShopInput({ ...base, sellerTypes: [] }).some(
+        (e) => e.field === "sellerTypes",
+      ),
+    ).toBe(true);
+    expect(
+      validateUpdateShopInput({ sellerTypes: [] }).some((e) => e.field === "sellerTypes"),
+    ).toBe(true);
+  });
+
+  it("rejects the legacy 'grower' value", () => {
+    const errors = validateCreateShopInput({
+      ...base,
+      sellerTypes: ["grower" as never],
+    });
+    expect(errors.some((e) => e.field === "sellerTypes")).toBe(true);
   });
 });

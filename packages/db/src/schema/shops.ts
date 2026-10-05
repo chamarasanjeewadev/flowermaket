@@ -1,5 +1,6 @@
 import {
   boolean,
+  check,
   index,
   integer,
   jsonb,
@@ -8,7 +9,8 @@ import {
   timestamp,
   uuid,
 } from "drizzle-orm/pg-core";
-import { shopType, verificationStatus } from "./enums";
+import { sql } from "drizzle-orm";
+import { sellerType, verificationStatus } from "./enums";
 import { users } from "./users";
 
 export const shops = pgTable(
@@ -19,7 +21,11 @@ export const shops = pgTable(
       .references(() => users.id)
       .notNull(),
     slug: text("slug").unique().notNull(),
-    shopType: shopType("shop_type").notNull().default("florist"),
+    /** One or more of florist | supplier | farmer (never empty). */
+    sellerTypes: sellerType("seller_types")
+      .array()
+      .notNull()
+      .default(sql`'{florist}'::seller_type[]`),
     nameEn: text("name_en").notNull(),
     nameSi: text("name_si"),
     descriptionEn: text("description_en"),
@@ -34,8 +40,6 @@ export const shops = pgTable(
     /** Commission in basis points; null = use platform default. */
     commissionRateBps: integer("commission_rate_bps"),
     bankDetails: jsonb("bank_details"),
-    /** Middleman/aggregator flag: a grower who sources from multiple farmers. */
-    isAggregator: boolean("is_aggregator").notNull().default(false),
     /** Subscription seam. "free" for everyone today; gated features read this later. */
     plan: text("plan").notNull().default("free"),
     verificationNotes: text("verification_notes"),
@@ -58,5 +62,9 @@ export const shops = pgTable(
       .notNull()
       .defaultNow(),
   },
-  (t) => [index("shops_owner_user_id_idx").on(t.ownerUserId)],
+  (t) => [
+    index("shops_owner_user_id_idx").on(t.ownerUserId),
+    index("shops_seller_types_idx").using("gin", t.sellerTypes),
+    check("shops_seller_types_nonempty", sql`cardinality(${t.sellerTypes}) > 0`),
+  ],
 );

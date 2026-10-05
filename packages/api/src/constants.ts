@@ -69,3 +69,28 @@ export const DESIGNER_CATEGORY_SLUGS: readonly string[] = [
   "chrysanthemums",
   "loose-flowers",
 ];
+
+/** Seller types a shop can hold (any non-empty combination), in canonical
+ * display order: florist (arranges / retail), supplier (bulk wholesaler /
+ * trader), farmer (grows flowers). Mirrors the `seller_type` pg enum. */
+export const SELLER_TYPES = ["florist", "supplier", "farmer"] as const;
+export type SellerType = (typeof SELLER_TYPES)[number];
+
+/** Types that receive sourcing RFQs (they sell stems, not arrangements). */
+export const SOURCING_SELLER_TYPES: readonly SellerType[] = ["supplier", "farmer"];
+
+export function isSellerType(value: unknown): value is SellerType {
+  return (
+    typeof value === "string" &&
+    (SELLER_TYPES as readonly string[]).includes(value)
+  );
+}
+
+/** Dedupe + canonical order; null when empty or any value is unknown. */
+export function normalizeSellerTypes(
+  input: readonly unknown[] | null | undefined,
+): SellerType[] | null {
+  if (!input || input.length === 0) return null;
+  if (!input.every(isSellerType)) return null;
+  return SELLER_TYPES.filter((t) => input.includes(t));
+}

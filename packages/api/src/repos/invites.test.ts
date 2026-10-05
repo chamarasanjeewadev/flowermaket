@@ -41,7 +41,11 @@ describe("generateInviteToken", () => {
 });
 
 describe("validateInviteInput", () => {
-  const valid = { phone: "94771234567", shopType: "grower" as const, language: "en" as const };
+  const valid = {
+    phone: "94771234567",
+    sellerTypes: ["farmer"] as const,
+    language: "en" as const,
+  };
 
   it("passes for valid input", () => {
     expect(validateInviteInput(valid)).toEqual([]);
@@ -57,9 +61,18 @@ describe("validateInviteInput", () => {
     expect(errors.some((e) => e.field === "phone")).toBe(true);
   });
 
-  it("rejects an invalid shopType", () => {
-    const errors = validateInviteInput({ ...valid, shopType: "wizard" as never });
-    expect(errors.some((e) => e.field === "shopType")).toBe(true);
+  it("passes with no seller types (left to the supplier)", () => {
+    expect(validateInviteInput({ ...valid, sellerTypes: null })).toEqual([]);
+  });
+
+  it("rejects an unknown seller type", () => {
+    const errors = validateInviteInput({ ...valid, sellerTypes: ["wizard"] });
+    expect(errors.some((e) => e.field === "sellerTypes")).toBe(true);
+  });
+
+  it("rejects an empty seller type list", () => {
+    const errors = validateInviteInput({ ...valid, sellerTypes: [] });
+    expect(errors.some((e) => e.field === "sellerTypes")).toBe(true);
   });
 
   it("rejects an invalid language", () => {
@@ -73,7 +86,7 @@ describe("buildInviteMessage", () => {
 
   it("includes the join link", () => {
     const msg = buildInviteMessage({
-      shopType: "grower",
+      sellerTypes: ["farmer"],
       language: "en",
       joinUrl,
     });
@@ -83,7 +96,7 @@ describe("buildInviteMessage", () => {
   it("greets by name when provided", () => {
     const msg = buildInviteMessage({
       nameEn: "Sunil",
-      shopType: "grower",
+      sellerTypes: ["farmer"],
       language: "en",
       joinUrl,
     });
@@ -91,19 +104,18 @@ describe("buildInviteMessage", () => {
   });
 
   it("uses grower benefits for a farmer (English)", () => {
-    const msg = buildInviteMessage({ shopType: "grower", language: "en", joinUrl });
+    const msg = buildInviteMessage({ sellerTypes: ["farmer"], language: "en", joinUrl });
     expect(msg.toLowerCase()).toContain("buyers");
   });
 
   it("uses florist benefits for a florist (English)", () => {
-    const msg = buildInviteMessage({ shopType: "florist", language: "en", joinUrl });
+    const msg = buildInviteMessage({ sellerTypes: ["florist"], language: "en", joinUrl });
     expect(msg.toLowerCase()).toContain("storefront");
   });
 
-  it("uses aggregator wording when isAggregator (English)", () => {
+  it("uses supplier wording when supplier is among the types (English)", () => {
     const msg = buildInviteMessage({
-      shopType: "grower",
-      isAggregator: true,
+      sellerTypes: ["supplier", "farmer"],
       language: "en",
       joinUrl,
     });
@@ -111,7 +123,7 @@ describe("buildInviteMessage", () => {
   });
 
   it("renders Sinhala when language is si", () => {
-    const msg = buildInviteMessage({ shopType: "grower", language: "si", joinUrl });
+    const msg = buildInviteMessage({ sellerTypes: ["farmer"], language: "si", joinUrl });
     // Contains at least one Sinhala-script character.
     expect(msg).toMatch(/[඀-෿]/);
     expect(msg).toContain(joinUrl);

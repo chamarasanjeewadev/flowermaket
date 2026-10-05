@@ -7,18 +7,16 @@
  * - Pure validation helpers are exported separately so they are unit-testable
  *   without a database (see shops.test.ts).
  */
-import { desc, eq } from "drizzle-orm";
+import { desc, eq, sql } from "drizzle-orm";
 import { schema } from "@flowers/db/client";
 import type { Db } from "../db";
 import { err, ok, isPgError, type ActionResult } from "../errors";
 import { slugify } from "../slug";
-import { DISTRICTS } from "../constants";
+import { DISTRICTS, normalizeSellerTypes, type SellerType } from "../constants";
 
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
-
-export type ShopType = "florist" | "grower";
 
 export type VerificationStatus =
   | "unverified"
@@ -33,8 +31,8 @@ export interface CreateShopInput {
   descriptionSi?: string | null;
   district: string;
   city?: string | null;
-  shopType?: ShopType | null;
-  isAggregator?: boolean | null;
+  /** Defaults to ["florist"] when omitted. */
+  sellerTypes?: readonly SellerType[] | null;
 }
 
 export interface UpdateShopInput {
@@ -43,21 +41,23 @@ export interface UpdateShopInput {
   descriptionEn?: string | null;
   descriptionSi?: string | null;
   city?: string | null;
+  sellerTypes?: readonly SellerType[];
 }
 
 export interface ShopRow {
   id: string;
   ownerUserId: string;
   slug: string;
-  shopType: ShopType;
+  sellerTypes: SellerType[];
   nameEn: string;
   nameSi: string | null;
   descriptionEn: string | null;
   descriptionSi: string | null;
   district: string;
   city: string | null;
+  logoPath: string | null;
+  bannerPath: string | null;
   verificationStatus: VerificationStatus;
-  isAggregator: boolean;
   plan: string;
   verificationNotes: string | null;
   verificationProof: unknown;
@@ -87,7 +87,6 @@ export function canSellCheck(shop: {
 // ---------------------------------------------------------------------------
 
 const DISTRICT_SLUGS = new Set(DISTRICTS.map((d) => d.slug));
-const SHOP_TYPES = new Set<ShopType>(["florist", "grower"]);
 const VERIFICATION_STATUSES = new Set<VerificationStatus>([
   "unverified",
   "pending",
@@ -132,8 +131,11 @@ export function validateCreateShopInput(input: CreateShopInput): ValidationError
     errors.push({ field: "district", message: "District must be a valid Sri Lanka district slug." });
   }
 
-  if (input.shopType != null && !SHOP_TYPES.has(input.shopType)) {
-    errors.push({ field: "shopType", message: "Shop type must be either florist or grower." });
+  if (input.sellerTypes != null && !normalizeSellerTypes(input.sellerTypes)) {
+    errors.push({
+      field: "sellerTypes",
+      message: "Choose at least one seller type: florist, supplier or farmer.",
+    });
   }
 
   return errors;
@@ -155,6 +157,13 @@ export function validateUpdateShopInput(input: UpdateShopInput): ValidationError
     } else if (nameEn.length > 100) {
       errors.push({ field: "nameEn", message: "Shop name must be at most 100 characters." });
     }
+  }
+
+  if (input.sellerTypes !== undefined && !normalizeSellerTypes(input.sellerTypes)) {
+    errors.push({
+      field: "sellerTypes",
+      message: "Choose at least one seller type: florist, supplier or farmer.",
+    });
   }
 
   return errors;
@@ -244,8 +253,7 @@ export async function createShop(
           descriptionSi: input.descriptionSi ?? null,
           district: input.district,
           city: input.city ?? null,
-          shopType: input.shopType ?? "florist",
-          isAggregator: input.isAggregator ?? false,
+          sellerTypes: normalizeSellerTypes(input.sellerTypes) ?? ["florist"],
           verificationStatus: opts?.verificationStatus ?? "pending",
         })
         .returning({ id: schema.shops.id, slug: schema.shops.slug });
@@ -292,6 +300,7 @@ export async function updateShop(
     descriptionEn?: string | null;
     descriptionSi?: string | null;
     city?: string | null;
+    sellerTypes?: SellerType[];
   };
 
   const updateSet: ShopUpdate = { updatedAt: new Date() };
@@ -300,6 +309,10 @@ export async function updateShop(
   if ("descriptionEn" in patch) updateSet.descriptionEn = patch.descriptionEn ?? null;
   if ("descriptionSi" in patch) updateSet.descriptionSi = patch.descriptionSi ?? null;
   if ("city" in patch) updateSet.city = patch.city ?? null;
+  if (patch.sellerTypes !== undefined) {
+    // Validated above, so normalize never returns null here.
+    updateSet.sellerTypes = normalizeSellerTypes(patch.sellerTypes) ?? ["florist"];
+  }
 
   try {
     const [row] = await db
@@ -335,8 +348,7 @@ export interface ReviewableShop {
   slug: string;
   nameEn: string;
   nameSi: string | null;
-  shopType: ShopType;
-  isAggregator: boolean;
+  sellerTypes: SellerType[];
   district: string;
   city: string | null;
   descriptionEn: string | null;
@@ -348,6 +360,9 @@ export interface ReviewableShop {
   ownerFullName: string | null;
   ownerPhone: string | null;
   createdAt: Date;
+  /** Products by status, so admins can spot empty storefronts. */
+  activeProductCount: number;
+  totalProductCount: number;
 }
 
 /** List shops for the admin verification queue, newest first; optional status filter. */
@@ -365,8 +380,7 @@ export async function listShopsForReview(
       slug: schema.shops.slug,
       nameEn: schema.shops.nameEn,
       nameSi: schema.shops.nameSi,
-      shopType: schema.shops.shopType,
-      isAggregator: schema.shops.isAggregator,
+      sellerTypes: schema.shops.sellerTypes,
       district: schema.shops.district,
       city: schema.shops.city,
       descriptionEn: schema.shops.descriptionEn,
@@ -378,6 +392,8 @@ export async function listShopsForReview(
       ownerFullName: schema.users.fullName,
       ownerPhone: schema.users.phone,
       createdAt: schema.shops.createdAt,
+      activeProductCount: sql<number>`(select count(*)::int from ${schema.products} where ${schema.products.shopId} = ${schema.shops.id} and ${schema.products.status} = 'active')`,
+      totalProductCount: sql<number>`(select count(*)::int from ${schema.products} where ${schema.products.shopId} = ${schema.shops.id})`,
     })
     .from(schema.shops)
     .innerJoin(schema.users, eq(schema.users.id, schema.shops.ownerUserId))
@@ -511,8 +527,7 @@ export async function adminCreateSupplier(
           descriptionSi: params.shop.descriptionSi ?? null,
           district: params.shop.district,
           city: params.shop.city ?? null,
-          shopType: params.shop.shopType ?? "florist",
-          isAggregator: params.shop.isAggregator ?? false,
+          sellerTypes: normalizeSellerTypes(params.shop.sellerTypes) ?? ["florist"],
           verificationStatus: params.verificationStatus,
           verificationReviewedAt: new Date(),
         })
@@ -523,5 +538,81 @@ export async function adminCreateSupplier(
   } catch (e) {
     if (isPgError(e, "23505")) return err("conflict", "This user already owns a shop.");
     return err("unknown", e instanceof Error ? e.message : "Could not create supplier.");
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Shop media (logo / banner)
+// ---------------------------------------------------------------------------
+
+export type ShopMediaKind = "logo" | "banner";
+
+/**
+ * Set (or clear with `null`) the owner's shop logo or banner storage path.
+ * Returns the previous path so the caller can remove the old storage object.
+ */
+export async function setShopMedia(
+  db: Db,
+  ownerUserId: string,
+  kind: ShopMediaKind,
+  storagePath: string | null,
+): Promise<ActionResult<{ previousPath: string | null }>> {
+  try {
+    const [current] = await db
+      .select({
+        logoPath: schema.shops.logoPath,
+        bannerPath: schema.shops.bannerPath,
+      })
+      .from(schema.shops)
+      .where(eq(schema.shops.ownerUserId, ownerUserId))
+      .limit(1);
+    if (!current) return err("not_found", "Shop not found.");
+
+    await db
+      .update(schema.shops)
+      .set(
+        kind === "logo"
+          ? { logoPath: storagePath, updatedAt: new Date() }
+          : { bannerPath: storagePath, updatedAt: new Date() },
+      )
+      .where(eq(schema.shops.ownerUserId, ownerUserId));
+
+    return ok({
+      previousPath: kind === "logo" ? current.logoPath : current.bannerPath,
+    });
+  } catch (e) {
+    return err(
+      "unknown",
+      e instanceof Error ? e.message : "Could not update shop image.",
+    );
+  }
+}
+
+/** Admin: replace a shop's seller types (at least one). */
+export async function adminSetShopSellerTypes(
+  db: Db,
+  shopId: string,
+  sellerTypes: readonly SellerType[],
+): Promise<ActionResult<{ id: string; sellerTypes: SellerType[] }>> {
+  const normalized = normalizeSellerTypes(sellerTypes);
+  if (!normalized) {
+    return err(
+      "validation",
+      "Choose at least one seller type: florist, supplier or farmer.",
+    );
+  }
+  try {
+    const [row] = await db
+      .update(schema.shops)
+      .set({ sellerTypes: normalized, updatedAt: new Date() })
+      .where(eq(schema.shops.id, shopId))
+      .returning({ id: schema.shops.id });
+    if (!row) return err("not_found", "Shop not found.");
+    return ok({ id: row.id, sellerTypes: normalized });
+  } catch (e) {
+    return err(
+      "unknown",
+      e instanceof Error ? e.message : "Could not update seller types.",
+    );
   }
 }

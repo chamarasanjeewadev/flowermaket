@@ -14,10 +14,20 @@
  * bundles; it pulls the postgres driver. Route loaders reach it via the
  * server functions in `apps/web/src/server/catalog.ts`.
  */
-import { and, asc, desc, eq, ilike, inArray, or, sql } from "drizzle-orm";
+import {
+  and,
+  arrayContains,
+  asc,
+  desc,
+  eq,
+  ilike,
+  inArray,
+  or,
+  sql,
+} from "drizzle-orm";
 import type { SQL } from "drizzle-orm";
 import { schema } from "@flowers/db/client";
-import { DESIGNER_CATEGORY_SLUGS } from "../constants";
+import { DESIGNER_CATEGORY_SLUGS, type SellerType } from "../constants";
 import type { Db } from "../db";
 
 export const CATALOG_PAGE_SIZE = 24;
@@ -40,6 +50,7 @@ export interface ProductListItem {
   shopSlug: string;
   shopNameEn: string;
   shopNameSi: string | null;
+  shopSellerTypes: SellerType[];
   categorySlug: string;
   flowerVariantId: string | null;
 }
@@ -59,8 +70,25 @@ export interface ShopSummary {
   descriptionSi: string | null;
   district: string;
   city: string | null;
-  shopType: "florist" | "grower";
+  sellerTypes: SellerType[];
+  /** Raw storage paths (resolve to URLs server-side). */
+  logoPath: string | null;
+  bannerPath: string | null;
   verificationStatus: "unverified" | "pending" | "verified" | "rejected";
+}
+
+/** A shop in the public directory, with enough product context to preview it. */
+export interface ShopDirectoryEntry extends ShopSummary {
+  productCount: number;
+  /** Up to 4 primary-image storage paths of the shop's newest products. */
+  previewImagePaths: string[];
+  /** Lowest active product price in LKR cents (null when no products). */
+  minPrice: number | null;
+}
+
+export interface ListShopsFilter {
+  sellerType?: SellerType;
+  district?: string;
 }
 
 export interface CategorySummary {
@@ -107,6 +135,7 @@ export interface ListProductsFilter {
   categorySlug?: string;
   listingType?: ListingType;
   district?: string;
+  sellerType?: SellerType;
   q?: string;
   page?: number;
 }
@@ -161,6 +190,7 @@ async function selectListItems(
       shopSlug: schema.shops.slug,
       shopNameEn: schema.shops.nameEn,
       shopNameSi: schema.shops.nameSi,
+      shopSellerTypes: schema.shops.sellerTypes,
       categorySlug: schema.categories.slug,
       flowerVariantId: schema.products.flowerVariantId,
     })
@@ -184,6 +214,23 @@ async function selectListItems(
     ...r,
     primaryImagePath: images.get(r.id) ?? null,
   }));
+}
+
+/** Columns selected for every public ShopSummary. */
+function shopSummaryColumns() {
+  return {
+    slug: schema.shops.slug,
+    nameEn: schema.shops.nameEn,
+    nameSi: schema.shops.nameSi,
+    descriptionEn: schema.shops.descriptionEn,
+    descriptionSi: schema.shops.descriptionSi,
+    district: schema.shops.district,
+    city: schema.shops.city,
+    sellerTypes: schema.shops.sellerTypes,
+    logoPath: schema.shops.logoPath,
+    bannerPath: schema.shops.bannerPath,
+    verificationStatus: schema.shops.verificationStatus,
+  };
 }
 
 /** Conditions that make a product publicly visible. */
@@ -214,6 +261,9 @@ export async function listActiveProducts(
   }
   if (filter.district) {
     conditions.push(eq(schema.shops.district, filter.district));
+  }
+  if (filter.sellerType) {
+    conditions.push(arrayContains(schema.shops.sellerTypes, [filter.sellerType]));
   }
   const q = filter.q?.trim();
   if (q) {
@@ -265,17 +315,7 @@ export async function getActiveProductBySlug(
   const [row] = await db
     .select({
       product: schema.products,
-      shop: {
-        slug: schema.shops.slug,
-        nameEn: schema.shops.nameEn,
-        nameSi: schema.shops.nameSi,
-        descriptionEn: schema.shops.descriptionEn,
-        descriptionSi: schema.shops.descriptionSi,
-        district: schema.shops.district,
-        city: schema.shops.city,
-        shopType: schema.shops.shopType,
-        verificationStatus: schema.shops.verificationStatus,
-      },
+      shop: shopSummaryColumns(),
       category: {
         slug: schema.categories.slug,
         nameEn: schema.categories.nameEn,
@@ -332,15 +372,7 @@ export async function getShopWithProducts(
 ): Promise<{ shop: ShopSummary; products: ProductListItem[] } | null> {
   const [shop] = await db
     .select({
-      slug: schema.shops.slug,
-      nameEn: schema.shops.nameEn,
-      nameSi: schema.shops.nameSi,
-      descriptionEn: schema.shops.descriptionEn,
-      descriptionSi: schema.shops.descriptionSi,
-      district: schema.shops.district,
-      city: schema.shops.city,
-      shopType: schema.shops.shopType,
-      verificationStatus: schema.shops.verificationStatus,
+      ...shopSummaryColumns(),
     })
     .from(schema.shops)
     .where(
@@ -363,28 +395,77 @@ export async function getShopWithProducts(
   return { shop, products };
 }
 
-/** All publicly-visible shops (verified + active), for the /shops directory. */
-export async function listActiveShops(db: Db): Promise<ShopSummary[]> {
-  return db
-    .select({
-      slug: schema.shops.slug,
-      nameEn: schema.shops.nameEn,
-      nameSi: schema.shops.nameSi,
-      descriptionEn: schema.shops.descriptionEn,
-      descriptionSi: schema.shops.descriptionSi,
-      district: schema.shops.district,
-      city: schema.shops.city,
-      shopType: schema.shops.shopType,
-      verificationStatus: schema.shops.verificationStatus,
-    })
+/** All publicly-visible shops (verified + active) for the /shops directory,
+ * with product counts and preview images. Shops with products sort first. */
+export async function listActiveShops(
+  db: Db,
+  filter: ListShopsFilter = {},
+): Promise<ShopDirectoryEntry[]> {
+  const conditions: SQL[] = [
+    eq(schema.shops.verificationStatus, "verified"),
+    eq(schema.shops.isActive, true),
+  ];
+  if (filter.sellerType) {
+    conditions.push(arrayContains(schema.shops.sellerTypes, [filter.sellerType]));
+  }
+  if (filter.district) {
+    conditions.push(eq(schema.shops.district, filter.district));
+  }
+
+  const shops = await db
+    .select({ id: schema.shops.id, ...shopSummaryColumns() })
     .from(schema.shops)
+    .where(and(...conditions))
+    .orderBy(asc(schema.shops.nameEn));
+  if (shops.length === 0) return [];
+
+  const products = await db
+    .select({
+      id: schema.products.id,
+      shopId: schema.products.shopId,
+      price: schema.products.price,
+    })
+    .from(schema.products)
     .where(
       and(
-        eq(schema.shops.verificationStatus, "verified"),
-        eq(schema.shops.isActive, true),
+        eq(schema.products.status, "active"),
+        inArray(
+          schema.products.shopId,
+          shops.map((x) => x.id),
+        ),
       ),
     )
-    .orderBy(asc(schema.shops.nameEn));
+    .orderBy(desc(schema.products.createdAt));
+
+  const images = await primaryImagePaths(
+    db,
+    products.map((p) => p.id),
+  );
+
+  const stats = new Map<
+    string,
+    { count: number; previews: string[]; minPrice: number | null }
+  >();
+  for (const p of products) {
+    const st = stats.get(p.shopId) ?? { count: 0, previews: [], minPrice: null };
+    st.count += 1;
+    st.minPrice = st.minPrice === null ? p.price : Math.min(st.minPrice, p.price);
+    const img = images.get(p.id);
+    if (img && st.previews.length < 4) st.previews.push(img);
+    stats.set(p.shopId, st);
+  }
+
+  return shops
+    .map(({ id, ...shop }) => {
+      const st = stats.get(id);
+      return {
+        ...shop,
+        productCount: st?.count ?? 0,
+        previewImagePaths: st?.previews ?? [],
+        minPrice: st?.minPrice ?? null,
+      };
+    })
+    .sort((a, b) => Number(b.productCount > 0) - Number(a.productCount > 0));
 }
 
 export interface SitemapData {
@@ -461,4 +542,35 @@ export async function listActiveCategoriesWithCounts(
     .orderBy(asc(schema.categories.sortOrder), asc(schema.categories.nameEn));
 
   return rows;
+}
+
+/** Category slug → primary image path of its newest publicly-visible product
+ * (used as the category tile cover). Categories without images are absent. */
+export async function listCategoryCoverImages(
+  db: Db,
+): Promise<Map<string, string>> {
+  const rows = await db
+    .select({
+      productId: schema.products.id,
+      categorySlug: schema.categories.slug,
+    })
+    .from(schema.products)
+    .innerJoin(schema.shops, eq(schema.products.shopId, schema.shops.id))
+    .innerJoin(
+      schema.categories,
+      eq(schema.products.categoryId, schema.categories.id),
+    )
+    .where(and(...publicConditions()))
+    .orderBy(desc(schema.products.createdAt));
+
+  const images = await primaryImagePaths(
+    db,
+    rows.map((r) => r.productId),
+  );
+  const covers = new Map<string, string>();
+  for (const row of rows) {
+    const img = images.get(row.productId);
+    if (img && !covers.has(row.categorySlug)) covers.set(row.categorySlug, img);
+  }
+  return covers;
 }

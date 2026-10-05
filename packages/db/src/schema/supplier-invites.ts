@@ -1,12 +1,11 @@
 import {
-  boolean,
   index,
   pgTable,
   text,
   timestamp,
   uuid,
 } from "drizzle-orm/pg-core";
-import { language, shopType } from "./enums";
+import { language, sellerType } from "./enums";
 import { users } from "./users";
 import { shops } from "./shops";
 
@@ -21,8 +20,8 @@ export const supplierInvites = pgTable(
     id: uuid("id").primaryKey().defaultRandom(),
     phone: text("phone").notNull(),
     nameEn: text("name_en"),
-    shopType: shopType("shop_type"),
-    isAggregator: boolean("is_aggregator").notNull().default(false),
+    /** Suggested seller types; null leaves it to the supplier at registration. */
+    sellerTypes: sellerType("seller_types").array(),
     language: language("language").notNull().default("en"),
     token: text("token").unique().notNull(),
     /** sent | accepted | expired */

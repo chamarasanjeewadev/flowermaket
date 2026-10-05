@@ -96,7 +96,7 @@ async function main() {
       .values({
         ownerUserId: demoUserId,
         slug: demoShopSlug,
-        shopType: "florist",
+        sellerTypes: ["florist"],
         nameEn: "Demo Florist",
         nameSi: "ආදර්ශ මල් වෙළඳසැල",
         descriptionEn: "A demo flower shop for development and testing.",
@@ -197,7 +197,7 @@ async function main() {
         {
           ownerUserId: growerUserId,
           slug: "nuwara-eliya-blooms",
-          shopType: "grower",
+          sellerTypes: ["farmer"],
           nameEn: "Nuwara Eliya Blooms",
           nameSi: "නුවරඑළිය බ්ලූම්ස්",
           descriptionEn:
@@ -212,7 +212,7 @@ async function main() {
         {
           ownerUserId: floristUserId,
           slug: "colombo-petals",
-          shopType: "florist",
+          sellerTypes: ["florist"],
           nameEn: "Colombo Petals",
           nameSi: "කොළඹ පෙටල්ස්",
           descriptionEn:

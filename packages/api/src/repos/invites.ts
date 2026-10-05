@@ -8,11 +8,11 @@ import { and, eq } from "drizzle-orm";
 import { schema } from "@flowers/db/client";
 import type { Db } from "../db";
 import { err, ok, isPgError, type ActionResult } from "../errors";
-import type { ShopType, ValidationError } from "./shops";
+import { normalizeSellerTypes, type SellerType } from "../constants";
+import type { ValidationError } from "./shops";
 
 export type InviteLanguage = "en" | "si";
 
-const SHOP_TYPE_SET = new Set<ShopType>(["florist", "grower"]);
 const LANGUAGE_SET = new Set<InviteLanguage>(["en", "si"]);
 
 // ---------------------------------------------------------------------------
@@ -33,7 +33,8 @@ export function generateInviteToken(): string {
 
 export function validateInviteInput(input: {
   phone: string;
-  shopType: string;
+  /** null/undefined = let the supplier choose at registration. */
+  sellerTypes?: readonly string[] | null;
   language: string;
 }): ValidationError[] {
   const errors: ValidationError[] = [];
@@ -43,8 +44,11 @@ export function validateInviteInput(input: {
   } else if (digits.length < 9) {
     errors.push({ field: "phone", message: "Phone number looks too short." });
   }
-  if (!SHOP_TYPE_SET.has(input.shopType as ShopType)) {
-    errors.push({ field: "shopType", message: "Shop type must be florist or grower." });
+  if (input.sellerTypes != null && !normalizeSellerTypes(input.sellerTypes)) {
+    errors.push({
+      field: "sellerTypes",
+      message: "Seller types must be one or more of florist, supplier, farmer.",
+    });
   }
   if (!LANGUAGE_SET.has(input.language as InviteLanguage)) {
     errors.push({ field: "language", message: "Language must be en or si." });
@@ -67,23 +71,30 @@ export function buildJoinUrl(
 
 export interface BuildInviteMessageInput {
   nameEn?: string | null;
-  shopType: ShopType;
-  isAggregator?: boolean | null;
+  sellerTypes?: readonly SellerType[] | null;
   language: InviteLanguage;
   joinUrl: string;
+}
+
+/** Which pitch fits best: supplier (bulk) > farmer > florist. */
+function invitePitch(types: readonly SellerType[] | null | undefined) {
+  if (types?.includes("supplier")) return "supplier" as const;
+  if (types?.includes("florist") && !types.includes("farmer")) return "florist" as const;
+  return "farmer" as const;
 }
 
 /** Build a bilingual, type-aware benefits message with the join link. */
 export function buildInviteMessage(input: BuildInviteMessageInput): string {
   const name = input.nameEn?.trim() || null;
+  const pitchKind = invitePitch(input.sellerTypes);
 
   if (input.language === "si") {
     const hi = name ? `ආයුබෝවන් ${name},` : "ආයුබෝවන්,";
     let pitch: string;
-    if (input.shopType === "florist") {
+    if (pitchKind === "florist") {
       pitch =
         "ඔබේ මල් වෙළඳසැලට FlowerMarket.lk හි ඔබේම අන්තර්ජාල වෙළඳසැලක් ලබාගෙන වැඩි ඇණවුම් ලබාගන්න.";
-    } else if (input.isAggregator) {
+    } else if (pitchKind === "supplier") {
       pitch =
         "FlowerMarket.lk හරහා තොග ඇණවුම් සහ වැඩි ගැනුම්කරුවන් එක තැනකින් කළමනාකරණය කරන්න.";
     } else {
@@ -95,12 +106,12 @@ export function buildInviteMessage(input: BuildInviteMessageInput): string {
 
   const hi = name ? `Hi ${name},` : "Hi there,";
   let pitch: string;
-  if (input.shopType === "florist") {
+  if (pitchKind === "florist") {
     pitch =
       "FlowerMarket.lk gives your flower shop its own online storefront and brings you more orders online.";
-  } else if (input.isAggregator) {
+  } else if (pitchKind === "supplier") {
     pitch =
-      "FlowerMarket.lk helps aggregators reach more buyers and handle bulk orders and RFQs in one place.";
+      "FlowerMarket.lk helps suppliers reach more buyers and handle bulk orders and RFQs in one place.";
   } else {
     pitch =
       "FlowerMarket.lk connects growers like you directly with buyers across Sri Lanka — better prices, no middlemen, and a free listing.";
@@ -116,8 +127,7 @@ export interface InviteRow {
   id: string;
   phone: string;
   nameEn: string | null;
-  shopType: ShopType | null;
-  isAggregator: boolean;
+  sellerTypes: SellerType[] | null;
   language: InviteLanguage;
   token: string;
   status: string;
@@ -128,8 +138,7 @@ export interface InviteRow {
 export interface CreateInviteParams {
   phone: string;
   nameEn?: string | null;
-  shopType: ShopType;
-  isAggregator?: boolean | null;
+  sellerTypes?: readonly SellerType[] | null;
   language: InviteLanguage;
   token: string;
   sentBy: string | null;
@@ -165,8 +174,7 @@ export async function createInvite(
       .values({
         phone: params.phone,
         nameEn: params.nameEn ?? null,
-        shopType: params.shopType,
-        isAggregator: params.isAggregator ?? false,
+        sellerTypes: normalizeSellerTypes(params.sellerTypes),
         language: params.language,
         token: params.token,
         sentBy: params.sentBy,

@@ -11,7 +11,9 @@ export const verificationStatus = pgEnum("verification_status", [
   "rejected",
 ]);
 
-export const shopType = pgEnum("shop_type", ["florist", "grower"]);
+/** A shop may hold several: florist (arranges/retail), supplier (bulk
+ * wholesaler/trader), farmer (grows flowers). */
+export const sellerType = pgEnum("seller_type", ["florist", "supplier", "farmer"]);
 
 export const productStatus = pgEnum("product_status", [
   "draft",
