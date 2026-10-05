@@ -15,6 +15,9 @@ import { Textarea } from "@flowers/ui/components/textarea";
 import { Alert, AlertDescription } from "@flowers/ui/components/alert";
 import { Flower, Loader2 } from "lucide-react";
 import { DISTRICTS } from "@flowers/api/constants";
+import type { SellerType } from "@flowers/api/constants";
+import { SellerTypePicker } from "../components/SellerTypePicker";
+import { getInvite } from "../server/auth";
 import { createShopFn } from "../server/shops";
 import { useT } from "../i18n/react";
 
@@ -22,6 +25,13 @@ export const Route = createFileRoute("/onboarding")({
   validateSearch: (search: Record<string, unknown>): { invite?: string } => ({
     invite: typeof search.invite === "string" ? search.invite : undefined,
   }),
+  loaderDeps: ({ search }) => ({ invite: search.invite }),
+  // Pre-fill seller types (and name) from the admin's invite, when present.
+  loader: async ({ deps }) => {
+    if (!deps.invite) return { invite: null };
+    const invite = await getInvite({ data: { token: deps.invite } });
+    return { invite: invite.valid ? invite : null };
+  },
   component: OnboardingPage,
 });
 
@@ -29,15 +39,16 @@ function OnboardingPage() {
   const { t } = useT();
   const router = useRouter();
   const { invite } = Route.useSearch();
+  const { invite: inviteDetails } = Route.useLoaderData();
   const [serverError, setServerError] = React.useState<string | null>(null);
 
   const form = useForm({
     defaultValues: {
-      nameEn: "",
+      nameEn: inviteDetails?.nameEn ?? "",
       nameSi: "",
       descriptionEn: "",
       descriptionSi: "",
-      shopType: "" as "" | "florist" | "grower",
+      sellerTypes: (inviteDetails?.sellerTypes ?? []) as SellerType[],
       district: "",
       city: "",
     },
@@ -49,7 +60,7 @@ function OnboardingPage() {
           nameSi: value.nameSi || null,
           descriptionEn: value.descriptionEn || null,
           descriptionSi: value.descriptionSi || null,
-          shopType: value.shopType || "florist",
+          sellerTypes: value.sellerTypes,
           district: value.district,
           city: value.city || null,
           inviteToken: invite ?? null,
@@ -149,45 +160,36 @@ function OnboardingPage() {
               )}
             </form.Field>
 
-            {/* Shop type — required */}
+            {/* Seller types — at least one */}
             <form.Field
-              name="shopType"
+              name="sellerTypes"
               validators={{
-                onBlur: ({ value }) =>
-                  !value ? t.onboarding.shopTypeRequired : undefined,
+                onChange: ({ value }) =>
+                  value.length === 0 ? t.onboarding.sellerTypesRequired : undefined,
+                onSubmit: ({ value }) =>
+                  value.length === 0 ? t.onboarding.sellerTypesRequired : undefined,
               }}
             >
               {(field) => (
-                <div className="space-y-1.5">
-                  <Label htmlFor={field.name}>
-                    {t.onboarding.shopType}{" "}
+                <fieldset className="space-y-1.5">
+                  <legend className="text-sm font-medium">
+                    {t.onboarding.sellerTypes}{" "}
                     <span className="text-destructive">*</span>
-                  </Label>
-                  <select
-                    id={field.name}
-                    name={field.name}
+                  </legend>
+                  <p className="text-xs text-muted-foreground">
+                    {t.onboarding.sellerTypesHint}
+                  </p>
+                  <SellerTypePicker
                     value={field.state.value}
+                    onChange={(next) => field.handleChange(next)}
                     onBlur={field.handleBlur}
-                    onChange={(e) =>
-                      field.handleChange(
-                        e.target.value as "" | "florist" | "grower",
-                      )
-                    }
-                    className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    <option value="">{t.onboarding.shopTypePlaceholder}</option>
-                    <option value="florist">
-                      {t.onboarding.shopTypeFlorist}
-                    </option>
-                    <option value="grower">{t.onboarding.shopTypeGrower}</option>
-                  </select>
-                  {field.state.meta.isTouched &&
-                    field.state.meta.errors.length > 0 && (
-                      <p className="text-xs text-destructive">
-                        {field.state.meta.errors[0]}
-                      </p>
-                    )}
-                </div>
+                  />
+                  {field.state.meta.errors.length > 0 && (
+                    <p className="text-xs text-destructive">
+                      {field.state.meta.errors[0]}
+                    </p>
+                  )}
+                </fieldset>
               )}
             </form.Field>
 

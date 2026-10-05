@@ -8,6 +8,7 @@ import {
   CardTitle,
 } from "@flowers/ui/components/card";
 import { Flower, PartyPopper } from "lucide-react";
+import type { SellerType } from "@flowers/api/constants";
 import { getInvite } from "../server/auth";
 
 export const Route = createFileRoute("/join/$token")({
@@ -18,8 +19,8 @@ export const Route = createFileRoute("/join/$token")({
   component: JoinPage,
 });
 
-const BENEFITS: Record<"florist" | "grower", string[]> = {
-  grower: [
+const BENEFITS: Record<SellerType, string[]> = {
+  farmer: [
     "Reach buyers across Sri Lanka directly",
     "Better prices — fewer middlemen",
     "Free listing to get started",
@@ -29,6 +30,17 @@ const BENEFITS: Record<"florist" | "grower", string[]> = {
     "More orders, online",
     "Showcase your bouquets and products",
   ],
+  supplier: [
+    "Reach shops, event planners and florists in bulk",
+    "Receive sourcing requests (RFQs) and quote fast",
+    "Free listing to get started",
+  ],
+};
+
+const TYPE_LABEL: Record<SellerType, string> = {
+  florist: "florist",
+  supplier: "supplier",
+  farmer: "farmer",
 };
 
 function JoinPage() {
@@ -58,7 +70,11 @@ function JoinPage() {
     );
   }
 
-  const benefits = BENEFITS[invite.shopType ?? "grower"];
+  const types = invite.sellerTypes ?? [];
+  const benefits = BENEFITS[types[0] ?? "farmer"];
+  const typeLabel = types.length
+    ? types.map((x) => TYPE_LABEL[x]).join(" & ")
+    : "seller";
 
   return (
     <div className="flex min-h-dvh flex-col items-center justify-center bg-background p-6">
@@ -71,7 +87,7 @@ function JoinPage() {
             {invite.nameEn ? `Welcome, ${invite.nameEn}!` : "You're invited!"}
           </CardTitle>
           <CardDescription>
-            Join FlowerMarket.lk as a {invite.isAggregator ? "supplier/aggregator" : invite.shopType ?? "supplier"}.
+            Join FlowerMarket.lk as a {typeLabel}.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-5">

@@ -2,6 +2,7 @@
  * Auth server functions for the Supplier Portal.
  */
 import { createServerFn } from "@tanstack/react-start";
+import type { SellerType } from "@flowers/api/constants";
 import { getCookies, setCookie, getRequestUrl } from "@tanstack/react-start/server";
 import { getEnv, tryCreateDb, getInviteByToken } from "@flowers/api";
 import { isLocale, type Locale, DEFAULT_LOCALE } from "../i18n";
@@ -84,8 +85,7 @@ export interface InviteDetails {
   valid: boolean;
   reason?: "not_found" | "used" | "expired";
   nameEn?: string | null;
-  shopType?: "florist" | "grower" | null;
-  isAggregator?: boolean;
+  sellerTypes?: SellerType[] | null;
 }
 
 /** Validate an invite token and return its pre-fill details (public, pre-auth). */
@@ -103,8 +103,7 @@ export const getInvite = createServerFn({ method: "GET" })
     return {
       valid: true,
       nameEn: invite.nameEn,
-      shopType: invite.shopType,
-      isAggregator: invite.isAggregator,
+      sellerTypes: invite.sellerTypes,
     };
   });
 
