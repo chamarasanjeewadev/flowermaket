@@ -50,13 +50,13 @@ export function ProductCard({
         />
         <Badge
           variant={isWholesale ? "brand" : "sticker"}
-          className="absolute left-2.5 top-2.5"
+          className="absolute left-2 top-2 sm:left-2.5 sm:top-2.5"
         >
           {isWholesale ? t.catalog.wholesaleBadge : t.catalog.retailBadge}
         </Badge>
       </div>
-      <div className="flex flex-1 flex-col gap-2 p-4">
-        <h3 className="font-display line-clamp-2 text-base leading-snug text-foreground">
+      <div className="flex flex-1 flex-col gap-1.5 p-3 sm:gap-2 sm:p-4">
+        <h3 className="font-display line-clamp-2 text-[15px] leading-snug text-foreground sm:text-base">
           {name}
         </h3>
         <PriceBlock
@@ -79,7 +79,7 @@ export function ProductCard({
           <SellerIcon className="size-3.5 shrink-0" aria-hidden="true" />
           <span className="truncate">{f(t.catalog.soldBy, { shop: shopName })}</span>
         </Link>
-        <div className="relative z-20 pt-2">
+        <div className="relative z-20 pt-1.5 sm:pt-2">
           <AddToEnquiryButton
             product={{
               id: product.id,
@@ -90,6 +90,7 @@ export function ProductCard({
               listingType: product.listingType,
             }}
             variant="card"
+            className="w-full sm:w-auto"
           />
         </div>
       </div>

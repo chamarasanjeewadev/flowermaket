@@ -84,25 +84,28 @@ function HomePage() {
 
   return (
     <>
-      {/* Hero */}
+      {/* Hero — compact on mobile so listings sit near the fold */}
       <section className="border-b border-border">
-        <div className="mx-auto grid max-w-6xl items-center gap-12 px-4 pb-16 pt-14 sm:pt-20 lg:grid-cols-2 lg:gap-16 lg:pb-24 lg:pt-24">
+        <div className="mx-auto grid max-w-6xl items-center gap-12 px-4 pb-6 pt-6 sm:pb-16 sm:pt-20 lg:grid-cols-2 lg:gap-16 lg:pb-24 lg:pt-24">
           {/* Text column */}
           <div>
-            <h1 className="font-display text-[3rem] leading-[0.95] sm:text-[4rem] lg:text-[4.75rem]">
+            <h1 className="font-display text-[2.125rem] leading-[1] sm:text-[4rem] sm:leading-[0.95] lg:text-[4.75rem]">
               {t.home.heroLead}
               <br />
               {t.home.heroHighlight}
             </h1>
-            <p className="mt-6 max-w-sm text-base leading-relaxed text-muted-foreground sm:text-lg">
+            <p className="mt-3 line-clamp-2 max-w-sm text-sm leading-relaxed text-muted-foreground sm:mt-6 sm:line-clamp-none sm:text-lg">
               {t.home.heroSubtitle}
             </p>
-            <div className="mt-8 flex flex-wrap gap-3">
+            <div className="mt-5 grid grid-cols-2 gap-2 sm:mt-8 sm:flex sm:flex-wrap sm:gap-3">
               <Link
                 to="/$locale/products"
                 params={{ locale }}
                 search={{ type: "retail" }}
-                className={cn(buttonVariants({ size: "pill" }))}
+                className={cn(
+                  buttonVariants({ size: "pill" }),
+                  "h-11 px-3 sm:h-12 sm:px-7",
+                )}
               >
                 {t.home.ctaShopRetail}
                 <ArrowUpRight className="size-4" aria-hidden="true" />
@@ -111,7 +114,10 @@ function HomePage() {
                 to="/$locale/products"
                 params={{ locale }}
                 search={{ type: "wholesale" }}
-                className={cn(buttonVariants({ variant: "outline", size: "pill" }))}
+                className={cn(
+                  buttonVariants({ variant: "outline", size: "pill" }),
+                  "h-11 px-3 sm:h-12 sm:px-7",
+                )}
               >
                 {t.home.ctaBuyWholesale}
                 <ArrowUpRight className="size-4" aria-hidden="true" />
@@ -119,8 +125,8 @@ function HomePage() {
             </div>
           </div>
 
-          {/* Image column */}
-          <div className="relative mx-auto w-full max-w-sm lg:max-w-none">
+          {/* Image column — desktop/tablet only; mobile leads with listings */}
+          <div className="relative mx-auto hidden w-full max-w-sm sm:block lg:max-w-none">
             <img
               src="/flowers/hero-bouquet.webp"
               alt="Fresh gerbera bouquet"
@@ -139,9 +145,57 @@ function HomePage() {
         </div>
       </section>
 
+      {/* Category chips — mobile quick filter row */}
+      {categories.length > 0 && (
+        <nav
+          aria-label={t.home.browseByCategory}
+          className="border-b border-border md:hidden"
+        >
+          <ul className="flex gap-2 overflow-x-auto px-4 py-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            <li className="shrink-0">
+              <Link
+                to="/$locale/products"
+                params={{ locale }}
+                className="inline-flex h-9 items-center rounded-full bg-foreground px-4 text-sm font-medium text-background"
+              >
+                {t.home.allItems}
+              </Link>
+            </li>
+            {orderedCategories.map((cat) => (
+              <li key={cat.id} className="shrink-0">
+                <Link
+                  to="/$locale/c/$slug"
+                  params={{ locale, slug: cat.slug }}
+                  className="inline-flex h-9 items-center whitespace-nowrap rounded-full border border-border bg-card px-4 text-sm font-medium text-foreground transition-colors active:bg-accent"
+                >
+                  {localizedCategoryName(cat, locale)}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </nav>
+      )}
+
+      {/* Latest listings — first thing after the hero on mobile */}
+      {featured.length > 0 && (
+        <section
+          aria-labelledby="featured-mobile"
+          className="mx-auto max-w-6xl px-4 pt-6 md:hidden"
+        >
+          <FeaturedHeader id="featured-mobile" />
+          <ul className="grid grid-cols-2 gap-3">
+            {featured.map((p, i) => (
+              <li key={p.id}>
+                <ProductCard product={p} index={i} />
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
       {/* Marketplace facts — trust strip */}
-      <section className="border-b border-border">
-        <ul className="mx-auto grid max-w-6xl gap-px px-4 py-10 sm:grid-cols-3">
+      <section className="mt-10 border-y border-border md:mt-0 md:border-t-0">
+        <ul className="mx-auto flex max-w-6xl snap-x snap-mandatory scroll-px-4 gap-3 overflow-x-auto px-4 py-6 [scrollbar-width:none] sm:grid sm:grid-cols-3 sm:gap-px sm:py-10 [&::-webkit-scrollbar]:hidden">
           {[
             {
               icon: BadgePercent,
@@ -159,7 +213,10 @@ function HomePage() {
               body: t.home.trust3Body,
             },
           ].map(({ icon: Icon, title, body }) => (
-            <li key={title} className="flex gap-4 px-2 py-3">
+            <li
+              key={title}
+              className="flex w-[78%] shrink-0 snap-start gap-3 rounded-xl border border-border bg-card p-4 sm:w-auto sm:gap-4 sm:rounded-none sm:border-0 sm:bg-transparent sm:px-2 sm:py-3"
+            >
               <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-accent text-foreground">
                 <Icon className="size-5" aria-hidden="true" />
               </span>
@@ -175,11 +232,11 @@ function HomePage() {
       {/* Seller types */}
       <section
         aria-labelledby="sellers"
-        className="mx-auto max-w-6xl px-4 pt-14"
+        className="mx-auto max-w-6xl px-4 pt-10 sm:pt-14"
       >
         <div className="mb-6 flex items-end justify-between gap-3">
           <div>
-            <h2 id="sellers" className="font-display text-3xl sm:text-4xl">
+            <h2 id="sellers" className="font-display text-2xl sm:text-4xl">
               {t.home.sellersTitle}
             </h2>
             <p className="mt-2 max-w-xl text-sm text-muted-foreground">
@@ -194,13 +251,13 @@ function HomePage() {
       {featuredShops.length > 0 && (
         <section
           aria-labelledby="featured-sellers"
-          className="mx-auto max-w-6xl px-4 pt-16"
+          className="mx-auto max-w-6xl px-4 pt-12 sm:pt-16"
         >
           <div className="mb-6 flex items-end justify-between gap-3">
             <div>
               <h2
                 id="featured-sellers"
-                className="font-display text-3xl sm:text-4xl"
+                className="font-display text-2xl sm:text-4xl"
               >
                 {t.home.featuredShopsTitle}
               </h2>
@@ -218,9 +275,12 @@ function HomePage() {
               <ArrowUpRight className="size-4" aria-hidden="true" />
             </Link>
           </div>
-          <ul className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          <ul className="-mx-4 flex snap-x snap-mandatory scroll-px-4 gap-3 overflow-x-auto px-4 pb-1 [scrollbar-width:none] sm:mx-0 sm:grid sm:grid-cols-2 sm:gap-5 sm:overflow-visible sm:px-0 lg:grid-cols-3 [&::-webkit-scrollbar]:hidden">
             {featuredShops.map((shop) => (
-              <li key={shop.slug}>
+              <li
+                key={shop.slug}
+                className="w-[82%] shrink-0 snap-start sm:w-auto"
+              >
                 <ShopCard shop={shop} />
               </li>
             ))}
@@ -229,12 +289,12 @@ function HomePage() {
       )}
 
       {/* Category grid */}
-      <div className="mx-auto max-w-6xl px-4 py-16">
+      <div className="mx-auto max-w-6xl px-4 py-12 sm:py-16">
         <section aria-labelledby="browse-categories">
           <div className="mb-6">
             <h2
               id="browse-categories"
-              className="font-display text-3xl sm:text-4xl"
+              className="font-display text-2xl sm:text-4xl"
             >
               {t.home.browseByCategory}
             </h2>
@@ -297,27 +357,10 @@ function HomePage() {
           )}
         </section>
 
-        {/* Featured strip */}
+        {/* Featured strip — desktop position (mobile copy sits above) */}
         {featured.length > 0 && (
-          <section aria-labelledby="featured" className="mt-16">
-            <div className="mb-6 flex items-end justify-between gap-3">
-              <div>
-                <h2 id="featured" className="font-display text-3xl sm:text-4xl">
-                  {t.home.featuredTitle}
-                </h2>
-                <p className="mt-2 text-sm text-muted-foreground">
-                  {t.home.featuredSub}
-                </p>
-              </div>
-              <Link
-                to="/$locale/products"
-                params={{ locale }}
-                className="group inline-flex shrink-0 items-center gap-1.5 text-sm font-medium text-brand hover:underline"
-              >
-                {t.nav.browse}
-                <ArrowUpRight className="size-4" aria-hidden="true" />
-              </Link>
-            </div>
+          <section aria-labelledby="featured" className="mt-16 hidden md:block">
+            <FeaturedHeader id="featured" />
             <ul className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
               {featured.map((p, i) => (
                 <li key={p.id}>
@@ -329,6 +372,30 @@ function HomePage() {
         )}
       </div>
     </>
+  );
+}
+
+function FeaturedHeader({ id }: { id: string }) {
+  const { locale, t } = useT();
+  return (
+    <div className="mb-4 flex items-end justify-between gap-3 sm:mb-6">
+      <div>
+        <h2 id={id} className="font-display text-2xl sm:text-4xl">
+          {t.home.featuredTitle}
+        </h2>
+        <p className="mt-2 hidden text-sm text-muted-foreground sm:block">
+          {t.home.featuredSub}
+        </p>
+      </div>
+      <Link
+        to="/$locale/products"
+        params={{ locale }}
+        className="group inline-flex shrink-0 items-center gap-1.5 text-sm font-medium text-brand hover:underline"
+      >
+        {t.nav.browse}
+        <ArrowUpRight className="size-4" aria-hidden="true" />
+      </Link>
+    </div>
   );
 }
 

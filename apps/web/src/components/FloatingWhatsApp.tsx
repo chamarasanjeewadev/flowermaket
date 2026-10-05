@@ -49,9 +49,9 @@ export function FloatingWhatsApp() {
       target="_blank"
       rel="noopener noreferrer"
       aria-label={t.enquiry.floatingLabel}
-      className="fixed bottom-5 right-5 z-50 flex size-14 items-center justify-center rounded-full bg-[#25D366] text-white shadow-lg transition-transform hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#25D366] focus-visible:ring-offset-2"
+      className="fixed bottom-4 right-4 z-50 flex size-12 sm:bottom-5 sm:right-5 sm:size-14 items-center justify-center rounded-full bg-[#25D366] text-white shadow-lg transition-transform hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#25D366] focus-visible:ring-offset-2"
     >
-      <WhatsAppGlyph className="size-7" />
+      <WhatsAppGlyph className="size-6 sm:size-7" />
       {hydrated && count > 0 && (
         <span className="absolute -right-1 -top-1 flex min-w-5 items-center justify-center rounded-full bg-brand px-1.5 text-xs font-semibold text-background">
           {count}

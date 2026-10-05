@@ -1,5 +1,10 @@
 import * as React from "react";
-import { Link, useRouter, useRouterState } from "@tanstack/react-router";
+import {
+  Link,
+  useNavigate,
+  useRouter,
+  useRouterState,
+} from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Button, buttonVariants } from "@flowers/ui/components/button";
@@ -111,7 +116,7 @@ function Wordmark({ ariaLabel }: { ariaLabel: string }) {
       className="inline-flex rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
       aria-label={ariaLabel}
     >
-      <img src="/logo.png" alt={ariaLabel} className="h-9 w-auto" />
+      <img src="/logo.png" alt={ariaLabel} className="h-8 w-auto sm:h-9" />
     </Link>
   );
 }
@@ -232,6 +237,59 @@ function NavigationProgress() {
   );
 }
 
+/** Full-width search bar shown under the top bar on mobile — the primary
+ * way into the catalog on small screens. Submits to /products?q=. */
+function MobileSearch() {
+  const { t, locale } = useT();
+  const navigate = useNavigate();
+  const currentQ = useRouterState({
+    select: (s) => {
+      const q = (s.location.search as Record<string, unknown>).q;
+      return typeof q === "string" ? q : "";
+    },
+  });
+  const [q, setQ] = React.useState(currentQ);
+  React.useEffect(() => setQ(currentQ), [currentQ]);
+
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    const term = q.trim();
+    void navigate({
+      to: "/$locale/products",
+      params: { locale },
+      search: term ? { q: term } : {},
+    });
+    (document.activeElement as HTMLElement | null)?.blur();
+  }
+
+  return (
+    <form
+      role="search"
+      onSubmit={handleSubmit}
+      className="mx-auto max-w-6xl px-4 pb-3 md:hidden"
+    >
+      <div className="flex h-11 items-center overflow-hidden rounded-full border border-border bg-card shadow-sm focus-within:ring-2 focus-within:ring-ring">
+        <input
+          type="search"
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          placeholder={t.catalog.searchPlaceholder}
+          aria-label={t.nav.search}
+          enterKeyHint="search"
+          className="h-full min-w-0 flex-1 bg-transparent pl-4 text-[16px] text-foreground placeholder:text-muted-foreground focus:outline-none [&::-webkit-search-cancel-button]:hidden"
+        />
+        <button
+          type="submit"
+          aria-label={t.nav.search}
+          className="mr-1 inline-flex size-9 shrink-0 items-center justify-center rounded-full bg-brand text-brand-foreground transition-colors hover:bg-brand/90"
+        >
+          <Search className="size-[18px]" aria-hidden="true" />
+        </button>
+      </div>
+    </form>
+  );
+}
+
 export function Header({ session }: { session: SessionUser }) {
   const { t, locale } = useT();
   const { count, hydrated } = useEnquiry();
@@ -242,7 +300,7 @@ export function Header({ session }: { session: SessionUser }) {
 
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/65">
-      <div className="mx-auto flex h-16 max-w-6xl items-center gap-3 px-4 sm:h-[72px]">
+      <div className="mx-auto flex h-14 max-w-6xl items-center gap-2 px-4 sm:h-[72px] sm:gap-3">
         <Wordmark ariaLabel={t.nav.homeAria} />
 
         <nav
@@ -291,7 +349,7 @@ export function Header({ session }: { session: SessionUser }) {
           </Link>
         </nav>
 
-        <div className="flex items-center gap-1.5 md:ml-0">
+        <div className="ml-auto flex items-center gap-1 sm:gap-1.5 md:ml-0">
           <Link
             to="/$locale/products"
             params={{ locale }}
@@ -430,6 +488,7 @@ export function Header({ session }: { session: SessionUser }) {
           </Sheet>
         </div>
       </div>
+      <MobileSearch />
       <NavigationProgress />
     </header>
   );
