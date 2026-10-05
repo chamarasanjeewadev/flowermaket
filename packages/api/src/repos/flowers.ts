@@ -154,6 +154,7 @@ export async function listDesignerVariants(
     .where(
       and(
         eq(schema.products.status, "active"),
+        eq(schema.products.moderationStatus, "approved"),
         inArray(schema.categories.slug, [...DESIGNER_CATEGORY_SLUGS]),
         isNotNull(schema.products.flowerVariantId),
       ),

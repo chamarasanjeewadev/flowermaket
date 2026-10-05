@@ -22,6 +22,18 @@ import { err, ok, isPgError, type ActionResult } from "../errors";
 import { slugify } from "../slug";
 import type { ListingType } from "./catalog";
 import type { ValidationError } from "./shops";
+import {
+  initialModeration,
+  nextModerationOnEdit,
+  nextModerationOnImageAdd,
+  type ModerationStatus,
+  type ProductActor,
+} from "./moderation";
+
+/** Options for write paths: who is acting (owner by default). */
+export interface ProductWriteOptions {
+  actor?: ProductActor;
+}
 
 // ---------------------------------------------------------------------------
 // Types
@@ -86,6 +98,8 @@ export interface OwnerProductListItem {
   listingType: ListingType;
   minOrderQty: number | null;
   status: ProductStatus;
+  moderationStatus: ModerationStatus;
+  moderationNote: string | null;
   categoryId: string;
   categorySlug: string;
   categoryNameEn: string;
@@ -110,6 +124,8 @@ export interface OwnerProductDetail {
   listingType: ListingType;
   minOrderQty: number | null;
   status: ProductStatus;
+  moderationStatus: ModerationStatus;
+  moderationNote: string | null;
   images: OwnerProductImage[];
   createdAt: Date;
   updatedAt: Date;
@@ -332,6 +348,8 @@ export async function listShopProducts(
       listingType: schema.products.listingType,
       minOrderQty: schema.products.minOrderQty,
       status: schema.products.status,
+      moderationStatus: schema.products.moderationStatus,
+      moderationNote: schema.products.moderationNote,
       categoryId: schema.products.categoryId,
       categorySlug: schema.categories.slug,
       categoryNameEn: schema.categories.nameEn,
@@ -394,6 +412,8 @@ export async function getShopProduct(
     listingType: product.listingType,
     minOrderQty: product.minOrderQty,
     status: product.status,
+    moderationStatus: product.moderationStatus,
+    moderationNote: product.moderationNote,
     images,
     createdAt: product.createdAt,
     updatedAt: product.updatedAt,
@@ -436,6 +456,7 @@ export async function createProduct(
   db: Db,
   shopId: string,
   input: CreateProductInput,
+  opts: ProductWriteOptions = {},
 ): Promise<ActionResult<{ id: string; slug: string }>> {
   const errors = validateCreateProductInput(input);
   if (errors.length > 0) {
@@ -465,6 +486,7 @@ export async function createProduct(
         listingType: input.listingType ?? "retail",
         minOrderQty: input.minOrderQty ?? null,
         status: input.status ?? "draft",
+        moderationStatus: initialModeration(opts.actor ?? "owner"),
       })
       .returning({ id: schema.products.id, slug: schema.products.slug });
 
@@ -489,6 +511,7 @@ export async function updateProduct(
   shopId: string,
   productId: string,
   patch: UpdateProductInput,
+  opts: ProductWriteOptions = {},
 ): Promise<ActionResult<{ id: string }>> {
   const errors = validateUpdateProductInput(patch);
   if (errors.length > 0) {
@@ -509,6 +532,7 @@ export async function updateProduct(
     listingType?: ListingType;
     minOrderQty?: number | null;
     status?: ProductStatus;
+    moderationStatus?: ModerationStatus;
   };
 
   const set: ProductUpdate = { updatedAt: new Date() };
@@ -526,8 +550,26 @@ export async function updateProduct(
   if (patch.status !== undefined) set.status = patch.status;
 
   try {
-    if (!(await ownsProduct(db, shopId, productId))) {
+    const [current] = await db
+      .select({ moderationStatus: schema.products.moderationStatus })
+      .from(schema.products)
+      .where(
+        and(
+          eq(schema.products.id, productId),
+          eq(schema.products.shopId, shopId),
+        ),
+      )
+      .limit(1);
+    if (!current) {
       return err("not_found", "Product not found.");
+    }
+    const nextModeration = nextModerationOnEdit(
+      current.moderationStatus,
+      patch,
+      opts.actor ?? "owner",
+    );
+    if (nextModeration !== current.moderationStatus) {
+      set.moderationStatus = nextModeration;
     }
 
     await db
@@ -563,6 +605,7 @@ export async function addProductImage(
   shopId: string,
   productId: string,
   input: AddProductImageInput,
+  opts: ProductWriteOptions = {},
 ): Promise<ActionResult<{ id: string }>> {
   try {
     return await db.transaction(async (tx) => {
@@ -606,6 +649,24 @@ export async function addProductImage(
           isPrimary: makePrimary,
         })
         .returning({ id: schema.productImages.id });
+
+      const [product] = await tx
+        .select({ moderationStatus: schema.products.moderationStatus })
+        .from(schema.products)
+        .where(eq(schema.products.id, productId))
+        .limit(1);
+      if (product) {
+        const next = nextModerationOnImageAdd(
+          product.moderationStatus,
+          opts.actor ?? "owner",
+        );
+        if (next !== product.moderationStatus) {
+          await tx
+            .update(schema.products)
+            .set({ moderationStatus: next })
+            .where(eq(schema.products.id, productId));
+        }
+      }
 
       return ok({ id: row.id });
     });

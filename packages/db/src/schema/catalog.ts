@@ -7,9 +7,10 @@ import {
   timestamp,
   uuid,
 } from "drizzle-orm/pg-core";
-import { listingType, productStatus } from "./enums";
+import { listingType, moderationStatus, productStatus } from "./enums";
 import { shops } from "./shops";
 import { flowerVariants } from "./flowers";
+import { users } from "./users";
 
 export const categories = pgTable("categories", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -44,6 +45,14 @@ export const products = pgTable(
     listingType: listingType("listing_type").notNull().default("retail"),
     minOrderQty: integer("min_order_qty"),
     status: productStatus("status").notNull().default("draft"),
+    /** Admin review: only `approved` (and `active`) products are public. */
+    moderationStatus: moderationStatus("moderation_status")
+      .notNull()
+      .default("pending"),
+    /** Reason shown to the supplier when blocked. */
+    moderationNote: text("moderation_note"),
+    moderatedAt: timestamp("moderated_at", { withTimezone: true }),
+    moderatedBy: uuid("moderated_by").references(() => users.id),
     flowerVariantId: text("flower_variant_id").references(
       () => flowerVariants.id,
       { onDelete: "set null" },
@@ -58,6 +67,7 @@ export const products = pgTable(
   (t) => [
     index("products_shop_id_idx").on(t.shopId),
     index("products_category_id_status_idx").on(t.categoryId, t.status),
+    index("products_moderation_status_idx").on(t.moderationStatus),
   ],
 );
 

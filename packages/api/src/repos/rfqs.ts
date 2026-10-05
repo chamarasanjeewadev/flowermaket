@@ -12,7 +12,7 @@
  * server function (Task 12) sends after the transaction commits so that a
  * send failure never rolls back the persisted RFQs.
  */
-import { and, arrayOverlaps, asc, desc, eq, inArray } from "drizzle-orm";
+import { and, arrayOverlaps, asc, desc, eq, inArray, ne } from "drizzle-orm";
 import { SOURCING_SELLER_TYPES } from "../constants";
 import { schema } from "@flowers/db/client";
 import type { Db } from "../db";
@@ -177,6 +177,7 @@ export async function matchRoseGrowers(
           arrayOverlaps(schema.shops.sellerTypes, [...SOURCING_SELLER_TYPES]),
           eq(schema.shops.isActive, true),
           eq(schema.products.status, "active"),
+          ne(schema.products.moderationStatus, "blocked"),
           inArray(schema.products.categoryId, catIds),
         ),
       );

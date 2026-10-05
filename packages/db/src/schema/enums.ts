@@ -24,6 +24,13 @@ export const productStatus = pgEnum("product_status", [
 
 export const listingType = pgEnum("listing_type", ["retail", "wholesale"]);
 
+/** Admin review state of a product. Only `approved` products are public. */
+export const moderationStatus = pgEnum("moderation_status", [
+  "pending",
+  "approved",
+  "blocked",
+]);
+
 export const orderStatus = pgEnum("order_status", [
   "draft", "sourcing", "quoted", "confirmed",
   "invoiced", "paid", "fulfilling", "completed", "cancelled",

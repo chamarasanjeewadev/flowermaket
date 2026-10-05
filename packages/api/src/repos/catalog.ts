@@ -3,6 +3,7 @@
  *
  * Every read enforces the public visibility rule:
  *   products.status = 'active'
+ *   AND products.moderation_status = 'approved'
  *   AND shops.verification_status = 'verified'
  *   AND shops.is_active = true
  *
@@ -237,6 +238,7 @@ function shopSummaryColumns() {
 function publicConditions(): SQL[] {
   return [
     eq(schema.products.status, "active"),
+    eq(schema.products.moderationStatus, "approved"),
     eq(schema.shops.verificationStatus, "verified"),
     eq(schema.shops.isActive, true),
   ];
@@ -429,6 +431,7 @@ export async function listActiveShops(
     .where(
       and(
         eq(schema.products.status, "active"),
+        eq(schema.products.moderationStatus, "approved"),
         inArray(
           schema.products.shopId,
           shops.map((x) => x.id),
@@ -521,6 +524,7 @@ export async function listActiveCategoriesWithCounts(
       and(
         eq(schema.products.categoryId, schema.categories.id),
         eq(schema.products.status, "active"),
+        eq(schema.products.moderationStatus, "approved"),
       ),
     )
     .leftJoin(

@@ -185,6 +185,18 @@ export async function getShopByOwner(
   return row ? (row as ShopRow) : null;
 }
 
+export async function getShopById(
+  db: Db,
+  shopId: string,
+): Promise<ShopRow | null> {
+  const [row] = await db
+    .select()
+    .from(schema.shops)
+    .where(eq(schema.shops.id, shopId))
+    .limit(1);
+  return row ? (row as ShopRow) : null;
+}
+
 export async function getShopBySlug(
   db: Db,
   slug: string,
@@ -278,13 +290,14 @@ export async function createShop(
 }
 
 /**
- * Update a shop's editable fields (owner-scoped).
+ * Update a shop's editable fields. Callers must authorize: the owner's own
+ * shop, or an admin acting as owner ("manage as owner").
  *
  * Slug and verification_status may NOT be changed via this function.
  */
 export async function updateShop(
   db: Db,
-  ownerUserId: string,
+  shopId: string,
   patch: UpdateShopInput,
 ): Promise<ActionResult<{ id: string }>> {
   const errors = validateUpdateShopInput(patch);
@@ -318,7 +331,7 @@ export async function updateShop(
     const [row] = await db
       .select({ id: schema.shops.id })
       .from(schema.shops)
-      .where(eq(schema.shops.ownerUserId, ownerUserId))
+      .where(eq(schema.shops.id, shopId))
       .limit(1);
 
     if (!row) {
@@ -328,7 +341,7 @@ export async function updateShop(
     await db
       .update(schema.shops)
       .set(updateSet)
-      .where(eq(schema.shops.ownerUserId, ownerUserId));
+      .where(eq(schema.shops.id, shopId));
 
     return ok({ id: row.id });
   } catch (e) {
@@ -360,7 +373,7 @@ export interface ReviewableShop {
   ownerFullName: string | null;
   ownerPhone: string | null;
   createdAt: Date;
-  /** Products by status, so admins can spot empty storefronts. */
+  /** Live (active + approved) vs all products, so admins can spot empty storefronts. */
   activeProductCount: number;
   totalProductCount: number;
 }
@@ -392,7 +405,7 @@ export async function listShopsForReview(
       ownerFullName: schema.users.fullName,
       ownerPhone: schema.users.phone,
       createdAt: schema.shops.createdAt,
-      activeProductCount: sql<number>`(select count(*)::int from ${schema.products} where ${schema.products.shopId} = ${schema.shops.id} and ${schema.products.status} = 'active')`,
+      activeProductCount: sql<number>`(select count(*)::int from ${schema.products} where ${schema.products.shopId} = ${schema.shops.id} and ${schema.products.status} = 'active' and ${schema.products.moderationStatus} = 'approved')`,
       totalProductCount: sql<number>`(select count(*)::int from ${schema.products} where ${schema.products.shopId} = ${schema.shops.id})`,
     })
     .from(schema.shops)
@@ -548,12 +561,12 @@ export async function adminCreateSupplier(
 export type ShopMediaKind = "logo" | "banner";
 
 /**
- * Set (or clear with `null`) the owner's shop logo or banner storage path.
+ * Set (or clear with `null`) a shop's logo or banner storage path (caller authorizes).
  * Returns the previous path so the caller can remove the old storage object.
  */
 export async function setShopMedia(
   db: Db,
-  ownerUserId: string,
+  shopId: string,
   kind: ShopMediaKind,
   storagePath: string | null,
 ): Promise<ActionResult<{ previousPath: string | null }>> {
@@ -564,7 +577,7 @@ export async function setShopMedia(
         bannerPath: schema.shops.bannerPath,
       })
       .from(schema.shops)
-      .where(eq(schema.shops.ownerUserId, ownerUserId))
+      .where(eq(schema.shops.id, shopId))
       .limit(1);
     if (!current) return err("not_found", "Shop not found.");
 
@@ -575,7 +588,7 @@ export async function setShopMedia(
           ? { logoPath: storagePath, updatedAt: new Date() }
           : { bannerPath: storagePath, updatedAt: new Date() },
       )
-      .where(eq(schema.shops.ownerUserId, ownerUserId));
+      .where(eq(schema.shops.id, shopId));
 
     return ok({
       previousPath: kind === "logo" ? current.logoPath : current.bannerPath,
