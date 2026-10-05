@@ -9,7 +9,8 @@
     "./constants": "./src/constants.ts",
     "./money": "./src/money.ts",
     "./pricing": "./src/pricing.ts",
-    "./flowers": "./src/flowers-client.ts"
+    "./flowers": "./src/flowers-client.ts",
+    "./slug": "./src/slug.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",

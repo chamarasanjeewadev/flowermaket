@@ -1,9 +1,9 @@
-import { and, asc, eq, inArray, isNotNull } from "drizzle-orm";
+import { and, asc, count, eq, inArray, isNotNull } from "drizzle-orm";
 import { schema } from "@flowers/db/client";
 import { DESIGNER_CATEGORY_SLUGS } from "../constants";
 import type { Db } from "../db";
-import type { FlowerVariantRow } from "../flowers-client";
-export type { FlowerVariantRow };
+import type { FlowerCategoryRow, FlowerVariantRow } from "../flowers-client";
+export type { FlowerCategoryRow, FlowerVariantRow };
 export { variantDisplayName } from "../flowers-client";
 
 export type FlowerSpeciesWithVariants = {
@@ -11,7 +11,7 @@ export type FlowerSpeciesWithVariants = {
   nameEn: string;
   nameSi: string;
   localName: string | null;
-  category: "imported" | "tropical" | "local";
+  category: string;
   defaultUnit: "stem" | "bunch" | "arrangement" | "item";
   sortOrder: number;
   isActive: boolean;
@@ -32,7 +32,7 @@ export type UpsertSpeciesInput = {
   nameEn: string;
   nameSi: string;
   localName?: string | null;
-  category: "imported" | "tropical" | "local";
+  category: string;
   defaultUnit: "stem" | "bunch" | "arrangement" | "item";
   sortOrder?: number;
   isActive?: boolean;
@@ -78,8 +78,12 @@ const variantSelect = {
   nameSi: schema.flowerSpecies.nameSi,
   localName: schema.flowerSpecies.localName,
   category: schema.flowerSpecies.category,
+  categoryNameEn: schema.flowerCategories.nameEn,
+  categoryNameSi: schema.flowerCategories.nameSi,
   defaultUnit: schema.flowerSpecies.defaultUnit,
 } as const;
+
+const categoryJoin = eq(schema.flowerSpecies.category, schema.flowerCategories.slug);
 
 type RawVariantRow = Omit<FlowerVariantRow, "imageUrl">;
 
@@ -108,6 +112,7 @@ export async function listFlowerVariants(
       schema.flowerSpecies,
       eq(schema.flowerVariants.speciesId, schema.flowerSpecies.id),
     )
+    .leftJoin(schema.flowerCategories, categoryJoin)
     .where(
       and(
         eq(schema.flowerVariants.isActive, true),
@@ -129,6 +134,7 @@ export async function listFeaturedVariants(
       schema.flowerSpecies,
       eq(schema.flowerVariants.speciesId, schema.flowerSpecies.id),
     )
+    .leftJoin(schema.flowerCategories, categoryJoin)
     .where(
       and(
         eq(schema.flowerVariants.isActive, true),
@@ -185,6 +191,7 @@ export async function listDesignerVariants(
       schema.flowerSpecies,
       eq(schema.flowerVariants.speciesId, schema.flowerSpecies.id),
     )
+    .leftJoin(schema.flowerCategories, categoryJoin)
     .where(whereClause)
     .orderBy(asc(schema.flowerVariants.sortOrder));
   return attachImageUrl(rows as RawVariantRow[], supabaseUrl);
@@ -267,6 +274,18 @@ export async function upsertFlowerVariant(
   db: Db,
   data: UpsertVariantInput,
 ): Promise<void> {
+  // Only overwrite fields the caller actually sent — e.g. toggling "featured"
+  // must not wipe an already-uploaded photo.
+  const set: Partial<typeof schema.flowerVariants.$inferInsert> = {
+    speciesId: data.speciesId,
+  };
+  if (data.colorEn !== undefined) set.colorEn = data.colorEn;
+  if (data.colorSi !== undefined) set.colorSi = data.colorSi;
+  if (data.imagePath !== undefined) set.imagePath = data.imagePath;
+  if (data.isFeatured !== undefined) set.isFeatured = data.isFeatured;
+  if (data.isActive !== undefined) set.isActive = data.isActive;
+  if (data.sortOrder !== undefined) set.sortOrder = data.sortOrder;
+
   await db
     .insert(schema.flowerVariants)
     .values({
@@ -279,27 +298,83 @@ export async function upsertFlowerVariant(
       isActive: data.isActive ?? true,
       sortOrder: data.sortOrder ?? 0,
     })
-    .onConflictDoUpdate({
-      target: schema.flowerVariants.id,
-      set: {
-        speciesId: data.speciesId,
-        colorEn: data.colorEn ?? null,
-        colorSi: data.colorSi ?? null,
-        imagePath: data.imagePath ?? null,
-        isFeatured: data.isFeatured ?? false,
-        isActive: data.isActive ?? true,
-        sortOrder: data.sortOrder ?? 0,
-      },
-    });
+    .onConflictDoUpdate({ target: schema.flowerVariants.id, set });
 }
 
 export async function patchVariantImagePath(
   db: Db,
   variantId: string,
-  imagePath: string,
+  imagePath: string | null,
 ): Promise<void> {
   await db
     .update(schema.flowerVariants)
     .set({ imagePath })
     .where(eq(schema.flowerVariants.id, variantId));
+}
+
+// ---------------------------------------------------------------------------
+// Flower categories
+// ---------------------------------------------------------------------------
+
+export type FlowerCategoryWithCount = FlowerCategoryRow & { speciesCount: number };
+
+export type UpsertFlowerCategoryInput = {
+  slug: string;
+  nameEn: string;
+  nameSi?: string | null;
+  sortOrder?: number;
+  isActive?: boolean;
+};
+
+/** Every category (active + inactive) with how many species use it. */
+export async function listFlowerCategories(
+  db: Db,
+): Promise<FlowerCategoryWithCount[]> {
+  const [categories, counts] = await Promise.all([
+    db
+      .select()
+      .from(schema.flowerCategories)
+      .orderBy(asc(schema.flowerCategories.sortOrder), asc(schema.flowerCategories.nameEn)),
+    db
+      .select({ slug: schema.flowerSpecies.category, n: count() })
+      .from(schema.flowerSpecies)
+      .groupBy(schema.flowerSpecies.category),
+  ]);
+  const bySlug = new Map(counts.map((c) => [c.slug, c.n]));
+  return categories.map((c) => ({ ...c, speciesCount: bySlug.get(c.slug) ?? 0 }));
+}
+
+export async function upsertFlowerCategory(
+  db: Db,
+  data: UpsertFlowerCategoryInput,
+): Promise<void> {
+  const set: Partial<typeof schema.flowerCategories.$inferInsert> = {
+    nameEn: data.nameEn,
+  };
+  if (data.nameSi !== undefined) set.nameSi = data.nameSi;
+  if (data.sortOrder !== undefined) set.sortOrder = data.sortOrder;
+  if (data.isActive !== undefined) set.isActive = data.isActive;
+  await db
+    .insert(schema.flowerCategories)
+    .values({
+      slug: data.slug,
+      nameEn: data.nameEn,
+      nameSi: data.nameSi ?? null,
+      sortOrder: data.sortOrder ?? 0,
+      isActive: data.isActive ?? true,
+    })
+    .onConflictDoUpdate({ target: schema.flowerCategories.slug, set });
+}
+
+/** Deletes a category only when no species uses it. Returns false if in use. */
+export async function deleteFlowerCategory(db: Db, slug: string): Promise<boolean> {
+  const [used] = await db
+    .select({ n: count() })
+    .from(schema.flowerSpecies)
+    .where(eq(schema.flowerSpecies.category, slug));
+  if ((used?.n ?? 0) > 0) return false;
+  await db
+    .delete(schema.flowerCategories)
+    .where(eq(schema.flowerCategories.slug, slug));
+  return true;
 }

@@ -13,7 +13,8 @@ import {
   buildImagenEndpoint,
   buildImagenRequest,
   extractImagenImage,
-  pickModelVariant,
+  resolveBouquetModel,
+  type BouquetModelChoice,
   type BouquetPromptItem,
 } from "@flowers/integrations";
 import { resolveSupplierSession } from "./session";
@@ -38,8 +39,8 @@ export type GenerateBouquetResult =
 
 export interface GenerateBouquetInput {
   items: BouquetPromptItem[];
-  /** Show the bouquet held by a model (a random model variant is chosen server-side). */
-  heldByModel?: boolean;
+  /** Show the bouquet held by a model look; "none"/omitted = product-only shot. */
+  model?: BouquetModelChoice;
 }
 
 function resolveIp(): string {
@@ -85,8 +86,7 @@ export const generateBouquetImageSupplier = createServerFn({ method: "POST" })
     if (!env.GEMINI_API_KEY) return { ok: false, reason: "unconfigured" };
 
     const prompt = buildBouquetPrompt(data.items, "en", {
-      heldByModel: data.heldByModel === true,
-      modelVariant: pickModelVariant(),
+      model: resolveBouquetModel(data.model),
     });
     if (!prompt) return { ok: false, reason: "empty" };
 

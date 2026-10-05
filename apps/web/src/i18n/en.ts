@@ -28,6 +28,7 @@ export const en = {
     siteNavigation: "Site navigation",
     homeAria: "FlowerMarket.lk home",
     cart: "Cart",
+    search: "Search",
   },
   footer: {
     tagline: "Sri Lanka's flower marketplace.",
@@ -102,8 +103,10 @@ export const en = {
       "You've used your free generation. Sign in or register to create up to 3 more.",
     rateLimitUser: "Daily limit reached. You can generate 3 bouquets per day.",
     rateLimitCooloff: "Please wait a few minutes before generating again.",
-    heldByModel: "Show held by a model",
-    heldByModelHint: "A model holds your bouquet — a different look each time.",
+    modelHeading: "Held by a model",
+    modelHint: "Choose a look for the model holding your bouquet.",
+    modelNone: "No model",
+    modelRandom: "Surprise me",
     signInToGenerate: "Sign in to generate more",
     aiDisclaimer:
       "The AI preview is for illustration only. Actual flowers may vary depending on seasonal availability.",
@@ -139,6 +142,7 @@ export const en = {
     trust2Body: "Every listing shows who sells it — florist, supplier or farmer.",
     trust3Title: "Simple enquiries",
     trust3Body: "Build a list and send your requirements on WhatsApp.",
+    allItems: "All",
     browseByCategory: "Browse by category",
     browseByCategorySub: "Explore flowers and arrangements by type.",
     featuredTitle: "Latest listings",

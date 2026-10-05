@@ -16,9 +16,33 @@ export type FlowerVariantRow = {
   nameEn: string;
   nameSi: string;
   localName: string | null;
-  category: "imported" | "tropical" | "local";
+  /** flower_categories.slug */
+  category: string;
+  categoryNameEn: string | null;
+  categoryNameSi: string | null;
   defaultUnit: "stem" | "bunch" | "arrangement" | "item";
 };
+
+export type FlowerCategoryRow = {
+  slug: string;
+  nameEn: string;
+  nameSi: string | null;
+  sortOrder: number;
+  isActive: boolean;
+};
+
+/** Units a species can be sold in by default. */
+export const FLOWER_UNITS = ["stem", "bunch", "arrangement", "item"] as const;
+export type FlowerUnit = (typeof FLOWER_UNITS)[number];
+
+/** Fallback label for a category slug with no flower_categories row. */
+export function humanizeCategorySlug(slug: string): string {
+  return slug
+    .split(/[-_]+/)
+    .filter(Boolean)
+    .map((w) => w[0]!.toUpperCase() + w.slice(1))
+    .join(" ");
+}
 
 export function variantDisplayName(
   v: Pick<FlowerVariantRow, "colorEn" | "colorSi" | "nameEn" | "nameSi">,

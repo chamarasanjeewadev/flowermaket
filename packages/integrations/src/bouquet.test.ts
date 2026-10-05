@@ -1,8 +1,8 @@
 import { describe, it, expect } from "vitest";
 import {
   buildBouquetPrompt,
-  BOUQUET_MODEL_VARIANTS,
-  pickModelVariant,
+  BOUQUET_MODELS,
+  resolveBouquetModel,
   buildImagenEndpoint,
   buildImagenRequest,
   extractImagenImage,
@@ -105,36 +105,46 @@ describe("imagen helpers", () => {
 });
 
 describe("buildBouquetPrompt — held by a model", () => {
-  it("describes a model holding the bouquet when heldByModel is set", () => {
-    const p = buildBouquetPrompt(items, "en", { heldByModel: true, modelVariant: 1 });
-    expect(p).toContain(BOUQUET_MODEL_VARIANTS[1]);
+  it("describes the chosen model look holding the bouquet", () => {
+    const p = buildBouquetPrompt(items, "en", { model: "pink-saree" });
+    expect(p).toContain(BOUQUET_MODELS[1].prompt);
     expect(p).toContain("5 Red Rose (per stem)");
     expect(p.toLowerCase()).toContain("photorealistic");
   });
 
-  it("keeps the product-only shot by default", () => {
-    const p = buildBouquetPrompt(items, "en");
-    for (const v of BOUQUET_MODEL_VARIANTS) expect(p).not.toContain(v);
+  it("keeps the product-only shot when no model is given", () => {
+    for (const opts of [{}, { model: null }]) {
+      const p = buildBouquetPrompt(items, "en", opts);
+      for (const m of BOUQUET_MODELS) expect(p).not.toContain(m.prompt);
+    }
   });
 
-  it("wraps out-of-range variant indices", () => {
-    const n = BOUQUET_MODEL_VARIANTS.length;
-    expect(buildBouquetPrompt(items, "en", { heldByModel: true, modelVariant: n + 2 })).toContain(
-      BOUQUET_MODEL_VARIANTS[2],
-    );
-    expect(buildBouquetPrompt(items, "en", { heldByModel: true, modelVariant: -1 })).toContain(
-      BOUQUET_MODEL_VARIANTS[n - 1],
-    );
+  it("asks for natural-looking flowers in both shot types", () => {
+    for (const opts of [{}, { model: "black-dress" as const }]) {
+      const p = buildBouquetPrompt(items, "en", opts).toLowerCase();
+      expect(p).toContain("natural");
+      expect(p).toContain("not artificial");
+    }
   });
 
   it("still returns empty when nothing is selected", () => {
-    expect(buildBouquetPrompt([], "en", { heldByModel: true })).toBe("");
+    expect(buildBouquetPrompt([], "en", { model: "white-shirt" })).toBe("");
   });
 });
 
-describe("pickModelVariant", () => {
-  it("returns an in-range index across the random range", () => {
-    expect(pickModelVariant(() => 0)).toBe(0);
-    expect(pickModelVariant(() => 0.9999)).toBe(BOUQUET_MODEL_VARIANTS.length - 1);
+describe("resolveBouquetModel", () => {
+  it("passes known ids through", () => {
+    expect(resolveBouquetModel("green-kurta")).toBe("green-kurta");
+  });
+
+  it("maps none, unknown and non-string input to no model", () => {
+    for (const v of ["none", "bogus", undefined, 3, null]) expect(resolveBouquetModel(v)).toBeNull();
+  });
+
+  it("picks an in-range look for random", () => {
+    expect(resolveBouquetModel("random", () => 0)).toBe(BOUQUET_MODELS[0].id);
+    expect(resolveBouquetModel("random", () => 0.9999)).toBe(
+      BOUQUET_MODELS[BOUQUET_MODELS.length - 1].id,
+    );
   });
 });

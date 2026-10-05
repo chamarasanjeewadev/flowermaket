@@ -11,11 +11,16 @@ import { Label } from "@flowers/ui/components/label";
 import { Button } from "@flowers/ui/components/button";
 import { Flower2, ImageOff, Loader2, Plus, Search } from "lucide-react";
 import type { FlowerSpeciesWithVariants } from "@flowers/api";
+import type { FlowerCategoryRow } from "@flowers/api/flowers";
 import {
+  getFlowerCategories,
   saveFlowerSpecies,
   saveFlowerVariant,
   uploadVariantImage,
 } from "../server/flowers";
+import { errorMessage, prepareImage } from "../lib/image-upload";
+import { categorySwatch } from "./flowers/CategoryPicker";
+import { toast } from "./toaster";
 
 export interface PickedFlower {
   flowerVariantId: string;
@@ -28,7 +33,7 @@ export interface PickedFlower {
 interface FlowerOption extends PickedFlower {
   nameSi: string;
   colorEn: string | null;
-  category: "imported" | "tropical" | "local";
+  category: string;
 }
 
 function flatten(flowers: FlowerSpeciesWithVariants[]): FlowerOption[] {
@@ -55,19 +60,6 @@ function flatten(flowers: FlowerSpeciesWithVariants[]): FlowerOption[] {
 const selectClass =
   "flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring";
 
-const CATEGORY_CLASS: Record<FlowerOption["category"], string> = {
-  imported: "bg-primary/10 text-primary",
-  tropical: "bg-warning/15 text-warning",
-  local: "bg-success/15 text-success",
-};
-
-async function fileToBase64(file: File): Promise<string> {
-  const buf = await file.arrayBuffer();
-  let binary = "";
-  const bytes = new Uint8Array(buf);
-  for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
-  return btoa(binary);
-}
 
 export function FlowerPicker({
   open,
@@ -181,7 +173,7 @@ export function FlowerPicker({
                     <div className="space-y-1 p-2">
                       <div className="truncate text-sm font-medium">{o.label}</div>
                       <span
-                        className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-medium ${CATEGORY_CLASS[o.category]}`}
+                        className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-medium ${categorySwatch(o.category)} text-foreground`}
                       >
                         {o.category}
                       </span>
@@ -221,7 +213,11 @@ function AddFlowerForm({
   const [nameEn, setNameEn] = React.useState(initialName);
   const [nameSi, setNameSi] = React.useState("");
   const [colorEn, setColorEn] = React.useState("");
-  const [category, setCategory] = React.useState<FlowerOption["category"]>("local");
+  const [category, setCategory] = React.useState<string>("local");
+  const [categories, setCategories] = React.useState<FlowerCategoryRow[]>([]);
+  React.useEffect(() => {
+    void getFlowerCategories().then((list) => setCategories(list.filter((c) => c.isActive)));
+  }, []);
   const [unit, setUnit] = React.useState<PickedFlower["unit"]>("stem");
   const [file, setFile] = React.useState<File | null>(null);
   const [busy, setBusy] = React.useState(false);
@@ -258,18 +254,12 @@ function AddFlowerForm({
       if (file) {
         // Image is optional — a failed upload must not block flower creation.
         try {
-          const base64 = await fileToBase64(file);
-          const res = await uploadVariantImage({
-            data: {
-              variantId,
-              fileName: `${variantId}-${file.name}`,
-              base64,
-              mimeType: file.type || "image/jpeg",
-            },
-          });
+          const prepared = await prepareImage(file);
+          const res = await uploadVariantImage({ data: { variantId, ...prepared } });
           imageUrl = res.imageUrl;
-        } catch {
+        } catch (err) {
           // Keep the flower; it just won't have a photo yet.
+          toast.error(`Flower added, but the photo failed: ${errorMessage(err, "upload error")}`);
         }
       }
 
@@ -302,10 +292,14 @@ function AddFlowerForm({
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="nf-cat">Category</Label>
-          <select id="nf-cat" className={selectClass} value={category} onChange={(e) => setCategory(e.target.value as FlowerOption["category"])}>
-            <option value="local">Local</option>
-            <option value="imported">Imported</option>
-            <option value="tropical">Tropical</option>
+          <select id="nf-cat" className={selectClass} value={category} onChange={(e) => setCategory(e.target.value)}>
+            {categories.length === 0 ? (
+              <option value="local">Local</option>
+            ) : (
+              categories.map((c) => (
+                <option key={c.slug} value={c.slug}>{c.nameEn}</option>
+              ))
+            )}
           </select>
         </div>
         <div className="space-y-1.5">

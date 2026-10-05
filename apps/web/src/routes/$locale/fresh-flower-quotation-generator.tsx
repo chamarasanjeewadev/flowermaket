@@ -68,13 +68,18 @@ import { localizedName, type Locale } from "../../i18n";
 import { useT } from "../../i18n/react";
 import { jsonLdScript, localePath, socialMeta } from "../../lib/seo";
 import { absoluteUrl, hreflangLinks, siteUrl } from "../../lib/site";
-import { variantDisplayName, type FlowerVariantRow } from "@flowers/api/flowers";
+import {
+  humanizeCategorySlug,
+  variantDisplayName,
+  type FlowerVariantRow,
+} from "@flowers/api/flowers";
 import {
   listFeaturedVariants,
   listFlowerVariants,
 } from "../../server/flowers";
 
-type FlowerCategory = "imported" | "tropical" | "local";
+/** flower_categories.slug — admin-managed, so any string. */
+type FlowerCategory = string;
 import { listProducts } from "../../server/catalog";
 
 const SEO_PATH = "/fresh-flower-quotation-generator";
@@ -212,7 +217,7 @@ function FlowerQuotationGeneratorPage() {
   const [copyState, setCopyState] = React.useState<"idle" | "copied">("idle");
   const [qrImageUrl, setQrImageUrl] = React.useState<string | null>(null);
   const [activeCategory, setActiveCategory] =
-    React.useState<FlowerCategory | "all">("all");
+    React.useState<FlowerCategory>("all");
   const [flowerSearch, setFlowerSearch] = React.useState("");
   const [flowerSheetOpen, setFlowerSheetOpen] = React.useState(false);
 
@@ -367,15 +372,29 @@ function FlowerQuotationGeneratorPage() {
     }),
   );
 
-  const CATEGORY_TABS: Array<{
-    key: FlowerCategory | "all";
-    label: string;
-  }> = [
+  // Tabs come from the categories actually in use, in catalog order. The three
+  // original categories keep their hand-tuned i18n labels.
+  const knownLabels: Record<string, string> = {
+    imported: t.quotation.categoryImported,
+    tropical: t.quotation.categoryTropical,
+    local: t.quotation.categoryLocal,
+  };
+  const CATEGORY_TABS: Array<{ key: FlowerCategory; label: string }> = [
     { key: "all", label: t.quotation.categoryAll },
-    { key: "imported", label: t.quotation.categoryImported },
-    { key: "tropical", label: t.quotation.categoryTropical },
-    { key: "local", label: t.quotation.categoryLocal },
   ];
+  for (const fl of allFlowers) {
+    if (CATEGORY_TABS.some((tab) => tab.key === fl.category)) continue;
+    const name =
+      locale === "si"
+        ? (fl.categoryNameSi ?? fl.categoryNameEn)
+        : fl.categoryNameEn;
+    CATEGORY_TABS.push({
+      key: fl.category,
+      label:
+        knownLabels[fl.category] ?? name ?? humanizeCategorySlug(fl.category),
+    });
+  }
+
 
   return (
     <div className="quotation-print-root">

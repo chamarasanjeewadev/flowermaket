@@ -4,12 +4,13 @@ import { Send, Sparkles } from "lucide-react";
 import {
   buildEnquiryText,
   buildWhatsappUrl,
+  BOUQUET_MODELS,
   pendingBasketAdditions,
   WHATSAPP_NUMBER,
+  type BouquetModelChoice,
   type EnquiryItem,
 } from "@flowers/integrations";
 import { Button } from "@flowers/ui/components/button";
-import { Checkbox } from "@flowers/ui/components/checkbox";
 import { type Locale } from "../../i18n";
 import { useT } from "../../i18n/react";
 import { siteUrl } from "../../lib/site";
@@ -18,6 +19,12 @@ import { generateBouquetImage } from "../../server/bouquet";
 import type { ProductListItemDTO } from "../../server/catalog";
 import { FlowerPicker } from "./FlowerPicker";
 import { BouquetPreview, type PreviewStatus } from "./BouquetPreview";
+
+const MODEL_OPTIONS: ReadonlyArray<{ id: BouquetModelChoice; labelEn: string; labelSi: string }> = [
+  { id: "none", labelEn: "No model", labelSi: "" },
+  { id: "random", labelEn: "Surprise me", labelSi: "" },
+  ...BOUQUET_MODELS,
+];
 
 type RateLimitReason = "anon_limit" | "user_limit" | "cooloff" | null;
 
@@ -29,7 +36,7 @@ export default function BouquetDesigner({ flowers }: { flowers: ProductListItemD
   const [dataUrl, setDataUrl] = React.useState<string | null>(null);
   const [imageUrl, setImageUrl] = React.useState<string | null>(null);
   const [rateLimitReason, setRateLimitReason] = React.useState<RateLimitReason>(null);
-  const [heldByModel, setHeldByModel] = React.useState(false);
+  const [model, setModel] = React.useState<BouquetModelChoice>("none");
 
   const byId = React.useMemo(() => new Map(flowers.map((fl) => [fl.id, fl])), [flowers]);
 
@@ -66,7 +73,7 @@ export default function BouquetDesigner({ flowers }: { flowers: ProductListItemD
       const result = await generateBouquetImage({
         data: {
           items: selection.map((i) => ({ nameEn: i.nameEn, qty: i.qty })),
-          heldByModel,
+          model,
         },
       });
       if (result.ok) {
@@ -152,18 +159,25 @@ export default function BouquetDesigner({ flowers }: { flowers: ProductListItemD
         <p className="mt-2 text-xs italic text-muted-foreground">
           {t.design.aiDisclaimer}
         </p>
-        <label className="mt-4 flex cursor-pointer items-start gap-2.5">
-          <Checkbox
-            checked={heldByModel}
-            onCheckedChange={(v) => setHeldByModel(v === true)}
-            disabled={status === "loading"}
-            className="mt-0.5"
-          />
-          <span className="text-sm">
-            {t.design.heldByModel}
-            <span className="block text-xs text-muted-foreground">{t.design.heldByModelHint}</span>
-          </span>
-        </label>
+        <fieldset className="mt-4" disabled={status === "loading"}>
+          <legend className="text-sm font-medium">{t.design.modelHeading}</legend>
+          <p className="text-xs text-muted-foreground">{t.design.modelHint}</p>
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            {MODEL_OPTIONS.map((opt) => (
+              <Button
+                key={opt.id}
+                type="button"
+                size="sm"
+                variant={model === opt.id ? "default" : "outline"}
+                aria-pressed={model === opt.id}
+                onClick={() => setModel(opt.id)}
+                className="h-8 rounded-full px-3 text-xs"
+              >
+                {opt.id === "none" ? t.design.modelNone : opt.id === "random" ? t.design.modelRandom : (locale === "si" ? opt.labelSi : opt.labelEn)}
+              </Button>
+            ))}
+          </div>
+        </fieldset>
         <div className="mt-4 flex flex-col gap-2">
           <Button
             onClick={() => void onGenerate()}

@@ -15,28 +15,84 @@ export interface BouquetPromptItem {
 export const MAX_PROMPT_FLOWERS = 12;
 
 /**
- * Model presets for the "held by a model" option. One is picked per generation
- * so repeated previews show different women, outfits, poses and backdrops.
+ * Model looks for the "held by a model" option. The user picks one (or
+ * "random"); `id` is the stable key sent from the client, labels are for UI.
  */
-export const BOUQUET_MODEL_VARIANTS: readonly string[] = [
-  "a young Sri Lankan woman with long straight black hair, wearing a crisp white linen shirt and beige trousers, standing against a plain light-grey studio backdrop, holding the bouquet across her body in the crook of one arm",
-  "a South Asian woman in her late twenties with a low bun, wearing a soft pastel-pink saree draped elegantly, gently smiling, holding the bouquet in both hands at waist height, warm cream studio background",
-  "a young Sri Lankan woman with shoulder-length wavy dark hair, wearing a sleeveless black dress and a thin gold necklace, holding the bouquet upright close to her chest, soft beige backdrop",
-  "a South Asian woman with curly dark hair tied back, wearing a light-blue cotton blouse and white jeans, cradling the bouquet in her arm with a relaxed natural pose, bright airy studio with soft window light",
-  "a young Sri Lankan woman in a modern kurta in sage green with small gold earrings, hair in a long braid over one shoulder, holding the bouquet slightly to the side, off-white seamless background",
-  "a South Asian woman in her thirties with a neat side-parted bob, wearing an ivory knit top and tan skirt, holding the bouquet in front of her with both hands, warm taupe studio backdrop",
-];
+export const BOUQUET_MODELS = [
+  {
+    id: "white-shirt",
+    labelEn: "White shirt",
+    labelSi: "සුදු කමිසය",
+    prompt:
+      "a young Sri Lankan woman with long straight black hair, wearing a crisp white linen shirt and beige trousers, standing against a plain light-grey studio backdrop, holding the bouquet across her body in the crook of one arm",
+  },
+  {
+    id: "pink-saree",
+    labelEn: "Pink saree",
+    labelSi: "රෝස සාරිය",
+    prompt:
+      "a South Asian woman in her late twenties with a low bun, wearing a soft pastel-pink saree draped elegantly, gently smiling, holding the bouquet in both hands at waist height, warm cream studio background",
+  },
+  {
+    id: "black-dress",
+    labelEn: "Black dress",
+    labelSi: "කළු ගවුම",
+    prompt:
+      "a young Sri Lankan woman with shoulder-length wavy dark hair, wearing a sleeveless black dress and a thin gold necklace, holding the bouquet upright close to her chest, soft beige backdrop",
+  },
+  {
+    id: "blue-blouse",
+    labelEn: "Blue blouse",
+    labelSi: "නිල් බ්ලවුසය",
+    prompt:
+      "a South Asian woman with curly dark hair tied back, wearing a light-blue cotton blouse and white jeans, cradling the bouquet in her arm with a relaxed natural pose, bright airy studio with soft window light",
+  },
+  {
+    id: "green-kurta",
+    labelEn: "Green kurta",
+    labelSi: "කොළ කුර්තාව",
+    prompt:
+      "a young Sri Lankan woman in a modern kurta in sage green with small gold earrings, hair in a long braid over one shoulder, holding the bouquet slightly to the side, off-white seamless background",
+  },
+  {
+    id: "ivory-knit",
+    labelEn: "Ivory knit top",
+    labelSi: "ලා කහ නිට් ටොප්",
+    prompt:
+      "a South Asian woman in her thirties with a neat side-parted bob, wearing an ivory knit top and tan skirt, holding the bouquet in front of her with both hands, warm taupe studio backdrop",
+  },
+] as const;
 
-export interface BouquetPromptOptions {
-  /** Show the bouquet held by a model instead of a product-only shot. */
-  heldByModel?: boolean;
-  /** Index into BOUQUET_MODEL_VARIANTS (wrapped). Defaults to 0. */
-  modelVariant?: number;
+export type BouquetModelId = (typeof BOUQUET_MODELS)[number]["id"];
+
+/** What the client sends: no model, a random look, or a specific look. */
+export type BouquetModelChoice = "none" | "random" | BouquetModelId;
+
+/**
+ * Resolve an untrusted client choice to a concrete look (or null for no model).
+ * Unknown values fall back to no model.
+ */
+export function resolveBouquetModel(
+  choice: unknown,
+  random: () => number = Math.random,
+): BouquetModelId | null {
+  if (choice === "random") {
+    const i = Math.floor(random() * BOUQUET_MODELS.length) % BOUQUET_MODELS.length;
+    return BOUQUET_MODELS[i].id;
+  }
+  return BOUQUET_MODELS.find((m) => m.id === choice)?.id ?? null;
 }
 
-/** Random variant index — the server calls this so the client can't steer it. */
-export function pickModelVariant(random: () => number = Math.random): number {
-  return Math.floor(random() * BOUQUET_MODEL_VARIANTS.length) % BOUQUET_MODEL_VARIANTS.length;
+/** Keeps generated flowers looking like real fresh-cut stems, not CGI. */
+const NATURAL_FLOWERS =
+  "The flowers look natural and freshly cut: real petal texture with subtle natural " +
+  "variation and slight imperfections, true-to-life colours, varied bloom sizes and " +
+  "stages of opening, natural greenery and stems, not artificial, not plastic, " +
+  "not oversaturated, not CGI.";
+
+export interface BouquetPromptOptions {
+  /** Show the bouquet held by this model look; omit for a product-only shot. */
+  model?: BouquetModelId | null;
 }
 
 export function buildBouquetPrompt(
@@ -47,12 +103,12 @@ export function buildBouquetPrompt(
   const picked = items.filter((i) => i.qty >= 1).slice(0, MAX_PROMPT_FLOWERS);
   if (picked.length === 0) return "";
   const list = picked.map((i) => `${i.qty} ${i.nameEn}`).join(", ");
-  if (options.heldByModel) {
-    const n = BOUQUET_MODEL_VARIANTS.length;
-    const idx = (((options.modelVariant ?? 0) % n) + n) % n;
+  const model = options.model ? BOUQUET_MODELS.find((m) => m.id === options.model) : undefined;
+  if (model) {
     return (
-      `A photorealistic e-commerce product photo of ${BOUQUET_MODEL_VARIANTS[idx]}. ` +
+      `A photorealistic e-commerce product photo of ${model.prompt}. ` +
       `The bouquet contains ${list}, hand-tied and wrapped in elegant florist paper with a ribbon. ` +
+      `${NATURAL_FLOWERS} ` +
       `Framed from the shoulders or chin down to the hips so the bouquet is the clear focal point, ` +
       `face partially cropped or out of focus, natural skin texture, realistic hands with five fingers ` +
       `naturally gripping the stems, true-to-life proportions, soft diffused studio lighting, ` +
@@ -61,8 +117,8 @@ export function buildBouquetPrompt(
   }
   return (
     `A photorealistic professional florist bouquet containing ${list}, ` +
-    `hand-tied and wrapped in kraft paper, soft natural studio lighting, ` +
-    `clean neutral background, high detail, no text, no watermark.`
+    `hand-tied and wrapped in kraft paper. ${NATURAL_FLOWERS} ` +
+    `Soft natural studio lighting, clean neutral background, high detail, no text, no watermark.`
   );
 }
 
