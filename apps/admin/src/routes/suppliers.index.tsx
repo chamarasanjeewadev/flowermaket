@@ -6,6 +6,7 @@ import {
   MapPin,
   MessageCircle,
   Package,
+  Pencil,
   Phone,
   Plus,
   Search,
@@ -41,6 +42,7 @@ import {
   reviewSupplierFn,
   setSupplierSellerTypesFn,
 } from "../server/suppliers";
+import { getPortalUrlsFn } from "../server/products";
 import {
   SELLER_TYPE_META,
   SellerTypeChips,
@@ -74,9 +76,13 @@ function locationLabel(shop: Pick<ReviewableShop, "city" | "district">): string 
 }
 
 export const Route = createFileRoute("/suppliers/")({
-  loader: async (): Promise<{ suppliers: ReviewableShop[] }> => ({
-    suppliers: await listSuppliersForReview({ data: {} }),
-  }),
+  loader: async () => {
+    const [suppliers, urls] = await Promise.all([
+      listSuppliersForReview({ data: {} }),
+      getPortalUrlsFn(),
+    ]);
+    return { suppliers, urls };
+  },
   component: SuppliersPage,
 });
 
@@ -90,9 +96,6 @@ const STATUS_VARIANT: Record<VerificationStatus, BadgeVariant> = {
   unverified: "outline",
   rejected: "destructive",
 };
-
-/** Public storefront on the buyer site. */
-const STOREFRONT_ORIGIN = "https://flowermarket.lk";
 
 function ProductCount({ shop }: { shop: ReviewableShop }) {
   const empty = shop.activeProductCount === 0;
@@ -131,7 +134,7 @@ function waMessage(shop: ReviewableShop) {
 // --- page ------------------------------------------------------------------
 
 function SuppliersPage() {
-  const { suppliers } = Route.useLoaderData();
+  const { suppliers, urls } = Route.useLoaderData();
   const router = useRouter();
   const [selected, setSelected] = React.useState<ReviewableShop | null>(null);
   const [busy, setBusy] = React.useState(false);
@@ -321,6 +324,8 @@ function SuppliersPage() {
       )}
 
       <SupplierSheet
+        supplierPortalUrl={urls.supplierPortalUrl ?? "https://supplier.flowermarket.lk"}
+        webUrl={urls.webUrl}
         shop={
           selected
             ? (suppliers.find((x) => x.id === selected.id) ?? selected)
@@ -357,6 +362,8 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 }
 
 function SupplierSheet({
+  supplierPortalUrl,
+  webUrl,
   shop,
   busy,
   rejecting,
@@ -368,6 +375,8 @@ function SupplierSheet({
   onVerify,
   onReject,
 }: {
+  supplierPortalUrl: string;
+  webUrl: string;
   shop: ReviewableShop | null;
   busy: boolean;
   rejecting: boolean;
@@ -398,6 +407,27 @@ function SupplierSheet({
             </SheetHeader>
 
             <div className="flex-1 space-y-5 overflow-y-auto px-4 py-2">
+              <div className="flex flex-wrap gap-2">
+                <Button asChild size="sm" variant="brand">
+                  <a
+                    href={`${supplierPortalUrl}/act-as/${shop.id}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <Pencil className="size-3.5" /> Manage as owner
+                  </a>
+                </Button>
+                <Button asChild size="sm" variant="outline">
+                  <Link to="/products" search={{ shop: shop.id, tab: "all" }}>
+                    <Package className="size-3.5" /> Products ({shop.totalProductCount})
+                  </Link>
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Manage as owner opens the supplier portal for this shop — add or
+                edit products and photos, logo, banner and profile.
+              </p>
+
               <SellerTypesEditor key={shop.id} shop={shop} />
 
               <div className="grid grid-cols-2 gap-4">
@@ -407,7 +437,7 @@ function SupplierSheet({
                 <Field label="Storefront">
                   {shop.verificationStatus === "verified" ? (
                     <a
-                      href={`${STOREFRONT_ORIGIN}/en/shops/${shop.slug}`}
+                      href={`${webUrl}/en/shops/${shop.slug}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="inline-flex items-center gap-1 text-brand hover:underline"

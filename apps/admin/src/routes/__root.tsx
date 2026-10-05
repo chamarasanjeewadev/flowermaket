@@ -26,6 +26,7 @@ const NAV_ITEMS = [
   { to: "/", label: "Dashboard", exact: true },
   { to: "/orders", label: "Orders", exact: false },
   { to: "/suppliers", label: "Suppliers", exact: false },
+  { to: "/products", label: "Products", exact: false },
   { to: "/whatsapp", label: "WhatsApp", exact: false },
   { to: "/flowers", label: "Flowers", exact: false },
   { to: "/bouquet-usage", label: "Bouquet AI", exact: false },

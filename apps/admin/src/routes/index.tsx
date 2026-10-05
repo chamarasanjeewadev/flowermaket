@@ -12,27 +12,31 @@ import { ArrowRight, Clock, Flower2, ShoppingBag, Store } from "lucide-react";
 import { listOrdersFn } from "../server/orders";
 import { listSuppliersForReview } from "../server/suppliers";
 import { getAdminFlowers } from "../server/flowers";
-import type { OrderSummary, ReviewableShop } from "@flowers/api";
+import { getModerationCountsFn } from "../server/products";
+import type { ModerationCounts, OrderSummary, ReviewableShop } from "@flowers/api";
 
 interface DashboardData {
   orders: OrderSummary[];
   suppliers: ReviewableShop[];
   speciesCount: number;
   variantCount: number;
+  moderation: ModerationCounts;
 }
 
 export const Route = createFileRoute("/")({
   loader: async (): Promise<DashboardData> => {
-    const [ordersRes, suppliers, flowers] = await Promise.all([
+    const [ordersRes, suppliers, flowers, moderation] = await Promise.all([
       listOrdersFn(),
       listSuppliersForReview({ data: {} }),
       getAdminFlowers(),
+      getModerationCountsFn(),
     ]);
     return {
       orders: ordersRes.ok ? ordersRes.data : [],
       suppliers,
       speciesCount: flowers.length,
       variantCount: flowers.reduce((n, s) => n + s.variants.length, 0),
+      moderation,
     };
   },
   component: DashboardPage,
@@ -92,7 +96,11 @@ function StatCard({
 }
 
 function DashboardPage() {
-  const { orders, suppliers, speciesCount, variantCount } = Route.useLoaderData();
+  const { orders, suppliers, speciesCount, variantCount, moderation } =
+    Route.useLoaderData();
+  const emptyStorefronts = suppliers.filter(
+    (s) => s.verificationStatus === "verified" && s.activeProductCount === 0,
+  );
 
   const openOrders = orders.filter((o) => OPEN_STATUSES.has(o.status)).length;
   const pendingSuppliers = suppliers.filter(
@@ -134,10 +142,14 @@ function DashboardPage() {
         />
         <StatCard
           icon={Clock}
-          label="Awaiting review"
-          value={pendingSuppliers}
-          to="/suppliers"
-          sub={<span className="text-muted-foreground">supplier verifications</span>}
+          label="Products to review"
+          value={moderation.pending}
+          to="/products"
+          sub={
+            <span className="text-muted-foreground">
+              {moderation.approved} live · {moderation.blocked} blocked
+            </span>
+          }
         />
         <StatCard
           icon={Flower2}
@@ -147,6 +159,54 @@ function DashboardPage() {
           sub={<span className="text-muted-foreground">{variantCount} variants</span>}
         />
       </div>
+
+      {/* Needs attention */}
+      {(moderation.pending > 0 || pendingSuppliers > 0 || emptyStorefronts.length > 0) && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Needs attention</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ul className="divide-y divide-border text-sm">
+              {moderation.pending > 0 && (
+                <li className="flex items-center justify-between gap-3 py-2.5">
+                  <span>
+                    <span className="font-semibold">{moderation.pending}</span> product
+                    {moderation.pending === 1 ? "" : "s"} waiting for approval
+                  </span>
+                  <Button asChild size="sm" variant="outline">
+                    <Link to="/products" search={{ tab: "pending" }}>Review</Link>
+                  </Button>
+                </li>
+              )}
+              {pendingSuppliers > 0 && (
+                <li className="flex items-center justify-between gap-3 py-2.5">
+                  <span>
+                    <span className="font-semibold">{pendingSuppliers}</span> shop
+                    {pendingSuppliers === 1 ? "" : "s"} waiting for verification
+                  </span>
+                  <Button asChild size="sm" variant="outline">
+                    <Link to="/suppliers">Verify</Link>
+                  </Button>
+                </li>
+              )}
+              {emptyStorefronts.map((s) => (
+                <li key={s.id} className="flex items-center justify-between gap-3 py-2.5">
+                  <span>
+                    <span className="font-semibold">{s.nameEn}</span> is verified but has
+                    no live products
+                  </span>
+                  <Button asChild size="sm" variant="outline">
+                    <Link to="/products" search={{ shop: s.id, tab: "all" }}>
+                      Check products
+                    </Link>
+                  </Button>
+                </li>
+              ))}
+            </ul>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Recent orders */}
       <Card>
