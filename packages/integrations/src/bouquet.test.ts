@@ -1,6 +1,8 @@
 import { describe, it, expect } from "vitest";
 import {
   buildBouquetPrompt,
+  BOUQUET_MODEL_VARIANTS,
+  pickModelVariant,
   buildImagenEndpoint,
   buildImagenRequest,
   extractImagenImage,
@@ -82,6 +84,7 @@ describe("imagen helpers", () => {
     const body = buildImagenRequest("a bouquet");
     expect(body.contents[0].parts[0].text).toBe("a bouquet");
     expect(body.generationConfig.responseModalities).toContain("IMAGE");
+    expect(body.generationConfig.imageConfig.aspectRatio).toBe("1:1");
   });
 
   it("extracts the base64 image from a Gemini generateContent response", () => {
@@ -98,5 +101,40 @@ describe("imagen helpers", () => {
     expect(extractImagenImage({ candidates: [] })).toBeNull();
     expect(extractImagenImage({ candidates: [{ content: { parts: [{ text: "hi" }] } }] })).toBeNull();
     expect(extractImagenImage(null)).toBeNull();
+  });
+});
+
+describe("buildBouquetPrompt — held by a model", () => {
+  it("describes a model holding the bouquet when heldByModel is set", () => {
+    const p = buildBouquetPrompt(items, "en", { heldByModel: true, modelVariant: 1 });
+    expect(p).toContain(BOUQUET_MODEL_VARIANTS[1]);
+    expect(p).toContain("5 Red Rose (per stem)");
+    expect(p.toLowerCase()).toContain("photorealistic");
+  });
+
+  it("keeps the product-only shot by default", () => {
+    const p = buildBouquetPrompt(items, "en");
+    for (const v of BOUQUET_MODEL_VARIANTS) expect(p).not.toContain(v);
+  });
+
+  it("wraps out-of-range variant indices", () => {
+    const n = BOUQUET_MODEL_VARIANTS.length;
+    expect(buildBouquetPrompt(items, "en", { heldByModel: true, modelVariant: n + 2 })).toContain(
+      BOUQUET_MODEL_VARIANTS[2],
+    );
+    expect(buildBouquetPrompt(items, "en", { heldByModel: true, modelVariant: -1 })).toContain(
+      BOUQUET_MODEL_VARIANTS[n - 1],
+    );
+  });
+
+  it("still returns empty when nothing is selected", () => {
+    expect(buildBouquetPrompt([], "en", { heldByModel: true })).toBe("");
+  });
+});
+
+describe("pickModelVariant", () => {
+  it("returns an in-range index across the random range", () => {
+    expect(pickModelVariant(() => 0)).toBe(0);
+    expect(pickModelVariant(() => 0.9999)).toBe(BOUQUET_MODEL_VARIANTS.length - 1);
   });
 });

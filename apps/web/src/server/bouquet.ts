@@ -10,6 +10,7 @@ import {
   buildImagenEndpoint,
   buildImagenRequest,
   extractImagenImage,
+  pickModelVariant,
   type BouquetPromptItem,
 } from "@flowers/integrations";
 import { resolveSessionUser } from "./session";
@@ -21,6 +22,8 @@ export type GenerateBouquetResult =
 
 export interface GenerateBouquetInput {
   items: BouquetPromptItem[];
+  /** Show the bouquet held by a model (a random model variant is chosen server-side). */
+  heldByModel?: boolean;
 }
 
 function resolveIp(): string {
@@ -37,7 +40,10 @@ export const generateBouquetImage = createServerFn({ method: "POST" })
     const env = getEnv();
     if (!env.GEMINI_API_KEY) return { ok: false, reason: "unconfigured" };
 
-    const prompt = buildBouquetPrompt(data.items, "en");
+    const prompt = buildBouquetPrompt(data.items, "en", {
+      heldByModel: data.heldByModel === true,
+      modelVariant: pickModelVariant(),
+    });
     if (!prompt) return { ok: false, reason: "empty" };
 
     const session = await resolveSessionUser();

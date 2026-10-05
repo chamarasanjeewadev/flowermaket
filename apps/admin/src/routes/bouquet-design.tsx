@@ -2,6 +2,7 @@ import * as React from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { Sparkles } from "lucide-react";
 import { Button } from "@flowers/ui/components/button";
+import { Checkbox } from "@flowers/ui/components/checkbox";
 import {
   generateBouquetImageAdmin,
   listDesignerFlowersAdmin,
@@ -28,6 +29,7 @@ function BouquetDesignPage() {
   const [dataUrl, setDataUrl] = React.useState<string | null>(null);
   const [imageUrl, setImageUrl] = React.useState<string | null>(null);
   const [message, setMessage] = React.useState<string | null>(null);
+  const [heldByModel, setHeldByModel] = React.useState(false);
 
   const selection = Object.entries(quantities)
     .filter(([, qty]) => qty > 0)
@@ -54,7 +56,7 @@ function BouquetDesignPage() {
     setGenStatus("loading");
     setMessage(null);
     try {
-      const result = await generateBouquetImageAdmin({ data: { items: selection } });
+      const result = await generateBouquetImageAdmin({ data: { items: selection, heldByModel } });
       if (result.ok) {
         setDataUrl(result.dataUrl);
         setImageUrl(result.imageUrl);
@@ -159,6 +161,21 @@ function BouquetDesignPage() {
           {message && (
             <p className="mt-3 text-sm text-destructive">{message}</p>
           )}
+
+          <label className="mt-4 flex cursor-pointer items-start gap-2.5">
+            <Checkbox
+              checked={heldByModel}
+              onCheckedChange={(v) => setHeldByModel(v === true)}
+              disabled={genStatus === "loading"}
+              className="mt-0.5"
+            />
+            <span className="text-sm">
+              Show held by a model
+              <span className="block text-xs text-muted-foreground">
+                A model holds the bouquet — a different look each time.
+              </span>
+            </span>
+          </label>
 
           <div className="mt-4 flex flex-col gap-2">
             <Button

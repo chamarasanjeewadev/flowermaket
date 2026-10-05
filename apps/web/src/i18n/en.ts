@@ -102,6 +102,8 @@ export const en = {
       "You've used your free generation. Sign in or register to create up to 3 more.",
     rateLimitUser: "Daily limit reached. You can generate 3 bouquets per day.",
     rateLimitCooloff: "Please wait a few minutes before generating again.",
+    heldByModel: "Show held by a model",
+    heldByModelHint: "A model holds your bouquet — a different look each time.",
     signInToGenerate: "Sign in to generate more",
     aiDisclaimer:
       "The AI preview is for illustration only. Actual flowers may vary depending on seasonal availability.",

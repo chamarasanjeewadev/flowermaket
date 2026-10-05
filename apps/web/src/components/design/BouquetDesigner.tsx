@@ -9,6 +9,7 @@ import {
   type EnquiryItem,
 } from "@flowers/integrations";
 import { Button } from "@flowers/ui/components/button";
+import { Checkbox } from "@flowers/ui/components/checkbox";
 import { type Locale } from "../../i18n";
 import { useT } from "../../i18n/react";
 import { siteUrl } from "../../lib/site";
@@ -28,6 +29,7 @@ export default function BouquetDesigner({ flowers }: { flowers: ProductListItemD
   const [dataUrl, setDataUrl] = React.useState<string | null>(null);
   const [imageUrl, setImageUrl] = React.useState<string | null>(null);
   const [rateLimitReason, setRateLimitReason] = React.useState<RateLimitReason>(null);
+  const [heldByModel, setHeldByModel] = React.useState(false);
 
   const byId = React.useMemo(() => new Map(flowers.map((fl) => [fl.id, fl])), [flowers]);
 
@@ -62,7 +64,10 @@ export default function BouquetDesigner({ flowers }: { flowers: ProductListItemD
     setRateLimitReason(null);
     try {
       const result = await generateBouquetImage({
-        data: { items: selection.map((i) => ({ nameEn: i.nameEn, qty: i.qty })) },
+        data: {
+          items: selection.map((i) => ({ nameEn: i.nameEn, qty: i.qty })),
+          heldByModel,
+        },
       });
       if (result.ok) {
         setDataUrl(result.dataUrl);
@@ -147,6 +152,18 @@ export default function BouquetDesigner({ flowers }: { flowers: ProductListItemD
         <p className="mt-2 text-xs italic text-muted-foreground">
           {t.design.aiDisclaimer}
         </p>
+        <label className="mt-4 flex cursor-pointer items-start gap-2.5">
+          <Checkbox
+            checked={heldByModel}
+            onCheckedChange={(v) => setHeldByModel(v === true)}
+            disabled={status === "loading"}
+            className="mt-0.5"
+          />
+          <span className="text-sm">
+            {t.design.heldByModel}
+            <span className="block text-xs text-muted-foreground">{t.design.heldByModelHint}</span>
+          </span>
+        </label>
         <div className="mt-4 flex flex-col gap-2">
           <Button
             onClick={() => void onGenerate()}
