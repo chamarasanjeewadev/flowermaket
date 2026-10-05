@@ -2,13 +2,14 @@ import * as React from "react";
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import {
   Check,
+  ExternalLink,
   MapPin,
   MessageCircle,
+  Package,
   Phone,
   Plus,
-  Sprout,
+  Search,
   Store,
-  Users,
   X,
 } from "lucide-react";
 import { Button } from "@flowers/ui/components/button";
@@ -32,8 +33,19 @@ import {
 import { Separator } from "@flowers/ui/components/separator";
 import { Textarea } from "@flowers/ui/components/textarea";
 import { buildWhatsappLink } from "@flowers/integrations";
-import { DISTRICTS } from "@flowers/api/constants";
-import { listSuppliersForReview, reviewSupplierFn } from "../server/suppliers";
+import { DISTRICTS, SELLER_TYPES, type SellerType } from "@flowers/api/constants";
+import { Input } from "@flowers/ui/components/input";
+import { cn } from "@flowers/ui/lib/utils";
+import {
+  listSuppliersForReview,
+  reviewSupplierFn,
+  setSupplierSellerTypesFn,
+} from "../server/suppliers";
+import {
+  SELLER_TYPE_META,
+  SellerTypeChips,
+  SellerTypeCheckboxes,
+} from "../components/seller-types";
 import type { ReviewableShop, VerificationStatus } from "@flowers/api";
 
 // --- formatting helpers ----------------------------------------------------
@@ -79,28 +91,37 @@ const STATUS_VARIANT: Record<VerificationStatus, BadgeVariant> = {
   rejected: "destructive",
 };
 
-function typeMeta(shopType: ReviewableShop["shopType"], isAggregator: boolean) {
-  if (shopType === "grower") {
-    return {
-      label: isAggregator ? "Aggregator" : "Farmer / Grower",
-      Icon: isAggregator ? Users : Sprout,
-      className: "bg-success/15 text-success",
-    };
-  }
-  return { label: "Florist", Icon: Store, className: "bg-primary/10 text-primary" };
-}
+/** Public storefront on the buyer site. */
+const STOREFRONT_ORIGIN = "https://flowermarket.lk";
 
-function TypeBadge({ shop }: { shop: ReviewableShop }) {
-  const { label, Icon, className } = typeMeta(shop.shopType, shop.isAggregator);
+function ProductCount({ shop }: { shop: ReviewableShop }) {
+  const empty = shop.activeProductCount === 0;
   return (
     <span
-      className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${className}`}
+      className={cn(
+        "inline-flex items-center gap-1 text-sm",
+        empty ? "font-medium text-warning" : "text-muted-foreground",
+      )}
+      title={`${shop.activeProductCount} active of ${shop.totalProductCount} total`}
     >
-      <Icon className="size-3.5" />
-      {label}
+      <Package className="size-3.5" aria-hidden="true" />
+      {shop.activeProductCount}
+      {shop.totalProductCount > shop.activeProductCount && (
+        <span className="text-xs text-muted-foreground">
+          {" "}/ {shop.totalProductCount}
+        </span>
+      )}
     </span>
   );
 }
+
+const STATUS_FILTERS: Array<{ value: VerificationStatus | "all"; label: string }> = [
+  { value: "all", label: "All" },
+  { value: "pending", label: "Pending" },
+  { value: "verified", label: "Verified" },
+  { value: "unverified", label: "Unverified" },
+  { value: "rejected", label: "Rejected" },
+];
 
 function waMessage(shop: ReviewableShop) {
   const name = shop.ownerFullName || shop.nameEn;
@@ -116,6 +137,23 @@ function SuppliersPage() {
   const [busy, setBusy] = React.useState(false);
   const [rejectNote, setRejectNote] = React.useState("");
   const [rejecting, setRejecting] = React.useState(false);
+  const [statusFilter, setStatusFilter] = React.useState<VerificationStatus | "all">("all");
+  const [typeFilter, setTypeFilter] = React.useState<SellerType | "all">("all");
+  const [query, setQuery] = React.useState("");
+
+  const q = query.trim().toLowerCase();
+  const visible = suppliers.filter(
+    (s) =>
+      (statusFilter === "all" || s.verificationStatus === statusFilter) &&
+      (typeFilter === "all" || s.sellerTypes.includes(typeFilter)) &&
+      (!q ||
+        s.nameEn.toLowerCase().includes(q) ||
+        s.ownerEmail.toLowerCase().includes(q) ||
+        (s.ownerPhone ?? "").includes(q)),
+  );
+  const emptyStorefronts = suppliers.filter(
+    (s) => s.verificationStatus === "verified" && s.activeProductCount === 0,
+  ).length;
 
   async function review(shopId: string, status: VerificationStatus, notes?: string) {
     setBusy(true);
@@ -144,6 +182,9 @@ function SuppliersPage() {
             {pending > 0 ? (
               <> · <span className="font-medium text-warning">{pending} awaiting review</span></>
             ) : null}
+            {emptyStorefronts > 0 ? (
+              <> · <span className="font-medium text-warning">{emptyStorefronts} verified with no active products</span></>
+            ) : null}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -166,19 +207,72 @@ function SuppliersPage() {
           <p className="text-sm text-muted-foreground">No suppliers yet.</p>
         </div>
       ) : (
+        <>
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex flex-wrap gap-1.5">
+            {STATUS_FILTERS.map((f) => (
+              <button
+                key={f.value}
+                type="button"
+                onClick={() => setStatusFilter(f.value)}
+                className={cn(
+                  "rounded-full border px-3 py-1 text-xs font-medium transition-colors",
+                  statusFilter === f.value
+                    ? "border-foreground bg-foreground text-background"
+                    : "border-border text-muted-foreground hover:text-foreground",
+                )}
+              >
+                {f.label}
+              </button>
+            ))}
+            <span className="mx-1 w-px self-stretch bg-border" aria-hidden="true" />
+            {(["all", ...SELLER_TYPES] as const).map((type) => (
+              <button
+                key={type}
+                type="button"
+                onClick={() => setTypeFilter(type)}
+                className={cn(
+                  "rounded-full border px-3 py-1 text-xs font-medium transition-colors",
+                  typeFilter === type
+                    ? "border-foreground bg-foreground text-background"
+                    : "border-border text-muted-foreground hover:text-foreground",
+                )}
+              >
+                {type === "all" ? "All types" : SELLER_TYPE_META[type].label}
+              </button>
+            ))}
+          </div>
+          <div className="relative lg:w-64">
+            <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search name, email, phone"
+              className="pl-8"
+            />
+          </div>
+        </div>
         <div className="overflow-x-auto rounded-xl border border-border bg-card">
           <Table>
             <TableHeader>
               <TableRow>
                 <TableHead>Shop</TableHead>
                 <TableHead>Type</TableHead>
+                <TableHead>Products</TableHead>
                 <TableHead>Location</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {suppliers.map((s) => {
+              {visible.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={6} className="py-10 text-center text-sm text-muted-foreground">
+                    No suppliers match these filters.
+                  </TableCell>
+                </TableRow>
+              )}
+              {visible.map((s) => {
                 const wa = buildWhatsappLink(s.ownerPhone, waMessage(s));
                 return (
                   <TableRow
@@ -190,7 +284,8 @@ function SuppliersPage() {
                       <div className="font-medium">{s.nameEn}</div>
                       <div className="text-xs text-muted-foreground">{s.ownerEmail}</div>
                     </TableCell>
-                    <TableCell><TypeBadge shop={s} /></TableCell>
+                    <TableCell><SellerTypeChips types={s.sellerTypes} /></TableCell>
+                    <TableCell><ProductCount shop={s} /></TableCell>
                     <TableCell className="text-sm text-muted-foreground">
                       {locationLabel(s)}
                     </TableCell>
@@ -222,10 +317,15 @@ function SuppliersPage() {
             </TableBody>
           </Table>
         </div>
+        </>
       )}
 
       <SupplierSheet
-        shop={selected}
+        shop={
+          selected
+            ? (suppliers.find((x) => x.id === selected.id) ?? selected)
+            : null
+        }
         busy={busy}
         rejecting={rejecting}
         rejectNote={rejectNote}
@@ -288,7 +388,7 @@ function SupplierSheet({
           <>
             <SheetHeader>
               <div className="flex items-center gap-2">
-                <TypeBadge shop={shop} />
+                <SellerTypeChips types={shop.sellerTypes} />
                 <Badge variant={STATUS_VARIANT[shop.verificationStatus]}>
                   {shop.verificationStatus}
                 </Badge>
@@ -298,6 +398,28 @@ function SupplierSheet({
             </SheetHeader>
 
             <div className="flex-1 space-y-5 overflow-y-auto px-4 py-2">
+              <SellerTypesEditor key={shop.id} shop={shop} />
+
+              <div className="grid grid-cols-2 gap-4">
+                <Field label="Products">
+                  <ProductCount shop={shop} />
+                </Field>
+                <Field label="Storefront">
+                  {shop.verificationStatus === "verified" ? (
+                    <a
+                      href={`${STOREFRONT_ORIGIN}/en/shops/${shop.slug}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 text-brand hover:underline"
+                    >
+                      View <ExternalLink className="size-3.5" />
+                    </a>
+                  ) : (
+                    <span className="text-muted-foreground">Not live until verified</span>
+                  )}
+                </Field>
+              </div>
+
               <div className="grid grid-cols-2 gap-4">
                 <Field label="District">{districtName(shop.district)}</Field>
                 <Field label="City">{titleCase(shop.city)}</Field>
@@ -385,5 +507,60 @@ function SupplierSheet({
         )}
       </SheetContent>
     </Sheet>
+  );
+}
+
+/** Inline editor for a shop's seller types (saves immediately). */
+function SellerTypesEditor({ shop }: { shop: ReviewableShop }) {
+  const router = useRouter();
+  const [value, setValue] = React.useState<SellerType[]>(shop.sellerTypes);
+  const [busy, setBusy] = React.useState(false);
+  const [error, setError] = React.useState<string | null>(null);
+  const dirty =
+    value.length !== shop.sellerTypes.length ||
+    value.some((x) => !shop.sellerTypes.includes(x));
+
+  async function save() {
+    setBusy(true);
+    setError(null);
+    try {
+      const result = await setSupplierSellerTypesFn({
+        data: { shopId: shop.id, sellerTypes: value },
+      });
+      if (!result.ok) setError(result.message);
+      else await router.invalidate();
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="space-y-2">
+      <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+        Seller type
+      </div>
+      <SellerTypeCheckboxes value={value} onChange={setValue} disabled={busy} />
+      {error && <p className="text-xs text-destructive">{error}</p>}
+      {dirty && (
+        <div className="flex gap-2">
+          <Button
+            size="sm"
+            variant="brand"
+            disabled={busy || value.length === 0}
+            onClick={() => void save()}
+          >
+            Save types
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            disabled={busy}
+            onClick={() => setValue(shop.sellerTypes)}
+          >
+            Reset
+          </Button>
+        </div>
+      )}
+    </div>
   );
 }

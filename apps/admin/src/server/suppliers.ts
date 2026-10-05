@@ -11,6 +11,7 @@ import {
   getUserByEmail,
   listShopsForReview,
   reviewShop,
+  adminSetShopSellerTypes,
   createInvite,
   generateInviteToken,
   buildInviteMessage,
@@ -20,7 +21,7 @@ import {
   type ReviewableShop,
   type VerificationStatus,
   type CreateShopInput,
-  type ShopType,
+  type SellerType,
   type InviteLanguage,
 } from "@flowers/api";
 import { createSupabaseAdminClient } from "@flowers/auth";
@@ -153,8 +154,8 @@ export const reviewSupplierFn = createServerFn({ method: "POST" })
 export interface InvitePayload {
   phone: string;
   nameEn: string | null;
-  shopType: ShopType;
-  isAggregator: boolean;
+  /** null = let the supplier choose at registration. */
+  sellerTypes: SellerType[] | null;
   language: InviteLanguage;
 }
 
@@ -190,8 +191,7 @@ export const inviteSupplierFn = createServerFn({ method: "POST" })
       const created = await createInvite(db, {
         phone: data.phone.trim(),
         nameEn: data.nameEn,
-        shopType: data.shopType,
-        isAggregator: data.isAggregator,
+        sellerTypes: data.sellerTypes,
         language: data.language,
         token,
         sentBy: session.kind === "admin" ? session.userId : null,
@@ -201,8 +201,7 @@ export const inviteSupplierFn = createServerFn({ method: "POST" })
 
       const message = buildInviteMessage({
         nameEn: data.nameEn,
-        shopType: data.shopType,
-        isAggregator: data.isAggregator,
+        sellerTypes: data.sellerTypes,
         language: data.language,
         joinUrl,
       });
@@ -229,5 +228,19 @@ export const inviteSupplierFn = createServerFn({ method: "POST" })
       }
 
       return { ok: true, data: { token, joinUrl, whatsappSent } };
+    },
+  );
+
+/** Change an existing shop's seller types (florist / supplier / farmer). */
+export const setSupplierSellerTypesFn = createServerFn({ method: "POST" })
+  .validator((input: { shopId: string; sellerTypes: SellerType[] }) => input)
+  .handler(
+    async ({ data }): Promise<ActionResult<{ id: string; sellerTypes: SellerType[] }>> => {
+      await requireAdmin();
+      const db = tryCreateDb();
+      if (!db) {
+        return { ok: false, code: "db_unavailable", message: "Database is not configured." };
+      }
+      return adminSetShopSellerTypes(db, data.shopId, data.sellerTypes);
     },
   );

@@ -1,4 +1,6 @@
 import * as React from "react";
+import type { SellerType } from "@flowers/api/constants";
+import { SellerTypeCheckboxes } from "../components/seller-types";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Button } from "@flowers/ui/components/button";
 import { Input } from "@flowers/ui/components/input";
@@ -24,8 +26,7 @@ function InviteSupplierPage() {
   const [form, setForm] = React.useState({
     phone: "",
     nameEn: "",
-    shopType: "grower" as "florist" | "grower",
-    isAggregator: false,
+    sellerTypes: ["farmer"] as SellerType[],
     language: "en" as "en" | "si",
   });
 
@@ -47,8 +48,7 @@ function InviteSupplierPage() {
         data: {
           phone: form.phone.trim(),
           nameEn: form.nameEn.trim() || null,
-          shopType: form.shopType,
-          isAggregator: form.isAggregator,
+          sellerTypes: form.sellerTypes.length ? form.sellerTypes : null,
           language: form.language,
         },
       });
@@ -73,7 +73,7 @@ function InviteSupplierPage() {
       <h1 className="font-display text-3xl">Invite a supplier</h1>
       <p className="text-sm text-muted-foreground">
         Send a WhatsApp invitation with a benefits pitch and a tokenized join
-        link. Works for farmers, middlemen, and florists.
+        link. Works for florists, suppliers and farmers.
       </p>
 
       {error && (
@@ -127,19 +127,20 @@ function InviteSupplierPage() {
           <Input id="nameEn" value={form.nameEn} onChange={(e) => set("nameEn", e.target.value)} />
         </div>
 
+        <div className="space-y-1.5">
+          <Label>
+            Seller type{" "}
+            <span className="font-normal text-muted-foreground">
+              (pre-selected for them; leave empty to let them choose)
+            </span>
+          </Label>
+          <SellerTypeCheckboxes
+            value={form.sellerTypes}
+            onChange={(next) => set("sellerTypes", next)}
+          />
+        </div>
+
         <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-1.5">
-            <Label htmlFor="shopType">Type</Label>
-            <select
-              id="shopType"
-              className={selectClass}
-              value={form.shopType}
-              onChange={(e) => set("shopType", e.target.value as "florist" | "grower")}
-            >
-              <option value="grower">Grower / farmer</option>
-              <option value="florist">Florist</option>
-            </select>
-          </div>
           <div className="space-y-1.5">
             <Label htmlFor="language">Message language</Label>
             <select
@@ -153,15 +154,6 @@ function InviteSupplierPage() {
             </select>
           </div>
         </div>
-
-        <label className="flex items-center gap-2 text-sm">
-          <input
-            type="checkbox"
-            checked={form.isAggregator}
-            onChange={(e) => set("isAggregator", e.target.checked)}
-          />
-          Aggregator / middleman
-        </label>
 
         <Button type="submit" disabled={busy} className="w-full">
           {busy ? <Loader2 className="mr-2 size-4 animate-spin" /> : null}

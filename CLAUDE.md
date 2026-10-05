@@ -70,7 +70,8 @@ pnpm deploy:admin     # vite build + wrangler deploy for apps/admin
 
 ```
 users           id (= auth.users.id), role (buyer|supplier|admin), email, phone, full_name, preferred_language
-shops           id, owner_user_id → users, slug, shop_type (florist|grower), name_en/si, district, city,
+shops           id, owner_user_id → users, slug, seller_types seller_type[] (any of florist|supplier|farmer,
+                never empty), name_en/si, district, city, logo_path, banner_path,
                 verification_status (unverified|pending|verified|rejected), commission_rate_bps, bank_details
 categories      id, slug, name_en/si, sort_order, is_active
 products        id, shop_id → shops, category_id → categories, slug, name_en/si, description_en/si,

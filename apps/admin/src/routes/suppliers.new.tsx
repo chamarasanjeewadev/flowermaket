@@ -1,4 +1,6 @@
 import * as React from "react";
+import type { SellerType } from "@flowers/api/constants";
+import { SellerTypeCheckboxes } from "../components/seller-types";
 import { createFileRoute, useRouter, Link } from "@tanstack/react-router";
 import { Button } from "@flowers/ui/components/button";
 import { Input } from "@flowers/ui/components/input";
@@ -24,8 +26,7 @@ function NewSupplierPage() {
     nameEn: "",
     nameSi: "",
     descriptionEn: "",
-    shopType: "grower" as "florist" | "grower",
-    isAggregator: false,
+    sellerTypes: ["farmer"] as SellerType[],
     district: "",
     city: "",
     email: "",
@@ -45,6 +46,10 @@ function NewSupplierPage() {
       setError("Shop name and district are required.");
       return;
     }
+    if (form.sellerTypes.length === 0) {
+      setError("Choose at least one seller type.");
+      return;
+    }
     if (!form.email.trim() && !form.phone.trim()) {
       setError("Provide an email or a phone number.");
       return;
@@ -61,8 +66,7 @@ function NewSupplierPage() {
             nameEn: form.nameEn.trim(),
             nameSi: form.nameSi.trim() || null,
             descriptionEn: form.descriptionEn.trim() || null,
-            shopType: form.shopType,
-            isAggregator: form.isAggregator,
+            sellerTypes: form.sellerTypes,
             district: form.district,
             city: form.city.trim() || null,
           },
@@ -88,7 +92,7 @@ function NewSupplierPage() {
       </Link>
       <h1 className="font-display text-3xl">Create supplier</h1>
       <p className="text-sm text-muted-foreground">
-        Provision an account for a farmer, middleman, or florist onboarded via
+        Provision an account for a florist, supplier or farmer onboarded via
         WhatsApp or a field agent.
       </p>
 
@@ -108,29 +112,12 @@ function NewSupplierPage() {
           <Input id="nameSi" value={form.nameSi} onChange={(e) => set("nameSi", e.target.value)} />
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-1.5">
-            <Label htmlFor="shopType">Type *</Label>
-            <select
-              id="shopType"
-              className={selectClass}
-              value={form.shopType}
-              onChange={(e) => set("shopType", e.target.value as "florist" | "grower")}
-            >
-              <option value="grower">Grower / farmer</option>
-              <option value="florist">Florist</option>
-            </select>
-          </div>
-          <div className="flex items-end pb-2">
-            <label className="flex items-center gap-2 text-sm">
-              <input
-                type="checkbox"
-                checked={form.isAggregator}
-                onChange={(e) => set("isAggregator", e.target.checked)}
-              />
-              Aggregator / middleman
-            </label>
-          </div>
+        <div className="space-y-1.5">
+          <Label>Seller type * <span className="font-normal text-muted-foreground">(choose all that apply)</span></Label>
+          <SellerTypeCheckboxes
+            value={form.sellerTypes}
+            onChange={(next) => set("sellerTypes", next)}
+          />
         </div>
 
         <div className="grid grid-cols-2 gap-4">
