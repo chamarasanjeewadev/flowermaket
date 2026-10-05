@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { isSellerType, type SellerType } from "@flowers/api/constants";
 import {
   Pagination,
   PaginationButton,
@@ -25,6 +26,7 @@ interface ProductsSearch {
   category?: string;
   type?: "retail" | "wholesale";
   district?: string;
+  seller?: SellerType;
   q?: string;
   page?: number;
 }
@@ -46,6 +48,7 @@ export const Route = createFileRoute("/$locale/products/")({
           : undefined,
       district:
         typeof search.district === "string" ? search.district : undefined,
+      seller: isSellerType(search.seller) ? search.seller : undefined,
       q:
         typeof search.q === "string" && search.q.trim()
           ? search.q.trim()
@@ -60,6 +63,7 @@ export const Route = createFileRoute("/$locale/products/")({
         category: deps.category,
         type: deps.type,
         district: deps.district,
+        sellerType: deps.seller,
         q: deps.q,
         page: deps.page,
       },
@@ -71,7 +75,11 @@ export const Route = createFileRoute("/$locale/products/")({
     const locale = params.locale as Locale;
     const filters = loaderData?.filters;
     const hasDuplicateProneFilter = Boolean(
-      filters?.category || filters?.district || filters?.q || filters?.page,
+      filters?.category ||
+        filters?.district ||
+        filters?.seller ||
+        filters?.q ||
+        filters?.page,
     );
     const isWholesaleLanding =
       filters?.type === "wholesale" && !hasDuplicateProneFilter;
@@ -155,6 +163,9 @@ function BrowsePage() {
               ? patch.type
               : undefined;
         }
+        if ("seller" in patch) {
+          next.seller = isSellerType(patch.seller) ? patch.seller : undefined;
+        }
         if ("q" in patch) {
           next.q = patch.q && patch.q.trim() ? patch.q.trim() : undefined;
         }
@@ -186,6 +197,7 @@ function BrowsePage() {
           value={{
             category: search.category,
             type: search.type,
+            seller: search.seller,
             q: search.q,
           }}
           onChange={applyPatch}

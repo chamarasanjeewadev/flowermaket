@@ -201,6 +201,37 @@ function UserMenu({
   );
 }
 
+/** Thin top progress bar while a route loader is in flight, so slow
+ * navigations (e.g. opening a shop) give immediate feedback. */
+function NavigationProgress() {
+  const pending = useRouterState({
+    select: (s) => s.status === "pending",
+  });
+  const [visible, setVisible] = React.useState(false);
+
+  React.useEffect(() => {
+    if (!pending) {
+      setVisible(false);
+      return;
+    }
+    // Skip the bar for near-instant navigations.
+    const id = window.setTimeout(() => setVisible(true), 120);
+    return () => window.clearTimeout(id);
+  }, [pending]);
+
+  return (
+    <div
+      aria-hidden="true"
+      className={cn(
+        "pointer-events-none absolute inset-x-0 bottom-0 h-0.5 overflow-hidden transition-opacity duration-300",
+        visible ? "opacity-100" : "opacity-0",
+      )}
+    >
+      <div className="h-full w-1/3 animate-[nav-progress_1.1s_ease-in-out_infinite] bg-brand" />
+    </div>
+  );
+}
+
 export function Header({ session }: { session: SessionUser }) {
   const { t, locale } = useT();
   const { count, hydrated } = useEnquiry();
@@ -218,11 +249,16 @@ export function Header({ session }: { session: SessionUser }) {
           aria-label={t.nav.siteNavigation}
           className="mx-auto hidden items-center gap-1 md:flex"
         >
-          <Link to="/$locale" params={{ locale }} className={navLink}>
-            {t.nav.home}
-          </Link>
           <Link to="/$locale/products" params={{ locale }} className={navLink}>
             {t.nav.browse}
+          </Link>
+          <Link
+            to="/$locale/shops"
+            params={{ locale }}
+            search={{}}
+            className={navLink}
+          >
+            {t.nav.shops}
           </Link>
           <Link
             to="/$locale/fresh-flowers-near-me"
@@ -324,6 +360,15 @@ export function Header({ session }: { session: SessionUser }) {
                   {t.nav.browse}
                 </Link>
                 <Link
+                  to="/$locale/shops"
+                  params={{ locale }}
+                  search={{}}
+                  onClick={() => setMobileOpen(false)}
+                  className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-accent"
+                >
+                  {t.nav.shops}
+                </Link>
+                <Link
                   to="/$locale/fresh-flowers-near-me"
                   params={{ locale }}
                   onClick={() => setMobileOpen(false)}
@@ -385,6 +430,7 @@ export function Header({ session }: { session: SessionUser }) {
           </Sheet>
         </div>
       </div>
+      <NavigationProgress />
     </header>
   );
 }

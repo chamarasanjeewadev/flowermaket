@@ -7,7 +7,10 @@ import {
   MessageCircle,
   Store,
 } from "lucide-react";
+import { SELLER_TYPES, type SellerType } from "@flowers/api/constants";
 import { ProductCard } from "../../components/catalog/ProductCard";
+import { ShopCard } from "../../components/sellers/ShopCard";
+import { SellerTypeTiles } from "../../components/sellers/SellerTypeTiles";
 import { localizedCategoryName } from "../../i18n";
 import { useT } from "../../i18n/react";
 import { absoluteUrl, hreflangLinks } from "../../lib/site";
@@ -20,13 +23,18 @@ import {
 import {
   getCategoriesWithCounts,
   getFeaturedProducts,
+  listShops,
 } from "../../server/catalog";
 
 export const Route = createFileRoute("/$locale/")({
-  loader: async () => ({
-    categories: await getCategoriesWithCounts(),
-    featured: await getFeaturedProducts(),
-  }),
+  loader: async () => {
+    const [categories, featured, shops] = await Promise.all([
+      getCategoriesWithCounts(),
+      getFeaturedProducts(),
+      listShops({ data: {} }),
+    ]);
+    return { categories, featured, shops };
+  },
   head: ({ params }) => {
     const locale = params.locale as import("../../i18n").Locale;
     const title =
@@ -59,8 +67,20 @@ export const Route = createFileRoute("/$locale/")({
 });
 
 function HomePage() {
-  const { categories, featured } = Route.useLoaderData();
-  const { locale, t } = useT();
+  const { categories, featured, shops } = Route.useLoaderData();
+  const { locale, t, f } = useT();
+  const sellerCounts = Object.fromEntries(
+    SELLER_TYPES.map((type) => [
+      type,
+      shops.filter((s) => s.sellerTypes.includes(type)).length,
+    ]),
+  ) as Record<SellerType, number>;
+  // Directory already sorts sellers with products first.
+  const featuredShops = shops.filter((s) => s.productCount > 0).slice(0, 3);
+  // Stocked categories first (stable, so admin sort order is kept within each group).
+  const orderedCategories = [...categories].sort(
+    (a, b) => Number(b.productCount > 0) - Number(a.productCount > 0),
+  );
 
   return (
     <>
@@ -152,8 +172,64 @@ function HomePage() {
         </ul>
       </section>
 
+      {/* Seller types */}
+      <section
+        aria-labelledby="sellers"
+        className="mx-auto max-w-6xl px-4 pt-14"
+      >
+        <div className="mb-6 flex items-end justify-between gap-3">
+          <div>
+            <h2 id="sellers" className="font-display text-3xl sm:text-4xl">
+              {t.home.sellersTitle}
+            </h2>
+            <p className="mt-2 max-w-xl text-sm text-muted-foreground">
+              {t.home.sellersSub}
+            </p>
+          </div>
+        </div>
+        <SellerTypeTiles counts={sellerCounts} />
+      </section>
+
+      {/* Featured sellers */}
+      {featuredShops.length > 0 && (
+        <section
+          aria-labelledby="featured-sellers"
+          className="mx-auto max-w-6xl px-4 pt-16"
+        >
+          <div className="mb-6 flex items-end justify-between gap-3">
+            <div>
+              <h2
+                id="featured-sellers"
+                className="font-display text-3xl sm:text-4xl"
+              >
+                {t.home.featuredShopsTitle}
+              </h2>
+              <p className="mt-2 text-sm text-muted-foreground">
+                {t.home.featuredShopsSub}
+              </p>
+            </div>
+            <Link
+              to="/$locale/shops"
+              params={{ locale }}
+              search={{}}
+              className="inline-flex shrink-0 items-center gap-1.5 text-sm font-medium text-brand hover:underline"
+            >
+              {t.home.viewAllShops}
+              <ArrowUpRight className="size-4" aria-hidden="true" />
+            </Link>
+          </div>
+          <ul className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            {featuredShops.map((shop) => (
+              <li key={shop.slug}>
+                <ShopCard shop={shop} />
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
       {/* Category grid */}
-      <div className="mx-auto max-w-6xl px-4 py-14">
+      <div className="mx-auto max-w-6xl px-4 py-16">
         <section aria-labelledby="browse-categories">
           <div className="mb-6">
             <h2
@@ -178,17 +254,42 @@ function HomePage() {
             </div>
           ) : (
             <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-              {categories.map((cat, i) => (
+              {orderedCategories.map((cat, i) => (
                 <li key={cat.id}>
                   <Link
                     to="/$locale/c/$slug"
                     params={{ locale, slug: cat.slug }}
                     className={cn(
-                      "flex h-28 items-end rounded-lg border border-border/60 p-4 text-sm font-medium transition-transform hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                      "group relative flex aspect-[4/3] items-end overflow-hidden rounded-xl p-4 transition-transform hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
                       CATEGORY_TINTS[i % CATEGORY_TINTS.length],
                     )}
                   >
-                    {localizedCategoryName(cat, locale)}
+                    {cat.coverImageUrl && (
+                      <>
+                        <img
+                          src={cat.coverImageUrl}
+                          alt=""
+                          loading="lazy"
+                          className="absolute inset-0 size-full object-cover transition-transform duration-500 group-hover:scale-105"
+                        />
+                        <span className="absolute inset-0 bg-gradient-to-t from-foreground/70 via-foreground/10 to-transparent" />
+                      </>
+                    )}
+                    <span
+                      className={cn(
+                        "relative flex flex-col",
+                        cat.coverImageUrl ? "text-background" : "text-foreground",
+                      )}
+                    >
+                      <span className="font-display text-lg leading-tight">
+                        {localizedCategoryName(cat, locale)}
+                      </span>
+                      {cat.productCount > 0 && (
+                        <span className="text-xs opacity-80">
+                          {f(t.home.categoryCount, { count: cat.productCount })}
+                        </span>
+                      )}
+                    </span>
                   </Link>
                 </li>
               ))}

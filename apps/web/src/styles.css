@@ -64,3 +64,19 @@
     size: A4;
   }
 }
+
+/* Header navigation progress bar (see NavigationProgress in Header.tsx). */
+@keyframes nav-progress {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(300%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [class*="animate-[nav-progress"] {
+    animation-duration: 3s;
+  }
+}

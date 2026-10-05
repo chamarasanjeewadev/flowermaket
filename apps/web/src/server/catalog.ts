@@ -14,12 +14,15 @@ import {
   listActiveCategoriesWithCounts,
   listActiveProducts,
   listActiveShops,
+  listCategoryCoverImages,
   listDesignerFlowers as repoListDesignerFlowers,
   tryCreateDb,
   type CategoryWithCount,
   type ListingType,
   type ProductDetail,
   type ProductListItem,
+  type SellerType,
+  type ShopDirectoryEntry,
   type ShopSummary,
 } from "@flowers/api";
 import { setPublicCatalogCache } from "./http-cache";
@@ -37,11 +40,19 @@ export interface ProductImageDTO {
   altText: string | null;
 }
 
-/** Shop summary with the district slug resolved to localized names. */
-export type ShopSummaryDTO = ShopSummary & {
+/** Shop summary with the district slug resolved to localized names and the
+ * logo / banner storage paths resolved to public URLs. */
+export type ShopSummaryDTO = Omit<ShopSummary, "logoPath" | "bannerPath"> & {
   districtNameEn: string;
   districtNameSi: string;
+  logoUrl: string | null;
+  bannerUrl: string | null;
 };
+
+export type ShopDirectoryDTO = ShopSummaryDTO &
+  Pick<ShopDirectoryEntry, "productCount" | "minPrice"> & {
+    previewImageUrls: string[];
+  };
 
 export type ProductDetailDTO = Omit<ProductDetail, "images" | "shop"> & {
   images: ProductImageDTO[];
@@ -87,12 +98,25 @@ function toListItemDTO(item: ProductListItem): ProductListItemDTO {
 /** Attach localized district names to a shop (called only inside handlers so
  * DISTRICTS is never referenced at module scope / in the client bundle). */
 function enrichShop(shop: ShopSummary): ShopSummaryDTO {
+  const { logoPath, bannerPath, ...rest } = shop;
   const d = DISTRICTS.find((x) => x.slug === shop.district);
   return {
-    ...shop,
+    ...rest,
     districtNameEn: d?.nameEn ?? shop.district,
     districtNameSi: d?.nameSi ?? shop.district,
+    logoUrl: resolveImageUrl(logoPath),
+    bannerUrl: resolveImageUrl(bannerPath),
   };
+}
+
+function toDirectoryDTO(entry: ShopDirectoryEntry): ShopDirectoryDTO {
+  const { productCount, minPrice, previewImagePaths, ...shop } = entry;
+  const previewImageUrls: string[] = [];
+  for (const path of previewImagePaths) {
+    const url = resolveImageUrl(path);
+    if (url) previewImageUrls.push(url);
+  }
+  return { ...enrichShop(shop), productCount, minPrice, previewImageUrls };
 }
 
 const emptyResult = (): ProductListResultDTO => ({
@@ -110,6 +134,7 @@ export interface ListProductsInput {
   category?: string;
   type?: ListingType;
   district?: string;
+  sellerType?: SellerType;
   q?: string;
   page?: number;
 }
@@ -125,6 +150,7 @@ export const listProducts = createServerFn({ method: "GET" })
         categorySlug: data.category,
         listingType: data.type,
         district: data.district,
+        sellerType: data.sellerType,
         q: data.q,
         page: data.page,
       });
@@ -173,14 +199,25 @@ export const getShopBySlug = createServerFn({ method: "GET" })
     }
   });
 
+export type CategoryWithCountDTO = CategoryWithCount & {
+  coverImageUrl: string | null;
+};
+
 export const getCategoriesWithCounts = createServerFn({
   method: "GET",
-}).handler(async (): Promise<CategoryWithCount[]> => {
+}).handler(async (): Promise<CategoryWithCountDTO[]> => {
   setPublicCatalogCache();
   const db = tryCreateDb();
   if (!db) return [];
   try {
-    return await listActiveCategoriesWithCounts(db);
+    const [categories, covers] = await Promise.all([
+      listActiveCategoriesWithCounts(db),
+      listCategoryCoverImages(db),
+    ]);
+    return categories.map((c) => ({
+      ...c,
+      coverImageUrl: resolveImageUrl(covers.get(c.slug) ?? null),
+    }));
   } catch {
     return [];
   }
@@ -214,16 +251,21 @@ export const listDesignerFlowers = createServerFn({ method: "GET" }).handler(
   },
 );
 
-export const listShops = createServerFn({ method: "GET" }).handler(
-  async (): Promise<ShopSummaryDTO[]> => {
+export interface ListShopsInput {
+  sellerType?: SellerType;
+  district?: string;
+}
+
+export const listShops = createServerFn({ method: "GET" })
+  .validator((data: ListShopsInput | undefined) => data ?? {})
+  .handler(async ({ data }): Promise<ShopDirectoryDTO[]> => {
     setPublicCatalogCache();
     const db = tryCreateDb();
     if (!db) return [];
     try {
-      const shops = await listActiveShops(db);
-      return shops.map(enrichShop);
+      const shops = await listActiveShops(db, data);
+      return shops.map(toDirectoryDTO);
     } catch {
       return [];
     }
-  },
-);
+  });

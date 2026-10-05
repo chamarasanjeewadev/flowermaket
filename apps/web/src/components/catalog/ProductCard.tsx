@@ -6,6 +6,7 @@ import { useT } from "../../i18n/react";
 import type { ProductListItemDTO } from "../../server/catalog";
 import { PriceBlock } from "./PriceBlock";
 import { AddToEnquiryButton } from "./AddToEnquiryButton";
+import { SELLER_TYPE_STYLE } from "../sellers/SellerTypeBadges";
 
 /** Rotating pastel tints for the image stage, echoing the reference's
  * colored blocks behind product photography. */
@@ -26,6 +27,8 @@ export function ProductCard({
   );
   const img = product.imageUrl ?? "/placeholder-flower.svg";
   const isWholesale = product.listingType === "wholesale";
+  const sellerType = product.shopSellerTypes[0] ?? "florist";
+  const SellerIcon = SELLER_TYPE_STYLE[sellerType].Icon;
 
   // Stretched-link pattern: the whole card is clickable via an absolutely
   // positioned link, while the "Add to enquiry" button sits above it (higher
@@ -67,9 +70,15 @@ export function ProductCard({
             {f(t.catalog.minOrder, { qty: product.minOrderQty })}
           </p>
         ) : null}
-        <p className="mt-auto pt-1 text-xs text-muted-foreground">
-          {f(t.catalog.soldBy, { shop: shopName })}
-        </p>
+        <Link
+          to="/$locale/shops/$slug"
+          params={{ locale, slug: product.shopSlug }}
+          className="relative z-20 mt-auto inline-flex min-w-0 items-center gap-1.5 self-start pt-1 text-xs text-muted-foreground hover:text-foreground hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          title={t.catalog.sellerTypes[sellerType]}
+        >
+          <SellerIcon className="size-3.5 shrink-0" aria-hidden="true" />
+          <span className="truncate">{f(t.catalog.soldBy, { shop: shopName })}</span>
+        </Link>
         <div className="relative z-20 pt-2">
           <AddToEnquiryButton
             product={{

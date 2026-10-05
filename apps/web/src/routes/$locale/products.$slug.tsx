@@ -2,7 +2,7 @@ import * as React from "react";
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { formatRupees } from "@flowers/api/money";
 import { Badge } from "@flowers/ui/components/badge";
-import { ArrowUpRight, Clock, Info, MapPin, Store } from "lucide-react";
+import { ArrowUpRight, Clock, Info, MapPin } from "lucide-react";
 import { PriceBlock } from "../../components/catalog/PriceBlock";
 import { WholesaleInfo } from "../../components/catalog/WholesaleInfo";
 import { AddToEnquiryButton } from "../../components/catalog/AddToEnquiryButton";
@@ -11,6 +11,8 @@ import {
   localizedName,
   type Locale,
 } from "../../i18n";
+import { ShopAvatar } from "../../components/sellers/ShopAvatar";
+import { SellerTypeBadges } from "../../components/sellers/SellerTypeBadges";
 import { useT } from "../../i18n/react";
 import { absoluteUrl, hreflangLinks } from "../../lib/site";
 import {
@@ -292,25 +294,33 @@ function ProductDetailPage() {
             </p>
           )}
 
-          {/* Shop card */}
+          {/* Seller card */}
           <Link
             to="/$locale/shops/$slug"
             params={{ locale, slug: product.shop.slug }}
-            className="mt-2 flex items-center gap-3 rounded-lg border p-4 transition-colors hover:border-brand/50"
+            className="group mt-2 flex items-center gap-4 rounded-xl border border-border bg-card p-4 transition-colors hover:border-foreground/30"
           >
-            <span className="flex size-10 items-center justify-center rounded-full bg-accent text-accent-foreground">
-              <Store className="size-5" aria-hidden="true" />
-            </span>
-            <span className="flex flex-col">
+            <ShopAvatar
+              name={product.shop.nameEn}
+              logoUrl={product.shop.logoUrl}
+              sellerTypes={product.shop.sellerTypes}
+              className="size-12 text-base"
+            />
+            <span className="flex min-w-0 flex-1 flex-col gap-1.5">
               <span className="text-sm font-medium text-foreground">
                 {f(t.catalog.soldBy, { shop: shopName })}
               </span>
-              <span className="text-xs text-muted-foreground">
-                {product.shop.shopType === "grower"
-                  ? t.catalog.grower
-                  : t.catalog.florist}{" "}
-                · {districtName}
+              <span className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                <SellerTypeBadges types={product.shop.sellerTypes} size="xs" />
+                <span className="inline-flex items-center gap-1">
+                  <MapPin className="size-3" aria-hidden="true" />
+                  {districtName}
+                </span>
               </span>
+            </span>
+            <span className="hidden shrink-0 items-center gap-1 text-sm font-medium text-brand sm:inline-flex">
+              {t.catalog.viewShop}
+              <ArrowUpRight className="size-4" aria-hidden="true" />
             </span>
           </Link>
 

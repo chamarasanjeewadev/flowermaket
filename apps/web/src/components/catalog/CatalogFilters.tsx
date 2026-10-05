@@ -9,6 +9,7 @@ import {
 } from "@flowers/ui/components/select";
 import { Tabs, TabsList, TabsTrigger } from "@flowers/ui/components/tabs";
 import { Search } from "lucide-react";
+import { SELLER_TYPES, type SellerType } from "@flowers/api/constants";
 import { localizedName } from "../../i18n";
 import { useT } from "../../i18n/react";
 
@@ -18,12 +19,14 @@ export const ALL = "all";
 export interface CatalogFilterValue {
   category?: string;
   type?: "retail" | "wholesale";
+  seller?: SellerType;
   q?: string;
 }
 
 export interface CatalogFilterPatch {
   category?: string;
   type?: string;
+  seller?: string;
   q?: string;
 }
 
@@ -62,7 +65,7 @@ export function CatalogFilters({
         </TabsList>
       </Tabs>
 
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-[1fr_2fr]">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-[1fr_1fr_2fr]">
         <Select
           value={value.category ?? ALL}
           onValueChange={(v) => onChange({ category: v })}
@@ -80,12 +83,29 @@ export function CatalogFilters({
           </SelectContent>
         </Select>
 
+        <Select
+          value={value.seller ?? ALL}
+          onValueChange={(v) => onChange({ seller: v })}
+        >
+          <SelectTrigger aria-label={t.catalog.filterSeller}>
+            <SelectValue placeholder={t.catalog.filterSeller} />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value={ALL}>{t.catalog.allSellers}</SelectItem>
+            {SELLER_TYPES.map((type) => (
+              <SelectItem key={type} value={type}>
+                {t.catalog.sellerTypesPlural[type]}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
         <form
           onSubmit={(e) => {
             e.preventDefault();
             onChange({ q });
           }}
-          className="relative"
+          className="relative sm:col-span-2 lg:col-span-1"
         >
           <Search
             className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
