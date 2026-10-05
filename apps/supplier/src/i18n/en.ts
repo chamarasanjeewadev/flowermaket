@@ -120,7 +120,7 @@ export const en = {
   },
   products: {
     title: "Products",
-    subtitle: "List the flowers you sell. Products go live once published and your shop is verified.",
+    subtitle: "List the flowers you sell. Products go live once published, approved by our team, and your shop is verified.",
     add: "Add product",
     empty: "You haven't listed any products yet.",
     emptyCta: "Add your first product",
@@ -137,6 +137,14 @@ export const en = {
     statusActive: "Active",
     statusPaused: "Paused",
     statusArchived: "Archived",
+    colReview: "Review",
+    moderationPending: "In review",
+    moderationApproved: "Approved",
+    moderationBlocked: "Blocked",
+    moderationPendingNote:
+      "Our team is reviewing this product. It appears on FlowerMarket.lk once approved. Changing the name, description, price, category or photos sends it back for review.",
+    moderationBlockedNote: "This product was blocked by FlowerMarket.lk and is hidden from buyers.",
+    moderationReason: "Reason:",
     // Form
     newTitle: "Add a product",
     editTitle: "Edit product",

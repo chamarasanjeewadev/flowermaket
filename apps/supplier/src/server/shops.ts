@@ -6,7 +6,7 @@ import {
   getEnv,
   requireDb,
   createShop,
-  getShopByOwner,
+  getShopById,
   updateShop,
   markInviteAccepted,
   setShopMedia,
@@ -59,7 +59,10 @@ export const updateShopFn = createServerFn({ method: "POST" })
     }
 
     const db = requireDb();
-    return updateShop(db, session.userId, data);
+    if (!session.shopId) {
+      return { ok: false, code: "not_found", message: "You do not have a shop yet." };
+    }
+    return updateShop(db, session.shopId, data);
   });
 
 // ---------------------------------------------------------------------------
@@ -105,8 +108,8 @@ export interface MyShopDTO {
 export const getMyShopFn = createServerFn({ method: "GET" }).handler(
   async (): Promise<MyShopDTO | null> => {
     const session = await resolveSupplierSession();
-    if (session.kind !== "supplier") return null;
-    const shop = await getShopByOwner(requireDb(), session.userId);
+    if (session.kind !== "supplier" || !session.shopId) return null;
+    const shop = await getShopById(requireDb(), session.shopId);
     if (!shop) return null;
     return {
       slug: shop.slug,
@@ -180,7 +183,7 @@ export const uploadShopImageFn = createServerFn({ method: "POST" })
       .upload(path, file, { contentType: file.type, upsert: false });
     if (error) return { ok: false, code: "unknown", message: error.message };
 
-    const result = await setShopMedia(requireDb(), session.userId, kind, path);
+    const result = await setShopMedia(requireDb(), session.shopId, kind, path);
     if (!result.ok) {
       await admin.storage.from(BUCKET).remove([path]);
       return result;
@@ -204,7 +207,10 @@ export const removeShopImageFn = createServerFn({ method: "POST" })
     if (!isMediaKind(data.kind)) {
       return { ok: false, code: "validation", message: "Unknown image kind." };
     }
-    const result = await setShopMedia(requireDb(), session.userId, data.kind, null);
+    if (!session.shopId) {
+      return { ok: false, code: "not_found", message: "You do not have a shop yet." };
+    }
+    const result = await setShopMedia(requireDb(), session.shopId, data.kind, null);
     if (!result.ok) return result;
     const previous = result.data.previousPath;
     const admin = storageAdmin();

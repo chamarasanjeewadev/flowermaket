@@ -5,7 +5,13 @@
  */
 import { getCookies, setCookie } from "@tanstack/react-start/server";
 import { createSupabaseServerClient } from "@flowers/auth";
-import { getEnv, tryCreateDb, getUserRole, getShopByOwner } from "@flowers/api";
+import {
+  getEnv,
+  tryCreateDb,
+  getUserRole,
+  getShopById,
+  getShopByOwner,
+} from "@flowers/api";
 
 /**
  * The session union every route sees via router context.
@@ -22,7 +28,22 @@ export type SupplierSession =
   | { kind: "config_error" }
   | { kind: "anonymous" }
   | { kind: "no_shop"; userId: string; email: string }
-  | { kind: "supplier"; userId: string; email: string; role: "buyer" | "supplier" | "admin"; shopId: string; shopNameEn: string; verificationStatus: "unverified" | "pending" | "verified" | "rejected" };
+  | {
+      kind: "supplier";
+      userId: string;
+      email: string;
+      role: "buyer" | "supplier" | "admin";
+      shopId: string;
+      shopNameEn: string;
+      verificationStatus: "unverified" | "pending" | "verified" | "rejected";
+      /** True when an admin is managing someone else's shop ("manage as owner"). */
+      actingAs: boolean;
+    };
+
+/** Admin-only cookie holding the shop id an admin is managing. */
+export const ACT_AS_COOKIE = "fm_act_as";
+/** 8 hours. */
+export const ACT_AS_MAX_AGE = 60 * 60 * 8;
 
 type SetCookieOptions = Parameters<typeof setCookie>[2];
 
@@ -71,6 +92,23 @@ export async function resolveSupplierSession(): Promise<SupplierSession> {
 
   // Admins skip the shop check — they always have full access.
   if (role === "admin") {
+    // "Manage as owner": act on the shop named by the admin-only cookie.
+    const actAsShopId = getCookies()[ACT_AS_COOKIE];
+    if (actAsShopId) {
+      const target = await getShopById(db, actAsShopId);
+      if (target) {
+        return {
+          kind: "supplier",
+          userId,
+          email,
+          role: "admin",
+          shopId: target.id,
+          shopNameEn: target.nameEn,
+          verificationStatus: target.verificationStatus,
+          actingAs: true,
+        };
+      }
+    }
     // For admins without a shop we still allow access — return a synthetic session.
     const shop = await getShopByOwner(db, userId);
     if (!shop) {
@@ -83,6 +121,7 @@ export async function resolveSupplierSession(): Promise<SupplierSession> {
         shopId: "",
         shopNameEn: "",
         verificationStatus: "verified",
+        actingAs: false,
       };
     }
     return {
@@ -93,6 +132,7 @@ export async function resolveSupplierSession(): Promise<SupplierSession> {
       shopId: shop.id,
       shopNameEn: shop.nameEn,
       verificationStatus: shop.verificationStatus,
+      actingAs: false,
     };
   }
 
@@ -110,5 +150,6 @@ export async function resolveSupplierSession(): Promise<SupplierSession> {
     shopId: shop.id,
     shopNameEn: shop.nameEn,
     verificationStatus: shop.verificationStatus,
+    actingAs: false,
   };
 }

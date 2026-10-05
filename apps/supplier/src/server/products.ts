@@ -97,6 +97,11 @@ function shopIdOf(session: SupplierSession): string | null {
     : null;
 }
 
+/** Admins (incl. "manage as owner") publish without re-review. */
+function actorOf(session: SupplierSession): "owner" | "admin" {
+  return session.kind === "supplier" && session.role === "admin" ? "admin" : "owner";
+}
+
 function authError<T>(): ActionResult<T> {
   return { ok: false, code: "auth_required", message: "You must be signed in." };
 }
@@ -171,7 +176,7 @@ export const createProductFn = createServerFn({ method: "POST" })
         return { ok: false, code: "not_found", message: "You do not have a shop yet." };
       }
       const db = requireDb();
-      return createProduct(db, shopId, data);
+      return createProduct(db, shopId, data, { actor: actorOf(session) });
     },
   );
 
@@ -195,7 +200,9 @@ export const updateProductFn = createServerFn({ method: "POST" })
       return { ok: false, code: "not_found", message: "You do not have a shop yet." };
     }
     const db = requireDb();
-    return updateProduct(db, shopId, data.productId, data.patch);
+    return updateProduct(db, shopId, data.productId, data.patch, {
+      actor: actorOf(session),
+    });
   });
 
 export const uploadProductImageFn = createServerFn({ method: "POST" })
@@ -254,9 +261,13 @@ export const uploadProductImageFn = createServerFn({ method: "POST" })
         return { ok: false, code: "unknown", message: uploadError.message };
       }
 
-      const result = await addProductImage(db, shopId, productId, {
-        storagePath: path,
-      });
+      const result = await addProductImage(
+        db,
+        shopId,
+        productId,
+        { storagePath: path },
+        { actor: actorOf(session) },
+      );
       if (!result.ok) {
         // Roll back the orphaned storage object if the DB insert failed.
         await admin.storage.from(BUCKET).remove([path]);

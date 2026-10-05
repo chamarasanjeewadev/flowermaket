@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { ModerationBadge } from "../components/ModerationBadge";
 import { formatRupees } from "@flowers/api/money";
 import { Button } from "@flowers/ui/components/button";
 import { Badge } from "@flowers/ui/components/badge";
@@ -89,6 +90,7 @@ function ProductsListPage() {
                 <TableHead>{t.products.colPrice}</TableHead>
                 <TableHead>{t.products.colStock}</TableHead>
                 <TableHead>{t.products.colStatus}</TableHead>
+                <TableHead>{t.products.colReview}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -130,6 +132,11 @@ function ProductsListPage() {
                   </TableCell>
                   <TableCell>
                     <StatusBadge status={p.status} />
+                  </TableCell>
+                  <TableCell>
+                    <span title={p.moderationNote ?? undefined}>
+                      <ModerationBadge status={p.moderationStatus} />
+                    </span>
                   </TableCell>
                 </TableRow>
               ))}

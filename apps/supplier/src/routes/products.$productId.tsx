@@ -1,4 +1,5 @@
 import * as React from "react";
+import { ModerationBadge, ModerationNotice } from "../components/ModerationBadge";
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { Button } from "@flowers/ui/components/button";
 import { Badge } from "@flowers/ui/components/badge";
@@ -86,6 +87,7 @@ function EditProductPage() {
           <Badge variant={isPublished ? "success" : "secondary"}>
             {isPublished ? t.products.statusActive : t.products.statusDraft}
           </Badge>
+          <ModerationBadge status={product.moderationStatus} />
         </div>
         <Button
           variant={isPublished ? "outline" : "brand"}
@@ -94,6 +96,11 @@ function EditProductPage() {
           {isPublished ? t.products.unpublish : t.products.publish}
         </Button>
       </div>
+
+      <ModerationNotice
+        status={product.moderationStatus}
+        note={product.moderationNote}
+      />
 
       <Card>
         <CardHeader>

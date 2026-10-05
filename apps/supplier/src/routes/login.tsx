@@ -12,6 +12,7 @@ import {
 import { Input } from "@flowers/ui/components/input";
 import { Label } from "@flowers/ui/components/label";
 import { Loader2 } from "lucide-react";
+import { safeRedirectPath } from "@flowers/api/redirect";
 import { signIn, requestPhoneOtp, verifyPhoneOtp } from "../server/auth";
 import { GoogleButton } from "../components/GoogleButton";
 import { useT } from "../i18n/react";
@@ -19,15 +20,17 @@ import { useT } from "../i18n/react";
 export const Route = createFileRoute("/login")({
   validateSearch: (
     search: Record<string, unknown>,
-  ): { error?: string } => ({
+  ): { error?: string; redirect?: string } => ({
     error: typeof search.error === "string" ? search.error : undefined,
+    redirect: typeof search.redirect === "string" ? search.redirect : undefined,
   }),
   component: LoginPage,
 });
 
 function LoginPage() {
   const { session } = Route.useRouteContext();
-  const { error: searchError } = Route.useSearch();
+  const { error: searchError, redirect: redirectTo } = Route.useSearch();
+  const afterLogin = safeRedirectPath(redirectTo);
   const { t } = useT();
   const router = useRouter();
   const [email, setEmail] = React.useState("");
@@ -69,7 +72,7 @@ function LoginPage() {
       const result = await verifyPhoneOtp({ data: { phone: phone.trim(), token: otp.trim() } });
       if (result.ok) {
         await router.invalidate();
-        await router.navigate({ to: "/" });
+        await router.navigate({ to: afterLogin });
       } else {
         setError(result.message ?? "Invalid code.");
       }
@@ -90,7 +93,7 @@ function LoginPage() {
       const result = await signIn({ data: { email: email.trim(), password } });
       if (result.ok) {
         await router.invalidate();
-        await router.navigate({ to: "/" });
+        await router.navigate({ to: afterLogin });
       } else {
         setError(result.message ?? t.auth.signInFailed);
       }
@@ -136,7 +139,7 @@ function LoginPage() {
                   <AlertDescription>{error}</AlertDescription>
                 </Alert>
               )}
-              <GoogleButton />
+              <GoogleButton redirect={redirectTo ? afterLogin : undefined} />
               <div className="flex items-center gap-3">
                 <span className="h-px flex-1 bg-border" />
                 <span className="text-xs text-muted-foreground">

@@ -1,4 +1,5 @@
 import * as React from "react";
+import { stopActingAsFn } from "../server/act-as";
 import type { QueryClient } from "@tanstack/react-query";
 import {
   HeadContent,
@@ -62,7 +63,13 @@ export const Route = createRootRouteWithContext<RouterContext>()({
     }
     // Unauthenticated → /login
     if (session.kind === "anonymous" && !isPublicPath) {
-      throw redirect({ to: "/login" });
+      // Keep the admin's "manage as owner" target across sign-in.
+      throw redirect({
+        to: "/login",
+        search: path.startsWith("/act-as/")
+          ? { redirect: location.href.replace(/^https?:\/\/[^/]+/, "") }
+          : {},
+      });
     }
 
     // Authenticated but no shop → /onboarding (unless already there or at /login)
@@ -231,6 +238,32 @@ function SessionFooter({ session }: { session: SupplierSession }) {
   );
 }
 
+/** Shown while an admin is managing someone else's shop. */
+function ActingAsBanner({ shopName }: { shopName: string }) {
+  const [busy, setBusy] = React.useState(false);
+  async function exit() {
+    setBusy(true);
+    try {
+      const { adminUrl } = await stopActingAsFn();
+      window.location.href = adminUrl ?? "/";
+    } finally {
+      setBusy(false);
+    }
+  }
+  return (
+    <div className="mx-auto mb-6 flex max-w-4xl flex-wrap items-center justify-between gap-3 rounded-lg border border-brand/40 bg-brand/10 px-4 py-2.5 text-sm">
+      <span>
+        <span className="font-semibold">Admin</span> · Managing{" "}
+        <span className="font-semibold">{shopName}</span> as owner. Changes you
+        make are published without review.
+      </span>
+      <Button size="sm" variant="outline" disabled={busy} onClick={() => void exit()}>
+        Exit
+      </Button>
+    </div>
+  );
+}
+
 function RootLayout() {
   const { session, locale } = Route.useRouteContext();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
@@ -256,6 +289,9 @@ function RootLayout() {
             </div>
           </aside>
           <main className="flex-1 p-6 sm:p-8">
+            {session.kind === "supplier" && session.actingAs && (
+              <ActingAsBanner shopName={session.shopNameEn} />
+            )}
             <div className="mx-auto max-w-4xl">
               <Outlet />
             </div>
