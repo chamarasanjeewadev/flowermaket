@@ -1,13 +1,21 @@
 /**
- * Evolution API WhatsApp client for order notifications.
+ * Evolution GO WhatsApp client (https://github.com/EvolutionAPI/evolution-go).
+ *
+ * Evolution GO scopes every messaging call to an instance by its **instance
+ * token**, sent as the `apikey` header — there is no instance name in the path
+ * (unlike Evolution API v2). Endpoints used: `POST /send/text`,
+ * `GET /instance/status`.
  *
  * Pure and dependency-free so it is safe in the client bundle.
  * Uses global fetch (Cloudflare Workers-native) for HTTP requests.
  */
 
 export interface EvolutionConfig {
+  /** Server origin, e.g. https://evolution.example.com */
   apiUrl: string;
+  /** The instance token (Evolution GO manager → instance → "Token da Instância"). */
   apiKey: string;
+  /** Instance name — informational (logs/UI); GO identifies the instance by token. */
   instance: string;
 }
 
@@ -46,9 +54,9 @@ export function buildWhatsappLink(
 }
 
 /**
- * Send a WhatsApp text message via Evolution API.
+ * Send a WhatsApp text message via Evolution GO (`POST /send/text`).
  *
- * @param config Evolution API configuration (apiUrl, apiKey, instance)
+ * @param config Evolution configuration (apiUrl, instance token)
  * @param to Recipient phone number (normalized internally)
  * @param message Message text to send
  * @returns { ok: true } on success, { ok: false; message: string } on error
@@ -58,7 +66,7 @@ export async function sendWhatsappText(
   to: string,
   message: string,
 ): Promise<SendResult> {
-  if (!config.apiUrl || !config.apiKey || !config.instance) {
+  if (!config.apiUrl || !config.apiKey) {
     return {
       ok: false,
       message: "WhatsApp (Evolution API) is not configured",
@@ -66,31 +74,107 @@ export async function sendWhatsappText(
   }
 
   try {
-    const res = await fetch(
-      `${config.apiUrl.replace(/\/$/, "")}/message/sendText/${config.instance}`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          apikey: config.apiKey,
-        },
-        body: JSON.stringify({ number: toWhatsappJid(to), text: message }),
+    const res = await fetch(`${config.apiUrl.replace(/\/$/, "")}/send/text`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        apikey: config.apiKey,
       },
-    );
+      body: JSON.stringify({
+        number: toWhatsappJid(to).replace("@s.whatsapp.net", ""),
+        text: message,
+      }),
+    });
 
     if (!res.ok) {
+      const detail = await readErrorDetail(res);
       return {
         ok: false,
-        message: `WhatsApp send failed (${res.status})`,
+        message: `WhatsApp send failed (${res.status})${detail ? `: ${detail}` : ""}`,
       };
     }
 
     return { ok: true };
-  } catch {
+  } catch (e) {
     return {
       ok: false,
-      message: "WhatsApp send failed",
+      message: `WhatsApp send failed: ${e instanceof Error ? e.message : "network error"}`,
     };
+  }
+}
+
+/**
+ * Health of the Evolution instance, as surfaced to the admin before sending.
+ * - `not_configured` — one of the EVOLUTION_* settings is missing.
+ * - `open`           — the WhatsApp session is connected and can send.
+ * - `disconnected`   — reachable, but the phone is logged out / connecting.
+ * - `unreachable`    — the API could not be reached or rejected the key.
+ */
+export type WhatsappStatus =
+  | { state: "not_configured"; missing: string[] }
+  | { state: "open"; instance: string }
+  | { state: "disconnected"; instance: string; detail: string }
+  | { state: "unreachable"; detail: string };
+
+/** Query Evolution GO `GET /instance/status` for the token's instance. */
+export async function getWhatsappStatus(
+  config: Partial<EvolutionConfig>,
+  timeoutMs = 4000,
+): Promise<WhatsappStatus> {
+  const missing = (
+    [
+      ["EVOLUTION_API_URL", config.apiUrl],
+      ["EVOLUTION_API_KEY", config.apiKey],
+    ] as const
+  )
+    .filter(([, v]) => !v)
+    .map(([k]) => k);
+  if (missing.length > 0 || !config.apiUrl || !config.apiKey) {
+    return { state: "not_configured", missing };
+  }
+  const instance = config.instance || "instance";
+
+  try {
+    const res = await fetch(`${config.apiUrl.replace(/\/$/, "")}/instance/status`, {
+      headers: { apikey: config.apiKey },
+      signal: AbortSignal.timeout(timeoutMs),
+    });
+    if (!res.ok) {
+      const detail = await readErrorDetail(res);
+      return {
+        state: "unreachable",
+        detail:
+          res.status === 401
+            ? "Instance token rejected (check EVOLUTION_API_KEY)"
+            : `HTTP ${res.status}${detail ? `: ${detail}` : ""}`,
+      };
+    }
+    const body = (await res.json()) as {
+      data?: { Connected?: boolean; LoggedIn?: boolean; Name?: string };
+    };
+    const connected = body.data?.Connected === true;
+    const loggedIn = body.data?.LoggedIn === true;
+    if (connected && loggedIn) return { state: "open", instance };
+    return {
+      state: "disconnected",
+      instance,
+      detail: !loggedIn ? "logged out — scan the QR code again" : "not connected",
+    };
+  } catch (e) {
+    return {
+      state: "unreachable",
+      detail: e instanceof Error ? e.message : "network error",
+    };
+  }
+}
+
+/** Best-effort short error text from an Evolution error response. */
+async function readErrorDetail(res: Response): Promise<string> {
+  try {
+    const text = (await res.text()).trim();
+    return text.length > 200 ? `${text.slice(0, 200)}…` : text;
+  } catch {
+    return "";
   }
 }
 
@@ -122,14 +206,96 @@ interface RawUpsert {
   };
 }
 
+interface GoMessageEvent {
+  event?: string;
+  data?: {
+    Info?: {
+      Chat?: string;
+      Sender?: string;
+      IsFromMe?: boolean;
+      IsGroup?: boolean;
+      ID?: string;
+      PushName?: string;
+      Timestamp?: string;
+    };
+    Message?: Record<string, unknown> | null;
+  };
+}
+
+/** Classify a WhatsApp message body (same protobuf JSON in v2 and GO). */
+function classifyBody(msg: Record<string, unknown>): {
+  kind: ParsedInbound["kind"];
+  text: string | null;
+  mediaMime: string | null;
+} {
+  if (typeof msg.conversation === "string" && msg.conversation) {
+    return { kind: "text", text: msg.conversation, mediaMime: null };
+  }
+  if (isObj(msg.extendedTextMessage)) {
+    return { kind: "text", text: strOrNull(msg.extendedTextMessage.text), mediaMime: null };
+  }
+  if (isObj(msg.imageMessage)) {
+    return {
+      kind: "image",
+      text: strOrNull(msg.imageMessage.caption),
+      mediaMime: strOrNull(msg.imageMessage.mimetype),
+    };
+  }
+  if (isObj(msg.audioMessage)) {
+    return { kind: "audio", text: null, mediaMime: strOrNull(msg.audioMessage.mimetype) };
+  }
+  if (isObj(msg.documentMessage)) {
+    return {
+      kind: "document",
+      text: strOrNull(msg.documentMessage.fileName),
+      mediaMime: strOrNull(msg.documentMessage.mimetype),
+    };
+  }
+  return { kind: "other", text: null, mediaMime: null };
+}
+
 /**
- * Normalize a single Evolution `messages.upsert` event. Returns null when the
- * event is not an inbound message we handle (wrong event, fromMe echo, no
- * message body). Tolerant of extra/unknown fields.
+ * Normalize an Evolution GO `Message` webhook event
+ * (`{ event: "Message", data: { Info, Message } }`). Media arrives as
+ * `data.Message.base64` when the server has WEBHOOK_FILES enabled.
+ */
+function parseGoMessage(e: GoMessageEvent): ParsedInbound | null {
+  const info = e.data?.Info;
+  const msg = e.data?.Message;
+  if (!info || !isObj(msg)) return null;
+  if (info.IsFromMe || info.IsGroup) return null;
+  const remoteJid = info.Chat ?? "";
+  // Only 1:1 chats with a phone JID (skip groups, broadcasts, newsletters).
+  if (!remoteJid.endsWith("@s.whatsapp.net")) return null;
+
+  const { kind, text, mediaMime } = classifyBody(msg);
+  const ts = info.Timestamp ? Date.parse(info.Timestamp) : NaN;
+  return {
+    remoteJid,
+    phone: jidToPhone(remoteJid),
+    keyId: info.ID ?? null,
+    pushName: strOrNull(info.PushName),
+    kind,
+    text,
+    mediaBase64: kind === "image" ? strOrNull(msg.base64) : null,
+    mediaMime,
+    timestamp: Number.isFinite(ts) ? Math.floor(ts / 1000) : null,
+  };
+}
+
+/**
+ * Normalize a single inbound webhook event from Evolution GO (`Message`) or
+ * Evolution API v2 (`messages.upsert`). Returns null when the event is not an
+ * inbound 1:1 message we handle (other events, fromMe echoes, groups, empty
+ * bodies). Tolerant of extra/unknown fields.
  */
 export function parseInboundMessage(event: unknown): ParsedInbound | null {
-  const e = event as RawUpsert | null;
-  if (!e || typeof e !== "object") return null;
+  if (!event || typeof event !== "object") return null;
+  if ((event as { event?: unknown }).event === "Message") {
+    return parseGoMessage(event as GoMessageEvent);
+  }
+
+  const e = event as RawUpsert;
   if (e.event !== "messages.upsert") return null;
   const d = e.data;
   if (!d || !d.key || !d.message) return null;
@@ -138,29 +304,7 @@ export function parseInboundMessage(event: unknown): ParsedInbound | null {
   const remoteJid = d.key.remoteJid ?? "";
   if (!remoteJid) return null;
 
-  const msg = d.message;
-  let kind: ParsedInbound["kind"] = "other";
-  let text: string | null = null;
-  let mediaMime: string | null = null;
-
-  if (typeof msg.conversation === "string") {
-    kind = "text";
-    text = msg.conversation;
-  } else if (isObj(msg.extendedTextMessage)) {
-    kind = "text";
-    text = strOrNull(msg.extendedTextMessage.text);
-  } else if (isObj(msg.imageMessage)) {
-    kind = "image";
-    text = strOrNull(msg.imageMessage.caption);
-    mediaMime = strOrNull(msg.imageMessage.mimetype);
-  } else if (isObj(msg.audioMessage)) {
-    kind = "audio";
-    mediaMime = strOrNull(msg.audioMessage.mimetype);
-  } else if (isObj(msg.documentMessage)) {
-    kind = "document";
-    text = strOrNull(msg.documentMessage.fileName);
-    mediaMime = strOrNull(msg.documentMessage.mimetype);
-  }
+  const { kind, text, mediaMime } = classifyBody(d.message);
 
   const tsRaw = d.messageTimestamp;
   const timestamp =

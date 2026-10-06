@@ -1,5 +1,12 @@
-import { describe, expect, it } from "vitest";
-import { toWhatsappJid, buildWhatsappLink, jidToPhone, parseInboundMessage } from "./evolution";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import {
+  toWhatsappJid,
+  buildWhatsappLink,
+  jidToPhone,
+  parseInboundMessage,
+  sendWhatsappText,
+  getWhatsappStatus,
+} from "./evolution";
 
 describe("buildWhatsappLink", () => {
   it("builds a wa.me link from a 94 number", () => {
@@ -101,5 +108,90 @@ describe("parseInboundMessage", () => {
     const r = parseInboundMessage(base({ stickerMessage: { mimetype: "image/webp" } }));
     expect(r!.kind).toBe("other");
     expect(r!.text).toBeNull();
+  });
+});
+
+describe("parseInboundMessage (Evolution GO)", () => {
+  const goEvent = (info: Record<string, unknown>, message: Record<string, unknown>) => ({
+    event: "Message",
+    instanceId: "i-1",
+    data: {
+      Info: {
+        Chat: "94771234567@s.whatsapp.net",
+        Sender: "94771234567@s.whatsapp.net",
+        IsFromMe: false,
+        IsGroup: false,
+        ID: "MSG1",
+        PushName: "Nilu",
+        Timestamp: "2026-10-06T10:00:00Z",
+        ...info,
+      },
+      Message: message,
+    },
+  });
+
+  it("parses a text message", () => {
+    const p = parseInboundMessage(goEvent({}, { conversation: "hello" }));
+    expect(p).toMatchObject({
+      phone: "94771234567",
+      keyId: "MSG1",
+      pushName: "Nilu",
+      kind: "text",
+      text: "hello",
+      timestamp: Date.parse("2026-10-06T10:00:00Z") / 1000,
+    });
+  });
+
+  it("parses an image with base64", () => {
+    const p = parseInboundMessage(
+      goEvent({}, { imageMessage: { caption: "roses", mimetype: "image/jpeg" }, base64: "AAAA" }),
+    );
+    expect(p).toMatchObject({ kind: "image", text: "roses", mediaBase64: "AAAA" });
+  });
+
+  it("ignores own messages and groups", () => {
+    expect(parseInboundMessage(goEvent({ IsFromMe: true }, { conversation: "x" }))).toBeNull();
+    expect(
+      parseInboundMessage(goEvent({ IsGroup: true, Chat: "123@g.us" }, { conversation: "x" })),
+    ).toBeNull();
+  });
+});
+
+describe("Evolution GO HTTP", () => {
+  afterEach(() => vi.unstubAllGlobals());
+  const config = { apiUrl: "https://evo.test/", apiKey: "tok", instance: "sda" };
+
+  it("sends text to /send/text with the instance token", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response("{}", { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+    const res = await sendWhatsappText(config, "0771234567", "hi");
+    expect(res).toEqual({ ok: true });
+    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe("https://evo.test/send/text");
+    expect((init.headers as Record<string, string>).apikey).toBe("tok");
+    expect(JSON.parse(init.body as string)).toEqual({ number: "94771234567", text: "hi" });
+  });
+
+  it("surfaces the server's error body", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response("bad number", { status: 400 })));
+    const res = await sendWhatsappText(config, "0771234567", "hi");
+    expect(res).toEqual({ ok: false, message: "WhatsApp send failed (400): bad number" });
+  });
+
+  it("reports open when connected and logged in", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        Response.json({ data: { Connected: true, LoggedIn: true, Name: "x" }, message: "success" }),
+      ),
+    );
+    expect(await getWhatsappStatus(config)).toEqual({ state: "open", instance: "sda" });
+  });
+
+  it("reports missing settings without calling the network", async () => {
+    expect(await getWhatsappStatus({ apiUrl: "", apiKey: "", instance: "" })).toEqual({
+      state: "not_configured",
+      missing: ["EVOLUTION_API_URL", "EVOLUTION_API_KEY"],
+    });
   });
 });

@@ -10,7 +10,8 @@
     "./money": "./src/money.ts",
     "./pricing": "./src/pricing.ts",
     "./flowers": "./src/flowers-client.ts",
-    "./slug": "./src/slug.ts"
+    "./slug": "./src/slug.ts",
+    "./invite-message": "./src/invite-message.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",

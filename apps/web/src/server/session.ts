@@ -4,7 +4,7 @@
  * Start's request-scoped cookie APIs.
  */
 import { getCookies, setCookie } from "@tanstack/react-start/server";
-import { createSupabaseServerClient, type SupabaseEnv } from "@flowers/auth";
+import { createSupabaseServerClient, getVerifiedUser, type SupabaseEnv } from "@flowers/auth";
 import { getEnv } from "@flowers/api";
 
 /**
@@ -76,13 +76,8 @@ export async function resolveSessionUser(): Promise<SessionUser> {
     return AUTH_DISABLED ? { kind: "auth_disabled" } : { kind: "config_error" };
   }
 
-  const { data, error } = await supabase.auth.getUser();
-  if (error || !data.user) return { kind: "anonymous" };
+  const user = await getVerifiedUser(supabase);
+  if (!user) return { kind: "anonymous" };
 
-  const user = data.user;
-  const email = user.email ?? "";
-  const metaName: unknown = user.user_metadata?.full_name;
-  const fullName = typeof metaName === "string" && metaName ? metaName : null;
-
-  return { kind: "authenticated", userId: user.id, email, fullName };
+  return { kind: "authenticated", userId: user.id, email: user.email, fullName: user.fullName };
 }

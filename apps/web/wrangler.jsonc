@@ -5,6 +5,10 @@
   "compatibility_flags": ["nodejs_compat"],
   "main": "@tanstack/react-start/server-entry",
   "observability": { "enabled": true },
+  // Smart Placement runs the Worker near Supabase (ap-south-1) instead of at
+  // the visitor's edge PoP: each request makes several sequential DB/Auth round
+  // trips, so being next to the database beats being next to the browser.
+  "placement": { "mode": "smart" },
   // Disable the *.workers.dev URL so flowermarket.lk is the only public origin.
   "workers_dev": false,
   // Apex custom domain — wrangler provisions the DNS record + TLS cert on deploy.

@@ -69,6 +69,34 @@ interface RouterContext {
   queryClient: QueryClient;
 }
 
+const SESSION_KEY = ["admin-session"] as const;
+
+/**
+ * Resolve the session for route guarding. SSR always checks fresh; client-side
+ * navigations reuse a confirmed admin session for a minute instead of paying a
+ * server round trip on every click. Only positive results are cached, and every
+ * server function re-checks auth itself, so this never widens access.
+ */
+async function loadSession(queryClient: QueryClient): Promise<AdminSession> {
+  if (typeof window === "undefined") return getAdminSession();
+  const session = await queryClient.fetchQuery({
+    queryKey: SESSION_KEY,
+    queryFn: () => getAdminSession(),
+    staleTime: 60_000,
+  });
+  if (session.kind !== "admin" && session.kind !== "auth_disabled") {
+    queryClient.removeQueries({ queryKey: SESSION_KEY });
+  }
+  return session;
+}
+
+async function signOutAndRedirect(router: ReturnType<typeof useRouter>) {
+  await signOut();
+  router.options.context.queryClient.removeQueries({ queryKey: SESSION_KEY });
+  await router.invalidate();
+  await router.navigate({ to: "/login" });
+}
+
 export const Route = createRootRouteWithContext<RouterContext>()({
   head: () => ({
     meta: [
@@ -84,8 +112,8 @@ export const Route = createRootRouteWithContext<RouterContext>()({
       { rel: "apple-touch-icon", href: "/icons/apple-touch-icon.png", sizes: "180x180" },
     ],
   }),
-  beforeLoad: async ({ location }) => {
-    const session = await getAdminSession();
+  beforeLoad: async ({ location, context }) => {
+    const session = await loadSession(context.queryClient);
 
     const isPublicPath =
       location.pathname === "/login" || location.pathname === "/auth/callback";
@@ -141,9 +169,7 @@ function SessionFooter({ session }: { session: AdminSession }) {
   async function handleSignOut() {
     setBusy(true);
     try {
-      await signOut();
-      await router.invalidate();
-      await router.navigate({ to: "/login" });
+      await signOutAndRedirect(router);
     } finally {
       setBusy(false);
     }
@@ -178,9 +204,7 @@ function NotAuthorized({
   const router = useRouter();
 
   async function handleSignOut() {
-    await signOut();
-    await router.invalidate();
-    await router.navigate({ to: "/login" });
+    await signOutAndRedirect(router);
   }
 
   return (

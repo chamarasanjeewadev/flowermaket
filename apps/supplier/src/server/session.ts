@@ -4,7 +4,7 @@
  * Start's request-scoped cookie APIs.
  */
 import { getCookies, setCookie } from "@tanstack/react-start/server";
-import { createSupabaseServerClient } from "@flowers/auth";
+import { createSupabaseServerClient, getVerifiedUser } from "@flowers/auth";
 import {
   getEnv,
   tryCreateDb,
@@ -75,11 +75,10 @@ export async function resolveSupplierSession(): Promise<SupplierSession> {
     return { kind: "config_error" };
   }
 
-  const { data } = await supabase.auth.getUser();
-  const user = data.user;
+  const user = await getVerifiedUser(supabase);
   if (!user) return { kind: "anonymous" };
 
-  const email = user.email ?? "";
+  const email = user.email;
   const userId = user.id;
 
   const db = tryCreateDb();

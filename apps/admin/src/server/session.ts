@@ -4,7 +4,7 @@
  * Start's request-scoped cookie APIs.
  */
 import { getCookies, setCookie } from "@tanstack/react-start/server";
-import { createSupabaseServerClient, hasRole } from "@flowers/auth";
+import { createSupabaseServerClient, getVerifiedUser, hasRole } from "@flowers/auth";
 import { getEnv, tryCreateDb, getUserRole } from "@flowers/api";
 
 /**
@@ -52,11 +52,10 @@ export async function resolveAdminSession(): Promise<AdminSession> {
     return { kind: "config_error" };
   }
 
-  const { data } = await supabase.auth.getUser();
-  const user = data.user;
+  const user = await getVerifiedUser(supabase);
   if (!user) return { kind: "anonymous" };
 
-  const email = user.email ?? "";
+  const email = user.email;
 
   // Look up the user's role in the DB. If the DB is unavailable treat as forbidden.
   const db = tryCreateDb();

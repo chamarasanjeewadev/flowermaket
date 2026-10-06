@@ -5,6 +5,10 @@
   "compatibility_flags": ["nodejs_compat"],
   "main": "@tanstack/react-start/server-entry",
   "observability": { "enabled": true },
+  // Smart Placement runs the Worker near Supabase (ap-south-1) instead of at
+  // the visitor's edge PoP: each request makes several sequential DB/Auth round
+  // trips, so being next to the database beats being next to the browser.
+  "placement": { "mode": "smart" },
   // workers_dev:false is required: Cloudflare Access only protects the custom
   // hostname, so leaving the *.workers.dev URL live would bypass Access.
   "workers_dev": false,

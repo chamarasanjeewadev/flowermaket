@@ -27,23 +27,26 @@ function b64ToBytes(b64: string): Uint8Array {
 }
 
 /**
- * Inbound WhatsApp webhook. URL shape matches the sibling Evolution integrations:
- *   POST /api/whatsapp/webhook/<instance>?token=<WHATSAPP_WEBHOOK_SECRET>
- * The instance path segment identifies the sending Evolution instance; auth is
- * the `token` query param, constant-time compared against WHATSAPP_WEBHOOK_SECRET.
- * A missing/wrong token (or unset secret) returns 404 with no leak.
+ * Inbound WhatsApp webhook (Evolution GO `Message` events; v2 `messages.upsert`
+ * also accepted). The shared secret WHATSAPP_WEBHOOK_SECRET may be given either
+ * as the path segment or as a `token` query param:
+ *   POST /api/whatsapp/webhook/<secret>
+ *   POST /api/whatsapp/webhook/<instance>?token=<secret>
+ * Compared in constant time; a missing/wrong secret (or unset env) returns 404
+ * with no leak.
  */
 export const Route = createFileRoute("/api/whatsapp/webhook/$instance")({
   server: {
     handlers: {
-      POST: async ({ request }) => {
+      POST: async ({ request, params }) => {
         const env = getEnv();
+        const secret = env.WHATSAPP_WEBHOOK_SECRET;
         const token = new URL(request.url).searchParams.get("token");
-        if (
-          !env.WHATSAPP_WEBHOOK_SECRET ||
-          !token ||
-          !timingSafeEqualStr(token, env.WHATSAPP_WEBHOOK_SECRET)
-        ) {
+        const authorized =
+          !!secret &&
+          ((!!token && timingSafeEqualStr(token, secret)) ||
+            timingSafeEqualStr(params.instance, secret));
+        if (!authorized) {
           return new Response("Not found", { status: 404 });
         }
 

@@ -1,4 +1,10 @@
-# WhatsApp (Evolution API) setup
+# WhatsApp (Evolution GO) setup
+
+We run **Evolution GO** (https://evolution.grittech.lk, manager at `/manager`),
+not Evolution API v2. GO authenticates messaging calls with the **instance
+token** in the `apikey` header and has no instance name in the URL:
+`POST /send/text`, `GET /instance/status`. The admin invite screen shows the
+live connection state from `/instance/status`.
 
 One Evolution instance / one number is shared by web + supplier + admin for
 sending. Only **admin** receives (hosts the webhook + inbox).
@@ -8,9 +14,9 @@ sending. Only **admin** receives (hosts the webhook + inbox).
 All three apps (send):
 
 ```bash
-wrangler secret put EVOLUTION_API_URL      # https://<your-evolution-host>
-wrangler secret put EVOLUTION_API_KEY
-wrangler secret put EVOLUTION_INSTANCE
+wrangler secret put EVOLUTION_API_URL      # https://evolution.grittech.lk
+wrangler secret put EVOLUTION_API_KEY      # the INSTANCE token (manager → instance → Token da Instância)
+wrangler secret put EVOLUTION_INSTANCE     # instance name, informational (e.g. sda)
 ```
 
 (run inside apps/web, apps/supplier, apps/admin)
@@ -38,30 +44,22 @@ select to_regclass('public.whatsapp_conversations'),
        to_regclass('public.whatsapp_messages');
 ```
 
-## 4. Register the webhook on the Evolution instance (one-time)
+## 4. Register the webhook on the Evolution GO instance (one-time)
 
-Confirm the field shape against your Evolution version first (v1 vs v2 differ).
-Common (Evolution v2):
+In the Evolution GO manager → instance → Configurações → Webhook, set the URL to
+either form (the secret is compared in constant time):
 
-```bash
-curl -X POST "$EVOLUTION_API_URL/webhook/set/$EVOLUTION_INSTANCE" \
-  -H "apikey: $EVOLUTION_API_KEY" -H "Content-Type: application/json" \
-  -d '{"webhook":{"enabled":true,
-       "url":"https://admin.flowermarket.lk/api/whatsapp/webhook/<EVOLUTION_INSTANCE>?token=<WHATSAPP_WEBHOOK_SECRET>",
-       "webhookByEvents":false,"base64":true,
-       "events":["MESSAGES_UPSERT"]}}'
-```
+- `https://admin.flowermarket.lk/api/whatsapp/webhook/<WHATSAPP_WEBHOOK_SECRET>`
+- `https://admin.flowermarket.lk/api/whatsapp/webhook/<instance>?token=<WHATSAPP_WEBHOOK_SECRET>`
 
-Webhook URL shape: `/api/whatsapp/webhook/<instance>?token=<secret>` — the
-instance is a path segment, the secret is the `token` query param (matches the
-sibling driver-tours integration). Admin is behind Cloudflare Access, so add an
-Access **Bypass** policy for path `/api/whatsapp/webhook/*` or Evolution's POST
-is challenged and never reaches the Worker.
+Enable the **MESSAGE** event. For inbound photos, the GO server needs
+`WEBHOOK_FILES=true` (media then arrives as `data.Message.base64`).
 
-Verify:
+Check the instance is connected:
 
 ```bash
-curl "$EVOLUTION_API_URL/webhook/find/$EVOLUTION_INSTANCE" -H "apikey: $EVOLUTION_API_KEY"
+curl https://evolution.grittech.lk/instance/status -H "apikey: <instance token>"
+# {"data":{"Connected":true,"LoggedIn":true,...}}
 ```
 
 ## 5. Local dev

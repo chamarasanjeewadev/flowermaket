@@ -11,7 +11,17 @@ import { err, ok, isPgError, type ActionResult } from "../errors";
 import { normalizeSellerTypes, type SellerType } from "../constants";
 import type { ValidationError } from "./shops";
 
-export type InviteLanguage = "en" | "si";
+import type { InviteLanguage } from "../invite-message";
+
+export {
+  buildInviteMessage,
+  applyInviteLink,
+  normalizeLkPhone,
+  formatLkPhone,
+  INVITE_LINK_PLACEHOLDER,
+  type BuildInviteMessageInput,
+  type InviteLanguage,
+} from "../invite-message";
 
 const LANGUAGE_SET = new Set<InviteLanguage>(["en", "si"]);
 
@@ -67,56 +77,6 @@ export function buildJoinUrl(
   const origin = (portalUrl ?? "").trim().replace(/\/$/, "");
   if (!origin) return null;
   return `${origin}/join/${token}`;
-}
-
-export interface BuildInviteMessageInput {
-  nameEn?: string | null;
-  sellerTypes?: readonly SellerType[] | null;
-  language: InviteLanguage;
-  joinUrl: string;
-}
-
-/** Which pitch fits best: supplier (bulk) > farmer > florist. */
-function invitePitch(types: readonly SellerType[] | null | undefined) {
-  if (types?.includes("supplier")) return "supplier" as const;
-  if (types?.includes("florist") && !types.includes("farmer")) return "florist" as const;
-  return "farmer" as const;
-}
-
-/** Build a bilingual, type-aware benefits message with the join link. */
-export function buildInviteMessage(input: BuildInviteMessageInput): string {
-  const name = input.nameEn?.trim() || null;
-  const pitchKind = invitePitch(input.sellerTypes);
-
-  if (input.language === "si") {
-    const hi = name ? `ආයුබෝවන් ${name},` : "ආයුබෝවන්,";
-    let pitch: string;
-    if (pitchKind === "florist") {
-      pitch =
-        "ඔබේ මල් වෙළඳසැලට FlowerMarket.lk හි ඔබේම අන්තර්ජාල වෙළඳසැලක් ලබාගෙන වැඩි ඇණවුම් ලබාගන්න.";
-    } else if (pitchKind === "supplier") {
-      pitch =
-        "FlowerMarket.lk හරහා තොග ඇණවුම් සහ වැඩි ගැනුම්කරුවන් එක තැනකින් කළමනාකරණය කරන්න.";
-    } else {
-      pitch =
-        "FlowerMarket.lk හරහා ඔබේ මල් ගැනුම්කරුවන් සමඟ සෘජුවම සම්බන්ධ වන්න — හොඳ මිල ගණන් සහ නොමිලේ ලැයිස්තුගත කිරීම.";
-    }
-    return `${hi} ${pitch} මෙතැනින් එක්වන්න: ${input.joinUrl}`;
-  }
-
-  const hi = name ? `Hi ${name},` : "Hi there,";
-  let pitch: string;
-  if (pitchKind === "florist") {
-    pitch =
-      "FlowerMarket.lk gives your flower shop its own online storefront and brings you more orders online.";
-  } else if (pitchKind === "supplier") {
-    pitch =
-      "FlowerMarket.lk helps suppliers reach more buyers and handle bulk orders and RFQs in one place.";
-  } else {
-    pitch =
-      "FlowerMarket.lk connects growers like you directly with buyers across Sri Lanka — better prices, no middlemen, and a free listing.";
-  }
-  return `${hi} ${pitch} Join here: ${input.joinUrl}`;
 }
 
 // ---------------------------------------------------------------------------
@@ -220,4 +180,22 @@ export async function markInviteAccepted(
   } catch (e) {
     return err("unknown", e instanceof Error ? e.message : "Could not update invite.");
   }
+}
+
+/** The still-pending (status "sent") invite for a phone, if any. */
+export async function getActiveInviteByPhone(
+  db: Db,
+  phone: string,
+): Promise<InviteRow | null> {
+  const [row] = await db
+    .select()
+    .from(schema.supplierInvites)
+    .where(
+      and(
+        eq(schema.supplierInvites.phone, phone),
+        eq(schema.supplierInvites.status, "sent"),
+      ),
+    )
+    .limit(1);
+  return row ? (row as InviteRow) : null;
 }

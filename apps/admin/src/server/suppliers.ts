@@ -16,6 +16,11 @@ import {
   generateInviteToken,
   buildInviteMessage,
   buildJoinUrl,
+  applyInviteLink,
+  normalizeLkPhone,
+  getActiveInviteByPhone,
+  getInviteByToken,
+  INVITE_LINK_PLACEHOLDER,
   recordOutboundMessage,
   type ActionResult,
   type ReviewableShop,
@@ -25,7 +30,12 @@ import {
   type InviteLanguage,
 } from "@flowers/api";
 import { createSupabaseAdminClient } from "@flowers/auth";
-import { sendWhatsappText } from "@flowers/integrations";
+import {
+  getWhatsappStatus,
+  sendWhatsappText,
+  type EvolutionConfig,
+  type WhatsappStatus,
+} from "@flowers/integrations";
 import { resolveAdminSession } from "./session";
 
 const INVITE_TTL_DAYS = 30;
@@ -157,79 +167,171 @@ export interface InvitePayload {
   /** null = let the supplier choose at registration. */
   sellerTypes: SellerType[] | null;
   language: InviteLanguage;
+  /**
+   * The admin-reviewed message. `{link}` is replaced with the join URL; when
+   * null the default template is used.
+   */
+  message: string | null;
+  /** "whatsapp" sends via Evolution; "link" only creates the invite. */
+  delivery: "whatsapp" | "link";
+}
+
+export type InviteDelivery =
+  | { status: "sent" }
+  | { status: "skipped" }
+  | { status: "failed"; detail: string };
+
+export interface InviteResult {
+  token: string;
+  joinUrl: string;
+  phone: string;
+  message: string;
+  delivery: InviteDelivery;
+}
+
+function evolutionConfig(): EvolutionConfig {
+  const env = getEnv();
+  // Empty strings make sendWhatsappText / getWhatsappStatus report "not configured".
+  return {
+    apiUrl: env.EVOLUTION_API_URL ?? "",
+    apiKey: env.EVOLUTION_API_KEY ?? "",
+    instance: env.EVOLUTION_INSTANCE ?? "",
+  };
+}
+
+/** Live Evolution connection state, shown on the invite screen before sending. */
+export const getWhatsappStatusFn = createServerFn({ method: "GET" }).handler(
+  async (): Promise<WhatsappStatus> => {
+    await requireAdmin();
+    return getWhatsappStatus(evolutionConfig());
+  },
+);
+
+async function deliverInvite(
+  db: NonNullable<ReturnType<typeof tryCreateDb>>,
+  phone: string,
+  message: string,
+): Promise<InviteDelivery> {
+  const res = await sendWhatsappText(evolutionConfig(), phone, message);
+  if (!res.ok) return { status: "failed", detail: res.message };
+  try {
+    await recordOutboundMessage(db, { phone, text: message });
+  } catch {
+    // logging into the inbox is best-effort; never fail the invite
+  }
+  return { status: "sent" };
 }
 
 /**
- * Create a tokenized invite and send a bilingual benefits message over WhatsApp.
- * The invite row is created first; a WhatsApp send failure is reported but does
- * not roll back the invite (admin can resend / copy the link).
+ * Create a tokenized invite and (optionally) send the admin-reviewed message
+ * over WhatsApp. The invite row is created first; a send failure is reported
+ * with Evolution's reason and the admin can retry via {@link resendInviteFn}.
  */
 export const inviteSupplierFn = createServerFn({ method: "POST" })
   .validator((input: InvitePayload) => input)
-  .handler(
-    async ({ data }): Promise<ActionResult<{ token: string; joinUrl: string; whatsappSent: boolean }>> => {
-      const session = await requireAdmin();
-      const db = tryCreateDb();
-      if (!db) {
-        return { ok: false, code: "db_unavailable", message: "Database is not configured." };
-      }
+  .handler(async ({ data }): Promise<ActionResult<InviteResult>> => {
+    const session = await requireAdmin();
+    const db = tryCreateDb();
+    if (!db) {
+      return { ok: false, code: "db_unavailable", message: "Database is not configured." };
+    }
 
-      const token = generateInviteToken();
-      const env = getEnv();
-      // Refuse before creating a dead invite if the portal origin is missing.
-      const joinUrl = buildJoinUrl(env.SUPPLIER_PORTAL_URL, token);
-      if (!joinUrl) {
-        return {
-          ok: false,
-          code: "db_unavailable",
-          message:
-            "Supplier portal URL (SUPPLIER_PORTAL_URL) is not configured; cannot build a join link.",
-        };
-      }
+    const phone = normalizeLkPhone(data.phone);
+    if (!phone) {
+      return {
+        ok: false,
+        code: "validation",
+        message: "Enter a Sri Lankan mobile number, e.g. 0771234567.",
+      };
+    }
 
-      const expiresAt = new Date(Date.now() + INVITE_TTL_DAYS * 24 * 60 * 60 * 1000);
-      const created = await createInvite(db, {
-        phone: data.phone.trim(),
+    const token = generateInviteToken();
+    const env = getEnv();
+    // Refuse before creating a dead invite if the portal origin is missing.
+    const joinUrl = buildJoinUrl(env.SUPPLIER_PORTAL_URL, token);
+    if (!joinUrl) {
+      return {
+        ok: false,
+        code: "db_unavailable",
+        message:
+          "Supplier portal URL (SUPPLIER_PORTAL_URL) is not configured; cannot build a join link.",
+      };
+    }
+
+    const template =
+      data.message?.trim() ||
+      buildInviteMessage({
         nameEn: data.nameEn,
         sellerTypes: data.sellerTypes,
         language: data.language,
-        token,
-        sentBy: session.kind === "admin" ? session.userId : null,
-        expiresAt,
+        joinUrl: INVITE_LINK_PLACEHOLDER,
       });
-      if (!created.ok) return created;
+    const message = applyInviteLink(template, joinUrl);
 
-      const message = buildInviteMessage({
-        nameEn: data.nameEn,
-        sellerTypes: data.sellerTypes,
-        language: data.language,
-        joinUrl,
-      });
+    const expiresAt = new Date(Date.now() + INVITE_TTL_DAYS * 24 * 60 * 60 * 1000);
+    const created = await createInvite(db, {
+      phone,
+      nameEn: data.nameEn,
+      sellerTypes: data.sellerTypes,
+      language: data.language,
+      token,
+      sentBy: session.kind === "admin" ? session.userId : null,
+      expiresAt,
+    });
+    if (!created.ok) return created;
 
-      let whatsappSent = false;
-      if (env.EVOLUTION_API_URL && env.EVOLUTION_API_KEY && env.EVOLUTION_INSTANCE) {
-        const res = await sendWhatsappText(
-          {
-            apiUrl: env.EVOLUTION_API_URL,
-            apiKey: env.EVOLUTION_API_KEY,
-            instance: env.EVOLUTION_INSTANCE,
-          },
-          data.phone.trim(),
-          message,
-        );
-        whatsappSent = res.ok;
-        if (res.ok) {
-          try {
-            await recordOutboundMessage(db, { phone: data.phone.trim(), text: message });
-          } catch {
-            // logging into the inbox is best-effort; never fail the invite
-          }
-        }
-      }
+    const delivery: InviteDelivery =
+      data.delivery === "whatsapp"
+        ? await deliverInvite(db, phone, message)
+        : { status: "skipped" };
 
-      return { ok: true, data: { token, joinUrl, whatsappSent } };
-    },
-  );
+    return { ok: true, data: { token, joinUrl, phone, message, delivery } };
+  });
+
+/**
+ * Look up the pending invite for a number so the admin can resend it instead
+ * of hitting the one-active-invite-per-number rule.
+ */
+export const getPendingInviteFn = createServerFn({ method: "GET" })
+  .validator((input: { phone: string }) => input)
+  .handler(async ({ data }): Promise<{ token: string; joinUrl: string } | null> => {
+    await requireAdmin();
+    const db = tryCreateDb();
+    const phone = normalizeLkPhone(data.phone);
+    if (!db || !phone) return null;
+    const invite = await getActiveInviteByPhone(db, phone);
+    const joinUrl = invite ? buildJoinUrl(getEnv().SUPPLIER_PORTAL_URL, invite.token) : null;
+    return invite && joinUrl ? { token: invite.token, joinUrl } : null;
+  });
+
+/** (Re)send an existing invite's message — after a failed send or a typo fix. */
+export const resendInviteFn = createServerFn({ method: "POST" })
+  .validator((input: { token: string; message: string }) => input)
+  .handler(async ({ data }): Promise<ActionResult<InviteResult>> => {
+    await requireAdmin();
+    const db = tryCreateDb();
+    if (!db) {
+      return { ok: false, code: "db_unavailable", message: "Database is not configured." };
+    }
+    const invite = await getInviteByToken(db, data.token);
+    if (!invite || invite.status !== "sent") {
+      return { ok: false, code: "not_found", message: "This invite is no longer pending." };
+    }
+    const joinUrl = buildJoinUrl(getEnv().SUPPLIER_PORTAL_URL, invite.token);
+    if (!joinUrl) {
+      return {
+        ok: false,
+        code: "db_unavailable",
+        message: "Supplier portal URL (SUPPLIER_PORTAL_URL) is not configured.",
+      };
+    }
+    const message = applyInviteLink(data.message, joinUrl);
+    const delivery = await deliverInvite(db, invite.phone, message);
+    return {
+      ok: true,
+      data: { token: invite.token, joinUrl, phone: invite.phone, message, delivery },
+    };
+  });
 
 /** Change an existing shop's seller types (florist / supplier / farmer). */
 export const setSupplierSellerTypesFn = createServerFn({ method: "POST" })

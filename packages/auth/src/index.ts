@@ -53,3 +53,36 @@ export function hasRole(
 ): boolean {
   return !!userRole && (allowed as string[]).includes(userRole);
 }
+
+export interface VerifiedUser {
+  id: string;
+  email: string;
+  fullName: string | null;
+}
+
+/**
+ * Resolve the signed-in user from the session cookie with a verified JWT.
+ *
+ * Uses `auth.getClaims()`, which verifies the access token locally against the
+ * project's cached JWKS (asymmetric signing keys) instead of a round trip to
+ * the Auth server on every request — the main per-navigation latency cost on
+ * Workers. Projects still on a symmetric (HS256) secret fall back to a server
+ * check inside getClaims, so this is never less safe than `getUser()`.
+ */
+export async function getVerifiedUser(
+  supabase: ReturnType<typeof createSupabaseServerClient>,
+): Promise<VerifiedUser | null> {
+  const { data, error } = await supabase.auth.getClaims();
+  const claims = data?.claims;
+  if (error || !claims?.sub) return null;
+  const meta: unknown = claims.user_metadata;
+  const fullName =
+    meta && typeof meta === "object" && "full_name" in meta && typeof meta.full_name === "string"
+      ? meta.full_name || null
+      : null;
+  return {
+    id: claims.sub,
+    email: typeof claims.email === "string" ? claims.email : "",
+    fullName,
+  };
+}
