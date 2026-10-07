@@ -7,6 +7,7 @@ import { useRouterState } from "@tanstack/react-router";
 import { useT } from "../i18n/react";
 import { useEnquiry } from "../lib/enquiry";
 import { siteUrl } from "../lib/site";
+import { track } from "../lib/analytics";
 
 /** Official WhatsApp glyph (lucide has no brand icon). */
 function WhatsAppGlyph({ className }: { className?: string }) {
@@ -48,6 +49,7 @@ export function FloatingWhatsApp() {
       href={href}
       target="_blank"
       rel="noopener noreferrer"
+      onClick={() => track.whatsappLead("floating_button", hydrated ? items : [])}
       aria-label={t.enquiry.floatingLabel}
       className="fixed bottom-4 right-4 z-50 flex size-12 sm:bottom-5 sm:right-5 sm:size-14 items-center justify-center rounded-full bg-[#25D366] text-white shadow-lg transition-transform hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#25D366] focus-visible:ring-offset-2"
     >

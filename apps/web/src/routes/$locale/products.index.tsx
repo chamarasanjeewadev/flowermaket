@@ -1,3 +1,4 @@
+import * as React from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { isSellerType, type SellerType } from "@flowers/api/constants";
 import {
@@ -21,6 +22,7 @@ import { useT } from "../../i18n/react";
 import { absoluteUrl, hreflangLinks } from "../../lib/site";
 import { socialMeta } from "../../lib/seo";
 import { getCategoriesWithCounts, listProducts } from "../../server/catalog";
+import { fromListItem, track } from "../../lib/analytics";
 
 interface ProductsSearch {
   category?: string;
@@ -146,6 +148,15 @@ function BrowsePage() {
   const search = Route.useSearch();
   const navigate = Route.useNavigate();
   const { t, f } = useT();
+
+  React.useEffect(() => {
+    if (search.q) track.search(search.q, result.total);
+    track.viewItemList(
+      search.q ? "search_results" : "browse",
+      search.q ? "Search results" : "Browse",
+      result.items.map(fromListItem),
+    );
+  }, [result, search.q]);
 
   function applyPatch(patch: CatalogFilterPatch) {
     navigate({

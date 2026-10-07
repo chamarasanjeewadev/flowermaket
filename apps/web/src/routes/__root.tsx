@@ -14,6 +14,7 @@ import { Footer } from "../components/Footer";
 import { Header } from "../components/Header";
 import { FloatingWhatsApp } from "../components/FloatingWhatsApp";
 import { EnquiryProvider } from "../lib/enquiry";
+import { GTM_ID, gtmHeadScript } from "../lib/analytics";
 import { getDict, isLocale, type Locale } from "../i18n";
 import { I18nProvider } from "../i18n/react";
 import { sessionQueryOptions } from "../lib/session";
@@ -73,9 +74,23 @@ function RootDocument({ children }: { children: React.ReactNode }) {
   return (
     <html lang={locale} suppressHydrationWarning>
       <head>
+        {GTM_ID && (
+          <script dangerouslySetInnerHTML={{ __html: gtmHeadScript(GTM_ID) }} />
+        )}
         <HeadContent />
       </head>
       <body className="min-h-dvh font-sans antialiased">
+        {GTM_ID && (
+          <noscript>
+            <iframe
+              src={`https://www.googletagmanager.com/ns.html?id=${GTM_ID}`}
+              height="0"
+              width="0"
+              style={{ display: "none", visibility: "hidden" }}
+              title="Google Tag Manager"
+            />
+          </noscript>
+        )}
         {children}
         <Scripts />
       </body>

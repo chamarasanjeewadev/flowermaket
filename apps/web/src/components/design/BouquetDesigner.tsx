@@ -16,6 +16,7 @@ import { useT } from "../../i18n/react";
 import { siteUrl } from "../../lib/site";
 import { useEnquiry } from "../../lib/enquiry";
 import { generateBouquetImage } from "../../server/bouquet";
+import { track } from "../../lib/analytics";
 import type { ProductListItemDTO } from "../../server/catalog";
 import { FlowerPicker } from "./FlowerPicker";
 import { BouquetPreview, type PreviewStatus } from "./BouquetPreview";
@@ -76,6 +77,7 @@ export default function BouquetDesigner({ flowers }: { flowers: ProductListItemD
           model,
         },
       });
+      track.bouquetGenerated(stems, selection.length, result.ok ? "ok" : result.reason);
       if (result.ok) {
         setDataUrl(result.dataUrl);
         setImageUrl(result.imageUrl);
@@ -116,6 +118,7 @@ export default function BouquetDesigner({ flowers }: { flowers: ProductListItemD
   );
 
   function onSendWhatsapp() {
+    track.whatsappLead("bouquet_designer", selection);
     for (const item of pendingBasketAdditions(selection, has)) {
       const { qty, ...draft } = item;
       add({ ...draft, qty });
@@ -200,7 +203,12 @@ export default function BouquetDesigner({ flowers }: { flowers: ProductListItemD
 
           {showMoreDesignsWa && (
             <Button asChild size="sm" className="bg-[#25D366] text-white hover:bg-[#1fb457]">
-              <a href={moreDesignsWaHref} target="_blank" rel="noopener noreferrer">
+              <a
+                href={moreDesignsWaHref}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => track.whatsappLead("design_limit")}
+              >
                 <Send className="size-4" aria-hidden="true" />
                 Want more designs? Message us
               </a>

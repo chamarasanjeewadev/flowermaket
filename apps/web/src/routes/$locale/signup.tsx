@@ -20,6 +20,7 @@ import { GoogleButton } from "../../components/GoogleButton";
 import { useT } from "../../i18n/react";
 import { refreshSession } from "../../lib/session";
 import { signUpWithPassword } from "../../server/auth";
+import { track } from "../../lib/analytics";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -65,6 +66,7 @@ function SignupPage() {
         toast.error(result.message);
         return;
       }
+      track.signUp("email");
       if (result.data.status === "confirm_email") {
         setConfirmEmailSent(true);
         return;

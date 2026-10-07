@@ -20,6 +20,7 @@ import { GoogleButton } from "../../components/GoogleButton";
 import { useT } from "../../i18n/react";
 import { refreshSession, safeRedirectPath } from "../../lib/session";
 import { signInWithPassword } from "../../server/auth";
+import { track } from "../../lib/analytics";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -61,6 +62,7 @@ function LoginPage() {
         toast.error(result.message);
         return;
       }
+      track.login("email");
       toast.success(t.auth.welcomeToast);
       await refreshSession(queryClient, router);
       router.history.push(safeRedirectPath(redirectTo) || `/${locale}/`);

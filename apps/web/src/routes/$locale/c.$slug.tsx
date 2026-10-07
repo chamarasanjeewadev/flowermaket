@@ -1,3 +1,4 @@
+import * as React from "react";
 import { createFileRoute, notFound } from "@tanstack/react-router";
 import { ProductGrid } from "../../components/catalog/ProductGrid";
 import { getDict, localizedName, type Locale } from "../../i18n";
@@ -10,6 +11,7 @@ import {
   socialMeta,
 } from "../../lib/seo";
 import { getCategoriesWithCounts, listProducts } from "../../server/catalog";
+import { fromListItem, track } from "../../lib/analytics";
 
 function categoryIntro(t: ReturnType<typeof useT>["t"], slug: string): string {
   const map = t.catalog.categoryIntro as Record<string, string | undefined>;
@@ -82,6 +84,14 @@ export const Route = createFileRoute("/$locale/c/$slug")({
 function CategoryPage() {
   const { category, result } = Route.useLoaderData();
   const { t, f, locale } = useT();
+
+  React.useEffect(() => {
+    track.viewItemList(
+      `category_${category.slug}`,
+      category.nameEn,
+      result.items.map(fromListItem),
+    );
+  }, [category.slug, result]);
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8">

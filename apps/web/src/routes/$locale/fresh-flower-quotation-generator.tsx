@@ -81,6 +81,7 @@ import {
 /** flower_categories.slug — admin-managed, so any string. */
 type FlowerCategory = string;
 import { listProducts } from "../../server/catalog";
+import { track } from "../../lib/analytics";
 
 const SEO_PATH = "/fresh-flower-quotation-generator";
 let customLineSequence = 1;
@@ -232,6 +233,11 @@ function FlowerQuotationGeneratorPage() {
     siteUrl: siteUrl(),
   });
   const whatsappUrl = buildWhatsappUrl(quotationText, WHATSAPP_NUMBER);
+
+  function onQuotationSend() {
+    track.whatsappLead("quotation_generator");
+    track.quotationSent(pricedLines.length, total);
+  }
 
   const units: Array<{ value: QuotationUnit; label: string }> = [
     { value: "stem", label: t.quotation.unitStem },
@@ -609,7 +615,7 @@ function FlowerQuotationGeneratorPage() {
                 size="lg"
                 className="w-full bg-[#25D366] text-white hover:bg-[#1fb457]"
               >
-                <a href={whatsappUrl} target="_blank" rel="noopener noreferrer">
+                <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" onClick={onQuotationSend}>
                   <Send className="size-4" aria-hidden="true" />
                   {t.quotation.requestOrder}
                 </a>
@@ -847,7 +853,7 @@ function FlowerQuotationGeneratorPage() {
               size="sm"
               className="shrink-0 bg-[#25D366] text-white hover:bg-[#1fb457]"
             >
-              <a href={whatsappUrl} target="_blank" rel="noopener noreferrer">
+              <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" onClick={onQuotationSend}>
                 <Send className="size-3.5" aria-hidden="true" />
                 {locale === "si" ? "යවන්න" : "Send"}
               </a>

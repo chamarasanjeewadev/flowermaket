@@ -16,6 +16,7 @@ import { useT } from "../../i18n/react";
 import { hreflangLinks } from "../../lib/site";
 import { siteUrl } from "../../lib/site";
 import { useEnquiry } from "../../lib/enquiry";
+import { track } from "../../lib/analytics";
 
 export const Route = createFileRoute("/$locale/enquiry")({
   head: ({ params }) => {
@@ -55,6 +56,14 @@ function EnquiryPage() {
     buildEnquiryText({ items, form, locale, siteUrl: siteUrl() }),
     WHATSAPP_NUMBER,
   );
+
+  // One view_cart per page visit, once the stored list has loaded.
+  const viewTracked = React.useRef(false);
+  React.useEffect(() => {
+    if (!hydrated || viewTracked.current || items.length === 0) return;
+    viewTracked.current = true;
+    track.viewEnquiry(items);
+  }, [hydrated, items]);
 
   if (!hydrated) {
     return (
@@ -137,7 +146,10 @@ function EnquiryPage() {
             <button
               type="button"
               aria-label={t.enquiry.remove}
-              onClick={() => remove(item.id)}
+              onClick={() => {
+                track.removeFromEnquiry(item);
+                remove(item.id);
+              }}
               className="flex size-8 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               <Trash2 className="size-4" aria-hidden="true" />
@@ -210,7 +222,12 @@ function EnquiryPage() {
           size="lg"
           className="w-full bg-[#25D366] text-white hover:bg-[#1fb457]"
         >
-          <a href={waHref} target="_blank" rel="noopener noreferrer">
+          <a
+            href={waHref}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() => track.whatsappLead("enquiry_page", items)}
+          >
             <Send className="size-4" aria-hidden="true" />
             {t.enquiry.sendWhatsapp}
           </a>

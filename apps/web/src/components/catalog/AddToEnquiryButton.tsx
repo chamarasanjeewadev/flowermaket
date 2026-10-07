@@ -4,6 +4,7 @@ import { cn } from "@flowers/ui/lib/utils";
 import type { EnquiryListingType } from "@flowers/integrations";
 import { useT } from "../../i18n/react";
 import { useEnquiry } from "../../lib/enquiry";
+import { track } from "../../lib/analytics";
 
 /** Minimal product shape needed to add a line to the enquiry list. */
 export interface EnquiryProductInput {
@@ -37,6 +38,7 @@ export function AddToEnquiryButton({
     e.preventDefault();
     e.stopPropagation();
     add(product);
+    track.addToEnquiry(product, 1, variant === "detail" ? "product_page" : "product_card");
   }
 
   const label = inList ? t.enquiry.inEnquiry : t.enquiry.addToEnquiry;

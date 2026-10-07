@@ -22,6 +22,7 @@ import {
   socialMeta,
 } from "../../lib/seo";
 import { getProductBySlug } from "../../server/catalog";
+import { track } from "../../lib/analytics";
 
 function truncateMetaDescription(value: string): string {
   if (value.length <= 160) return value;
@@ -152,6 +153,17 @@ function ProductDetailPage() {
   const { product } = Route.useLoaderData();
   const { t, f, locale } = useT();
   const [active, setActive] = React.useState(0);
+
+  React.useEffect(() => {
+    track.viewItem({
+      id: product.id,
+      nameEn: product.nameEn,
+      price: product.price,
+      listingType: product.listingType,
+      categoryEn: product.category.nameEn,
+      shopEn: product.shop.nameEn,
+    });
+  }, [product.id]);
 
   const name = localizedName(product, locale);
   const description = localizedDescription(product, locale);
