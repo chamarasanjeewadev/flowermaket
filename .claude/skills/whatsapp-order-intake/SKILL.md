@@ -9,9 +9,10 @@ description: Turn a WhatsApp customer conversation into a FlowerMarket.lk order 
 2. Extract into this shape and show it to the operator:
    - customer: name, phone (from the conversation), language (en/si — match how they write)
    - items: descriptionEn (+ descriptionSi if they wrote Sinhala), quantity, unit
-     (stems / bunches / bouquets / arrangements), variant (colour, size, grade), notes
+     (exactly one of stem / bunch / box — describe bouquets/arrangements in descriptionEn),
+     variant (colour, size, grade), notes
    - category: pick from `list_categories` when obvious, else leave empty
-   - delivery: address, district, city; neededByDate as YYYY-MM-DD
+   - delivery: address, district (a slug such as `colombo` — the tool schema lists them), city; neededByDate as YYYY-MM-DD
    - notesCustomer (occasion, card message) / notesInternal (budget, anything for us)
 3. List what is missing or ambiguous. Ask the operator — don't guess quantities, dates or
    addresses. If the customer must be asked, draft a short WhatsApp question in their language

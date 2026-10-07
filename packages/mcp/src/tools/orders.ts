@@ -5,6 +5,9 @@
  */
 import { z } from "zod";
 import {
+  DISTRICTS,
+  ORDER_SOURCES,
+  ORDER_UNITS,
   acceptDocument,
   buildDocumentDraft,
   cancelAward,
@@ -45,12 +48,18 @@ const orderStatus = z.enum([
   "cancelled",
 ]);
 const documentType = z.enum(["quotation", "invoice", "receipt"]);
+// Same allow-lists the repo validates against, so agents see them in the schema.
+const districtSlugs = DISTRICTS.map((d) => d.slug);
+const district = z
+  .string()
+  .refine((v) => districtSlugs.includes(v), { message: `Use a district slug: ${districtSlugs.join(", ")}` })
+  .describe(`District slug, one of: ${districtSlugs.join(", ")}`);
 
 const orderItem = z.object({
   descriptionEn: z.string().min(1).describe("What the customer wants, in English"),
   descriptionSi: z.string().nullable().optional(),
   quantity: z.number().int().positive(),
-  unit: z.string().min(1).describe("e.g. stems, bunches, bouquets"),
+  unit: z.enum(ORDER_UNITS).describe("stem | bunch | box — put bouquet/arrangement detail in variant/notes"),
   variant: z.string().nullable().optional().describe("Colour/size/grade, e.g. 'red, 50cm'"),
   categoryId: z.string().uuid().nullable().optional().describe("From list_categories"),
   notes: z.string().nullable().optional(),
@@ -130,9 +139,9 @@ export const orderTools: AnyTool[] = [
       customerPhone: z.string().min(1),
       customerEmail: z.string().email().nullable().optional(),
       customerLocale: z.enum(["en", "si"]).default("en"),
-      source: z.enum(["whatsapp", "phone", "web", "walk_in"]).default("whatsapp"),
+      source: z.enum(ORDER_SOURCES).default("whatsapp"),
       deliveryAddress: z.string().nullable().optional(),
-      deliveryDistrict: z.string().nullable().optional(),
+      deliveryDistrict: district.nullable().optional(),
       deliveryCity: z.string().nullable().optional(),
       neededByDate: z
         .string()

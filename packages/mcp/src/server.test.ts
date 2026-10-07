@@ -68,11 +68,31 @@ describe("flowers MCP server", () => {
       arguments: {
         customerName: "Nimali",
         customerPhone: "0771234567",
-        items: [{ descriptionEn: "Red roses", quantity: 24, unit: "stems" }],
+        items: [{ descriptionEn: "Red roses", quantity: 24, unit: "stem" }],
       },
     });
     expect(res.isError).toBe(true);
     expect(text(res)).toContain("auth_required");
+  });
+
+  it("rejects units and districts the order repo would refuse", async () => {
+    const client = await connect(false);
+    for (const patch of [
+      { items: [{ descriptionEn: "Red roses", quantity: 24, unit: "stems" }] },
+      { deliveryDistrict: "Colombo 07" },
+    ]) {
+      const res = await client.callTool({
+        name: "create_order",
+        arguments: {
+          customerName: "Nimali",
+          customerPhone: "0771234567",
+          items: [{ descriptionEn: "Red roses", quantity: 24, unit: "stem" }],
+          ...patch,
+        },
+      });
+      expect(res.isError).toBe(true);
+      expect(text(res)).not.toContain("auth_required");
+    }
   });
 
   it("requires a reason to block a product", async () => {
