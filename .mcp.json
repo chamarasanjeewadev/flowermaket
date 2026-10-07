@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "flowers": {
+      "type": "stdio",
+      "command": "packages/mcp/node_modules/.bin/tsx",
+      "args": ["packages/mcp/src/main.ts"]
+    }
+  }
+}

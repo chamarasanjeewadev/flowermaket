@@ -25,6 +25,7 @@ packages/
   config/       Shared tsconfig.base.json
   db/           Drizzle schema (src/schema/*), createDb() client, drizzle-kit migrations
   integrations/ Third-party integrations: PayHere checkout types + formatCents()
+  mcp/          Local stdio MCP server (`flowers`) for AI agents — orders, moderation, WhatsApp (see its README)
   ui/           shadcn-style components + Tailwind globals
 ```
 
@@ -47,6 +48,14 @@ pnpm deploy:web       # vite build + wrangler deploy for apps/web
 pnpm deploy:supplier  # vite build + wrangler deploy for apps/supplier
 pnpm deploy:admin     # vite build + wrangler deploy for apps/admin
 ```
+
+## AI agents (MCP)
+
+`.mcp.json` registers the `flowers` MCP server (`packages/mcp`), which runs admin operations
+against **production** data. Read tools are auto-allowed in `.claude/settings.json`; writes and
+WhatsApp sends always prompt. Project agents live in `.claude/agents/`, workflows in
+`.claude/skills/`. Never send a WhatsApp message to a customer/supplier without the operator
+approving the exact text.
 
 ## Key conventions
 

@@ -1,0 +1,20 @@
+{
+  "enabledMcpjsonServers": [
+    "flowers"
+  ],
+  "permissions": {
+    "allow": [
+      "mcp__flowers__list_shops",
+      "mcp__flowers__list_products_for_moderation",
+      "mcp__flowers__list_categories",
+      "mcp__flowers__get_pending_supplier_invite",
+      "mcp__flowers__list_orders",
+      "mcp__flowers__get_order",
+      "mcp__flowers__match_suppliers",
+      "mcp__flowers__get_cost_rollup",
+      "mcp__flowers__whatsapp_status",
+      "mcp__flowers__list_whatsapp_conversations",
+      "mcp__flowers__get_whatsapp_conversation"
+    ]
+  }
+}

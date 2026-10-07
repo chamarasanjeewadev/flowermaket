@@ -1,0 +1,27 @@
+{
+  "name": "@flowers/mcp",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Local stdio MCP server exposing FlowerMarket.lk admin operations to AI agents.",
+  "scripts": {
+    "start": "tsx src/main.ts",
+    "inspect": "npx @modelcontextprotocol/inspector tsx src/main.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "build": "echo 'source package - nothing to build'"
+  },
+  "dependencies": {
+    "@flowers/api": "workspace:*",
+    "@flowers/integrations": "workspace:*",
+    "@modelcontextprotocol/sdk": "^1.32.1",
+    "zod": "^4.5.4"
+  },
+  "devDependencies": {
+    "@flowers/config": "workspace:*",
+    "@types/node": "^22.20.1",
+    "tsx": "^4.23.12",
+    "typescript": "^6.0.2",
+    "vitest": "^4.0.0"
+  }
+}
