@@ -23,6 +23,8 @@ import {
   buildJoinUrl,
   applyInviteLink,
   normalizeLkPhone,
+  getActiveInviteByPhone,
+  INVITE_LINK_PLACEHOLDER,
   recordOutboundMessage,
   type ActionResult,
   type FloristListingDTO,
@@ -30,10 +32,9 @@ import {
 } from "@flowers/api";
 import {
   getPlaceDetails,
-  notificationConfigFromEnv,
   searchFloristsNearby,
   searchFloristsText,
-  sendSupplierNotification,
+  sendWhatsappText,
   type PlaceSummary,
 } from "@flowers/integrations";
 import { resolveAdminSession } from "./session";
@@ -130,7 +131,6 @@ export const listFloristsFn = createServerFn({ method: "POST" })
   .validator((input: ListFilters) => input)
   .handler(async ({ data }): Promise<ActionResult<FloristListingDTO[]>> => {
     await requireAdmin();
-    if (!placesKey()) return err("validation", MISSING_KEY);
     const db = tryCreateDb();
     if (!db) return err("db_unavailable", NO_DB);
     try {
@@ -169,7 +169,6 @@ export const linkFloristToShopFn = createServerFn({ method: "POST" })
   .validator((input: { listingId: string; shopId: string }) => input)
   .handler(async ({ data }): Promise<ActionResult<void>> => {
     await requireAdmin();
-    if (!placesKey()) return err("validation", MISSING_KEY);
     const db = tryCreateDb();
     if (!db) return err("db_unavailable", NO_DB);
     return linkListingToShop(db, data.listingId, data.shopId);
@@ -179,7 +178,6 @@ export const setFloristLocationFn = createServerFn({ method: "POST" })
   .validator((input: { listingId: string; lat: number; lng: number }) => input)
   .handler(async ({ data }): Promise<ActionResult<void>> => {
     await requireAdmin();
-    if (!placesKey()) return err("validation", MISSING_KEY);
     if (!isLatLng(data.lat, data.lng)) return err("validation", "Latitude/longitude are out of range.");
     const db = tryCreateDb();
     if (!db) return err("db_unavailable", NO_DB);
@@ -190,7 +188,6 @@ export const setFloristStatusFn = createServerFn({ method: "POST" })
   .validator((input: { listingId: string; status: "unclaimed" | "opted_out" | "blocked" }) => input)
   .handler(async ({ data }): Promise<ActionResult<void>> => {
     await requireAdmin();
-    if (!placesKey()) return err("validation", MISSING_KEY);
     if (data.status !== "unclaimed" && data.status !== "opted_out" && data.status !== "blocked") {
       return err("validation", "Invalid status.");
     }
@@ -241,7 +238,6 @@ export const inviteFloristFn = createServerFn({ method: "POST" })
   .handler(
     async ({ data }): Promise<ActionResult<{ joinUrl: string; delivery: FloristInviteDelivery }>> => {
       const session = await requireAdmin();
-      if (!placesKey()) return err("validation", MISSING_KEY);
       const db = tryCreateDb();
       if (!db) return err("db_unavailable", NO_DB);
 
@@ -255,30 +251,54 @@ export const inviteFloristFn = createServerFn({ method: "POST" })
       const template = data.message?.trim();
       if (!template) return err("validation", "The message can't be empty.");
 
+      if (!template.includes(INVITE_LINK_PLACEHOLDER)) {
+        return err("validation", `The message must contain ${INVITE_LINK_PLACEHOLDER} so the join link can be added.`);
+      }
+
       const env = getEnv();
-      const token = generateInviteToken();
+      // Reuse a pending invite for this number instead of hitting the one-active-invite rule.
+      const existing = await getActiveInviteByPhone(db, phone);
+      let token: string;
+      let inviteId: string;
+      if (existing) {
+        token = existing.token;
+        inviteId = existing.id;
+      } else {
+        token = generateInviteToken();
+        if (!buildJoinUrl(env.SUPPLIER_PORTAL_URL, token)) {
+          return err("db_unavailable", "Supplier portal URL (SUPPLIER_PORTAL_URL) is not configured.");
+        }
+        const created = await createInvite(db, {
+          phone,
+          nameEn: listing.name,
+          sellerTypes: ["florist"],
+          language: "en",
+          token,
+          sentBy: session.kind === "admin" ? session.userId : null,
+          expiresAt: new Date(Date.now() + INVITE_TTL_DAYS * 24 * 60 * 60 * 1000),
+        });
+        if (!created.ok) return created;
+        inviteId = created.data.id;
+      }
       const joinUrl = buildJoinUrl(env.SUPPLIER_PORTAL_URL, token);
       if (!joinUrl) {
         return err("db_unavailable", "Supplier portal URL (SUPPLIER_PORTAL_URL) is not configured.");
       }
       const message = applyInviteLink(template, joinUrl);
 
-      const created = await createInvite(db, {
-        phone,
-        nameEn: listing.name,
-        sellerTypes: ["florist"],
-        language: "en",
-        token,
-        sentBy: session.kind === "admin" ? session.userId : null,
-        expiresAt: new Date(Date.now() + INVITE_TTL_DAYS * 24 * 60 * 60 * 1000),
-      });
-      if (!created.ok) return created;
+      // Link before sending so a failed send leaves the listing `invited` and resendable.
+      const marked = await markListingInvited(db, listing.id, inviteId);
+      if (!marked.ok) return marked;
 
-      const sent = await sendSupplierNotification(notificationConfigFromEnv(env), {
+      const sent = await sendWhatsappText(
+        {
+          apiUrl: env.EVOLUTION_API_URL ?? "",
+          apiKey: env.EVOLUTION_API_KEY ?? "",
+          instance: env.EVOLUTION_INSTANCE ?? "",
+        },
         phone,
-        text: message,
-        variables: {},
-      });
+        message,
+      );
       if (!sent.ok) {
         return ok({ joinUrl, delivery: { status: "failed", detail: sent.message } });
       }
@@ -287,8 +307,6 @@ export const inviteFloristFn = createServerFn({ method: "POST" })
       } catch {
         // inbox logging is best-effort
       }
-      const marked = await markListingInvited(db, listing.id, created.data.id);
-      if (!marked.ok) return marked;
       return ok({ joinUrl, delivery: { status: "sent" } });
     },
   );

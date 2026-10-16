@@ -152,6 +152,7 @@ function FloristsPage() {
   }
 
   async function setStatus(l: FloristListingDTO, status: "opted_out" | "blocked" | "unclaimed") {
+    if (status !== "unclaimed" && !window.confirm(`Mark ${l.name} as ${status.replace("_", " ")}?`)) return;
     try {
       const res = await setFloristStatusFn({ data: { listingId: l.id, status } });
       if (!res.ok) toast.error(res.message);
@@ -256,7 +257,7 @@ function FloristsPage() {
                     <TableCell className="max-w-xs truncate">{p.address ?? "—"}</TableCell>
                     <TableCell>{p.phone ?? "—"}</TableCell>
                     <TableCell>
-                      {p.rating !== null ? `★${p.rating.toFixed(1)} (${p.reviewCount ?? 0})` : "—"}
+                      {p.rating !== null ? `★${p.rating.toFixed(1)} (${p.reviewCount ?? 0}) Google` : "—"}
                     </TableCell>
                     <TableCell className="text-right">
                       <Button
