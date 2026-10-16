@@ -8,3 +8,4 @@ export * from "./whatsapp";
 export * from "./supplier-notifications";
 export * from "./notification-config";
 export * from "./places";
+export * from "./local-requests";
