@@ -165,7 +165,7 @@ export async function createAward(
       // Without the lock, under read-committed two concurrent inserts could
       // each pass validation and collectively over-allocate.
       const [item] = await tx
-        .select({ quantity: schema.orderItems.quantity })
+        .select({ quantity: schema.orderItems.quantity, orderId: schema.orderItems.orderId })
         .from(schema.orderItems)
         .where(eq(schema.orderItems.id, input.orderItemId))
         .for("update")
@@ -175,6 +175,8 @@ export async function createAward(
         return err("not_found", "Order item not found.");
       }
 
+      const [customerOrder] = await tx.select({ status: schema.orders.status }).from(schema.orders).where(eq(schema.orders.id, item.orderId)).for("update");
+      if (!customerOrder || !["draft", "sourcing", "quoted"].includes(customerOrder.status)) return err("validation", "Supplier allocations are locked after customer confirmation. Cancel assigned work explicitly if it must be withdrawn.");
       // Re-read all non-cancelled awards for this item inside the tx.
       const existingAwards = await tx
         .select({
@@ -275,6 +277,20 @@ export async function cancelAward(
 ): Promise<ActionResult<void>> {
   try {
     return await db.transaction(async (tx) => {
+      const [assignment] = await tx.select({ award: schema.orderItemAwards, order: schema.orders, shop: schema.shops })
+        .from(schema.orderItemAwards).innerJoin(schema.orderItems, eq(schema.orderItems.id, schema.orderItemAwards.orderItemId))
+        .innerJoin(schema.orders, eq(schema.orders.id, schema.orderItems.orderId))
+        .innerJoin(schema.shops, eq(schema.shops.id, schema.orderItemAwards.supplierShopId))
+        .where(eq(schema.orderItemAwards.id, awardId)).for("update");
+      if (!assignment) return err("not_found", "Award not found.");
+      if (assignment.award.status === "cancelled") return ok(undefined);
+      if (assignment.order.status === "completed") return err("validation", "Completed work cannot be withdrawn.");
+      if (["confirmed", "invoiced", "paid", "fulfilling"].includes(assignment.order.status)) {
+        const message = assignment.shop.notificationLanguage === "si"
+          ? `FlowerMarket ${assignment.order.orderNo}: ඔබට පවරා ඇති ප්‍රමාණය ${assignment.award.awardedQty} අවලංගු කර ඇත. මෙම වැඩ නවත්වන්න. වෙනත් පවරා ඇති වැඩ ද්වාරයෙන් පරීක්ෂා කරන්න.`
+          : `FlowerMarket ${assignment.order.orderNo}: Your assignment of ${assignment.award.awardedQty} has been withdrawn. Stop this work. Check other assigned items in the portal.`;
+        await tx.insert(schema.supplierAlerts).values({ orderId: assignment.order.id, shopId: assignment.shop.id, phone: assignment.shop.notificationPhone, eventKey: `${awardId}:withdrawn`, message }).onConflictDoNothing();
+      }
       const [row] = await tx
         .update(schema.orderItemAwards)
         .set({ status: "cancelled", updatedAt: new Date() })

@@ -101,3 +101,11 @@ flow (shop profile, product CRUD), buyer account pages.
 
 **Phase 2 — later.** PayHere checkout + notify integration (MD5 hash helpers, order lifecycle),
 order management on supplier + admin portals.
+
+## Supplier managed-marketplace workflow
+
+For the supplier portal changes and staging verification, read `docs/supplier-workflow.md`.
+This supersedes the older phase-status summary for these flows. The additive
+`0023_supplier_workflow.sql` is a deliberate custom migration; the generated
+snapshot predates the manually applied 0018–0022 changes. Do not regenerate or
+apply unrelated destructive schema changes to reconcile that snapshot.

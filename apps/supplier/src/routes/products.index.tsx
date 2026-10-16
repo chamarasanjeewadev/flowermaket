@@ -1,8 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ModerationBadge } from "../components/ModerationBadge";
+import { ProductPublishingStatus } from "../components/ProductPublishingStatus";
+import { getReadinessFn } from "../server/portal";
 import { formatRupees } from "@flowers/api/money";
 import { Button } from "@flowers/ui/components/button";
-import { Badge } from "@flowers/ui/components/badge";
 import { EmptyState } from "@flowers/ui/components/empty-state";
 import {
   Table,
@@ -17,35 +17,13 @@ import { listShopProductsFn } from "../server/products";
 import { useT } from "../i18n/react";
 
 export const Route = createFileRoute("/products/")({
-  loader: async () => ({ products: await listShopProductsFn() }),
+  loader: async () => { const [products, readiness] = await Promise.all([listShopProductsFn(), getReadinessFn()]); return { products, readiness }; },
   component: ProductsListPage,
 });
 
-type ProductStatus = "draft" | "active" | "paused" | "archived";
-
-function StatusBadge({ status }: { status: ProductStatus }) {
-  const { t } = useT();
-  const labels: Record<ProductStatus, string> = {
-    draft: t.products.statusDraft,
-    active: t.products.statusActive,
-    paused: t.products.statusPaused,
-    archived: t.products.statusArchived,
-  };
-  const variants: Record<
-    ProductStatus,
-    "secondary" | "success" | "warning" | "outline"
-  > = {
-    draft: "secondary",
-    active: "success",
-    paused: "warning",
-    archived: "outline",
-  };
-  return <Badge variant={variants[status]}>{labels[status]}</Badge>;
-}
-
 function ProductsListPage() {
   const { t } = useT();
-  const { products } = Route.useLoaderData();
+  const { products, readiness } = Route.useLoaderData();
 
   return (
     <div className="space-y-6">
@@ -90,7 +68,6 @@ function ProductsListPage() {
                 <TableHead>{t.products.colPrice}</TableHead>
                 <TableHead>{t.products.colStock}</TableHead>
                 <TableHead>{t.products.colStatus}</TableHead>
-                <TableHead>{t.products.colReview}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -131,12 +108,7 @@ function ProductsListPage() {
                     {p.stockQty == null ? t.products.madeToOrder : p.stockQty}
                   </TableCell>
                   <TableCell>
-                    <StatusBadge status={p.status} />
-                  </TableCell>
-                  <TableCell>
-                    <span title={p.moderationNote ?? undefined}>
-                      <ModerationBadge status={p.moderationStatus} />
-                    </span>
+                    <ProductPublishingStatus product={p} shopVerified={readiness?.status === "Approved"} />
                   </TableCell>
                 </TableRow>
               ))}

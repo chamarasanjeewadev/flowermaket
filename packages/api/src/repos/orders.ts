@@ -6,10 +6,11 @@
  * - Every mutation returns `ActionResult<T>` — no throws from business logic.
  * - Pure helpers (`nextOrderNo`, `canTransition`) are exported for unit tests.
  */
-import { asc, desc, eq, inArray, sql } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, ne, sql } from "drizzle-orm";
 import { schema } from "@flowers/db/client";
 import type { Db } from "../db";
 import { err, isPgError, ok, type ActionResult } from "../errors";
+import { acceptDocument } from "./documents";
 import { DISTRICTS, ORDER_SOURCES, ORDER_UNITS, type OrderSource } from "../constants";
 import type { ValidationError } from "./shops";
 
@@ -171,6 +172,12 @@ export interface RfqDetail {
   status: string;
   message: string | null;
   quoteNotes: string | null;
+  quoteDeliveryCost?: number;
+  quoteRevisions?: typeof schema.rfqs.$inferSelect.quoteRevisions;
+  supplierQuestions?: typeof schema.rfqs.$inferSelect.supplierQuestions;
+  notificationStatus?: string;
+  notificationProviderId?: string | null;
+  notificationError?: string | null;
   quoteValidUntil: Date | null;
   sentAt: Date | null;
   viewedAt: Date | null;
@@ -182,6 +189,8 @@ export interface RfqDetail {
 }
 
 export interface OrderItemAwardDetail {
+  fulfilmentStatus?: string;
+  fulfilmentHistory?: { status: string; at: string; userId: string }[];
   id: string;
   orderItemId: string;
   supplierShopId: string;
@@ -230,6 +239,7 @@ export interface OrderDetail {
   createdAt: Date;
   updatedAt: Date;
   items: OrderItemDetail[];
+  statusHistory?: { status: string; at: string }[];
   rfqs: RfqDetail[];
   awards: OrderItemAwardDetail[];
   documents: OrderDocumentDetail[];
@@ -329,23 +339,28 @@ export async function updateOrderStatus(
   orderId: string,
   to: OrderStatus,
 ): Promise<ActionResult<void>> {
-  const [current] = await db
-    .select({ status: schema.orders.status })
-    .from(schema.orders)
-    .where(eq(schema.orders.id, orderId));
-
-  if (!current) return err("not_found", "Order not found");
-
-  if (!canTransition(current.status as OrderStatus, to)) {
-    return err("validation", `Illegal transition ${current.status} -> ${to}`);
-  }
-
-  await db
-    .update(schema.orders)
-    .set({ status: to, updatedAt: new Date() })
-    .where(eq(schema.orders.id, orderId));
-
-  return ok(undefined);
+  return db.transaction(async tx => {
+    const [current] = await tx.select().from(schema.orders).where(eq(schema.orders.id, orderId)).for("update");
+    if (!current) return err("not_found", "Order not found");
+    if (!canTransition(current.status as OrderStatus, to)) return err("validation", `Illegal transition ${current.status} -> ${to}`);
+    const now = new Date();
+    await tx.update(schema.orders).set({ status: to, updatedAt: now,
+      statusHistory: [...(current.statusHistory.length ? current.statusHistory : [{ status: current.status, at: current.updatedAt.toISOString() }]), { status: to, at: now.toISOString() }],
+    }).where(eq(schema.orders.id, orderId));
+    if (["confirmed", "cancelled", "completed"].includes(to)) {
+      const suppliers = await tx.selectDistinct({ shopId: schema.shops.id, phone: schema.shops.notificationPhone, language: schema.shops.notificationLanguage })
+        .from(schema.orderItemAwards).innerJoin(schema.orderItems, eq(schema.orderItems.id, schema.orderItemAwards.orderItemId))
+        .innerJoin(schema.shops, eq(schema.shops.id, schema.orderItemAwards.supplierShopId))
+        .where(and(eq(schema.orderItems.orderId, orderId), ne(schema.orderItemAwards.status, "cancelled")));
+      for (const supplier of suppliers) {
+        const message = supplier.language === "si"
+          ? `FlowerMarket ${current.orderNo}: ${to === "confirmed" ? "ඇණවුම තහවුරු කර ඇත. ද්වාරයේ ඔබට පවරා ඇති ප්‍රමාණය පරීක්ෂා කරන්න." : to === "cancelled" ? "ඇණවුම අවලංගු කර ඇත. වැඩ නවත්වන්න." : "ඇණවුම සම්පූර්ණ කර ඇත."}`
+          : `FlowerMarket ${current.orderNo}: ${to === "confirmed" ? "Order confirmed. Review your assigned quantities in the portal before preparing." : to === "cancelled" ? "Order cancelled. Stop work and contact FlowerMarket." : "Order completed."}`;
+        await tx.insert(schema.supplierAlerts).values({ orderId, shopId: supplier.shopId, phone: supplier.phone, eventKey: `${orderId}:${to}`, message }).onConflictDoNothing();
+      }
+    }
+    return ok(undefined);
+  });
 }
 
 /**
@@ -392,6 +407,12 @@ export async function getOrder(
       status: schema.rfqs.status,
       message: schema.rfqs.message,
       quoteNotes: schema.rfqs.quoteNotes,
+      quoteDeliveryCost: schema.rfqs.quoteDeliveryCost,
+      quoteRevisions: schema.rfqs.quoteRevisions,
+      supplierQuestions: schema.rfqs.supplierQuestions,
+      notificationStatus: schema.rfqs.notificationStatus,
+      notificationProviderId: schema.rfqs.notificationProviderId,
+      notificationError: schema.rfqs.notificationError,
       quoteValidUntil: schema.rfqs.quoteValidUntil,
       sentAt: schema.rfqs.sentAt,
       viewedAt: schema.rfqs.viewedAt,
@@ -451,6 +472,8 @@ export async function getOrder(
             awardedQty: schema.orderItemAwards.awardedQty,
             unitCost: schema.orderItemAwards.unitCost,
             status: schema.orderItemAwards.status,
+            fulfilmentStatus: schema.orderItemAwards.fulfilmentStatus,
+            fulfilmentHistory: schema.orderItemAwards.fulfilmentHistory,
             notes: schema.orderItemAwards.notes,
             createdAt: schema.orderItemAwards.createdAt,
             updatedAt: schema.orderItemAwards.updatedAt,
@@ -525,6 +548,7 @@ export async function getOrder(
     notesInternal: order.notesInternal,
     notesCustomer: order.notesCustomer,
     status: order.status as OrderStatus,
+    statusHistory: order.statusHistory,
     createdByUserId: order.createdByUserId,
     createdAt: order.createdAt,
     updatedAt: order.updatedAt,
@@ -564,4 +588,19 @@ export async function listOrders(
       neededByDate: r.neededByDate,
     })),
   );
+}
+
+/** Customer acceptance and supplier authorization commit together. */
+export async function confirmCustomerQuotation(db: Db, orderId: string, docId: string): Promise<ActionResult<void>> {
+  return db.transaction(async tx => {
+    const [order] = await tx.select().from(schema.orders).where(eq(schema.orders.id, orderId)).for("update");
+    if (!order) return err("not_found", "Order not found.");
+    if (!canTransition(order.status, "confirmed")) return err("validation", "This order can no longer be confirmed.");
+    const [doc] = await tx.select().from(schema.documents).where(and(eq(schema.documents.id, docId), eq(schema.documents.orderId, orderId))).for("update");
+    if (!doc || doc.type !== "quotation") return err("validation", "Select a quotation belonging to this order.");
+    if (doc.validUntil && doc.validUntil <= new Date()) return err("validation", "The quotation has expired. Issue a revised offer.");
+    const accepted = await acceptDocument(tx, docId);
+    if (!accepted.ok) return accepted;
+    return updateOrderStatus(tx, orderId, "confirmed");
+  });
 }

@@ -11,7 +11,8 @@
     "./pricing": "./src/pricing.ts",
     "./flowers": "./src/flowers-client.ts",
     "./slug": "./src/slug.ts",
-    "./invite-message": "./src/invite-message.ts"
+    "./invite-message": "./src/invite-message.ts",
+    "./supplier-workflow": "./src/supplier-workflow.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",

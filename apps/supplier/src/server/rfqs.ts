@@ -98,6 +98,7 @@ export interface SubmitQuoteInput {
   /** Quote lines — unitPrice in CENTS (conversion done in the route component). */
   lines: SupplierQuoteLineInput[];
   quoteNotes?: string | null;
+  deliveryCost?: number;
   validUntil?: string | null; // ISO date string from <input type="date">
 }
 
@@ -124,6 +125,7 @@ export const submitQuoteFn = createServerFn({ method: "POST" })
       data.lines,
       data.quoteNotes ?? null,
       validUntilDate,
+      data.deliveryCost ?? 0,
     );
   });
 

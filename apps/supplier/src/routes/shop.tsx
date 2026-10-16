@@ -27,8 +27,11 @@ import {
 } from "../server/shops";
 import { useT } from "../i18n/react";
 
+import { getReadinessFn } from "../server/portal";
+import { StoreReadiness, PortalSettings } from "../components/StoreSetup";
+
 export const Route = createFileRoute("/shop")({
-  loader: async () => ({ shop: await getMyShopFn() }),
+  loader: async () => { const [shop, readiness] = await Promise.all([getMyShopFn(), getReadinessFn()]); return { shop, readiness }; },
   component: ShopSettingsPage,
 });
 
@@ -70,8 +73,10 @@ function ShopSettingsPage() {
 }
 
 function ShopSettings({ shop }: { shop: MyShopDTO }) {
-  const { t } = useT();
+  const { t, locale } = useT();
   const router = useRouter();
+  const { readiness } = Route.useLoaderData();
+  const [copyMessage, setCopyMessage] = React.useState("");
   const [serverError, setServerError] = React.useState<string | null>(null);
   const [savedMsg, setSavedMsg] = React.useState(false);
 
@@ -130,6 +135,10 @@ function ShopSettings({ shop }: { shop: MyShopDTO }) {
         )}
       </div>
 
+      <StoreReadiness data={readiness} />
+      {readiness && <PortalSettings data={readiness} />}
+      <Button variant="outline" onClick={() => { void navigator.clipboard.writeText(shop.storefrontUrl).then(() => setCopyMessage("Store link copied."), () => setCopyMessage(shop.storefrontUrl)); }}>{locale === "si" ? "සාප්පු සබැඳිය පිටපත් කරන්න" : "Copy store link"}</Button>
+      {copyMessage && <p role="status" className="break-all text-sm">{copyMessage}</p>}
       <Card>
         <CardHeader>
           <CardTitle className="text-base">{t.shop.appearance}</CardTitle>

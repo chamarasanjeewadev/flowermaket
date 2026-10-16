@@ -27,3 +27,4 @@ export * from "./repos/bouquet-gen";
 export * from "./repos/flowers";
 export * from "./repos/whatsapp";
 export * from "./repos/webhook-auth";
+export * from "./repos/supplier-portal";

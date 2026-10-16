@@ -12,6 +12,7 @@ import {
   useRouterState,
 } from "@tanstack/react-router";
 import { Button } from "@flowers/ui/components/button";
+import { safeRedirectPath } from "@flowers/api/redirect";
 import { LogOut } from "lucide-react";
 import {
   getSupplierSession,
@@ -66,9 +67,7 @@ export const Route = createRootRouteWithContext<RouterContext>()({
       // Keep the admin's "manage as owner" target across sign-in.
       throw redirect({
         to: "/login",
-        search: path.startsWith("/act-as/")
-          ? { redirect: location.href.replace(/^https?:\/\/[^/]+/, "") }
-          : {},
+        search: { redirect: safeRedirectPath(location.href.replace(/^https?:\/\/[^/]+/, "")) },
       });
     }
 
@@ -76,9 +75,9 @@ export const Route = createRootRouteWithContext<RouterContext>()({
     if (
       session.kind === "no_shop" &&
       path !== "/onboarding" &&
-      path !== "/login"
+      path !== "/login" && !isPublicPath
     ) {
-      throw redirect({ to: "/onboarding" });
+      throw redirect({ to: "/onboarding", search: { redirect: safeRedirectPath(location.href.replace(/^https?:\/\/[^/]+/, "")) } });
     }
 
     // Authenticated with shop (or admin) → skip login/onboarding
@@ -86,7 +85,8 @@ export const Route = createRootRouteWithContext<RouterContext>()({
       session.kind === "supplier" &&
       (path === "/login" || path === "/onboarding")
     ) {
-      throw redirect({ to: "/" });
+      const target = safeRedirectPath(new URLSearchParams(location.searchStr).get("redirect") ?? undefined);
+      throw redirect({ href: ["/login", "/onboarding", "/auth/callback", "/register"].includes(target.split("?")[0]!) ? "/" : target });
     }
 
     // auth_disabled — let through to any page (dev mode)
@@ -143,57 +143,22 @@ function LocaleToggle({ locale }: { locale: Locale }) {
 }
 
 function SidebarNav() {
-  const { t } = useT();
-  return (
-    <nav className="mt-6 flex flex-col gap-1 text-sm">
-      <Link
-        to="/"
-        className="rounded-md border-l-2 border-transparent px-3 py-2 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-        activeProps={{
-          className: "border-brand bg-accent font-medium text-brand",
-        }}
-        activeOptions={{ exact: true }}
-      >
-        {t.nav.dashboard}
-      </Link>
-      <Link
-        to="/products"
-        className="rounded-md border-l-2 border-transparent px-3 py-2 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-        activeProps={{
-          className: "border-brand bg-accent font-medium text-brand",
-        }}
-      >
-        {t.nav.products}
-      </Link>
-      <Link
-        to="/rfqs"
-        className="rounded-md border-l-2 border-transparent px-3 py-2 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-        activeProps={{
-          className: "border-brand bg-accent font-medium text-brand",
-        }}
-      >
-        {t.nav.rfqs}
-      </Link>
-      <Link
-        to="/shop"
-        className="rounded-md border-l-2 border-transparent px-3 py-2 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-        activeProps={{
-          className: "border-brand bg-accent font-medium text-brand",
-        }}
-      >
-        {t.nav.shopSettings}
-      </Link>
-      <Link
-        to="/bouquet-design"
-        className="rounded-md border-l-2 border-transparent px-3 py-2 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-        activeProps={{
-          className: "border-brand bg-accent font-medium text-brand",
-        }}
-      >
-        {t.nav.designBouquet}
-      </Link>
-    </nav>
-  );
+  const { t, locale } = useT();
+  const links = [
+    ["/", t.nav.dashboard], ["/rfqs", t.nav.rfqs],
+    ["/orders", locale === "si" ? "තහවුරු කළ ඇණවුම්" : "Orders"],
+    ["/products", t.nav.products], ["/shop", t.nav.shopSettings],
+  ] as const;
+  return <nav aria-label={locale === "si" ? "සැපයුම්කරු සංචාලනය" : "Supplier navigation"} className="mt-4 grid grid-cols-2 gap-2 text-sm sm:flex sm:flex-col">
+    {links.map(([to, label]) => <Link key={to} to={to}
+      className="flex min-h-11 items-center rounded-md border-l-2 border-transparent px-3 py-2 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
+      activeProps={{ className: "border-brand bg-accent font-medium text-brand", "aria-current": "page" }}
+      activeOptions={{ exact: to === "/" }}>{label}</Link>)}
+    <div className="col-span-2 mt-3 border-t border-border pt-3">
+      <p className="px-3 text-xs text-muted-foreground">{locale === "si" ? "මෙවලම්" : "Tools"}</p>
+      <Link to="/bouquet-design" className="flex min-h-11 items-center rounded-md px-3 hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring">{t.nav.designBouquet}</Link>
+    </div>
+  </nav>;
 }
 
 function SessionFooter({ session }: { session: SupplierSession }) {
@@ -280,6 +245,7 @@ function RootLayout() {
         </>
       ) : (
         <div className="flex min-h-dvh">
+          <a href="#main-content" className="sr-only focus:not-sr-only focus:fixed focus:z-50 focus:bg-card focus:p-4">Skip to content</a>
           <aside className="sticky top-0 hidden h-dvh w-56 shrink-0 flex-col border-r border-border bg-card p-4 sm:flex">
             <Logo />
             <SidebarNav />
@@ -288,7 +254,13 @@ function RootLayout() {
               <SessionFooter session={session} />
             </div>
           </aside>
-          <main className="flex-1 p-6 sm:p-8">
+          <main id="main-content" className="min-w-0 flex-1 p-4 sm:p-8">
+            <details key={pathname} className="mb-6 rounded-xl border border-border bg-card p-3 sm:hidden">
+              <summary className="min-h-11 cursor-pointer py-3 font-medium">FlowerMarket · Menu</summary>
+              <SidebarNav />
+              <LocaleToggle locale={locale} />
+              <SessionFooter session={session} />
+            </details>
             {session.kind === "supplier" && session.actingAs && (
               <ActingAsBanner shopName={session.shopNameEn} />
             )}

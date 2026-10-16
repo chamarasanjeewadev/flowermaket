@@ -1,8 +1,10 @@
 import * as React from "react";
-import { ModerationBadge, ModerationNotice } from "../components/ModerationBadge";
+import { ModerationNotice } from "../components/ModerationBadge";
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
-import { Button } from "@flowers/ui/components/button";
 import { Badge } from "@flowers/ui/components/badge";
+import { Button } from "@flowers/ui/components/button";
+import { ProductPublishingStatus } from "../components/ProductPublishingStatus";
+import { getReadinessFn } from "../server/portal";
 import {
   Card,
   CardContent,
@@ -29,6 +31,7 @@ export const Route = createFileRoute("/products/$productId")({
   loader: async ({ params }) => ({
     product: await getShopProductFn({ data: params.productId }),
     categories: await listCategoriesFn(),
+    readiness: await getReadinessFn(),
   }),
   component: EditProductPage,
 });
@@ -36,7 +39,7 @@ export const Route = createFileRoute("/products/$productId")({
 function EditProductPage() {
   const { t } = useT();
   const router = useRouter();
-  const { product, categories } = Route.useLoaderData();
+  const { product, categories, readiness } = Route.useLoaderData();
   const { productId } = Route.useParams();
 
   if (!product) {
@@ -54,6 +57,7 @@ function EditProductPage() {
   }
 
   const isPublished = product.status === "active";
+
 
   async function togglePublish() {
     const next = isPublished ? "paused" : "active";
@@ -80,14 +84,11 @@ function EditProductPage() {
       </Link>
 
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <h1 className="font-display text-2xl sm:text-3xl">
             {product.nameEn}
           </h1>
-          <Badge variant={isPublished ? "success" : "secondary"}>
-            {isPublished ? t.products.statusActive : t.products.statusDraft}
-          </Badge>
-          <ModerationBadge status={product.moderationStatus} />
+          <ProductPublishingStatus product={product} shopVerified={readiness?.status === "Approved"} />
         </div>
         <Button
           variant={isPublished ? "outline" : "brand"}
@@ -110,6 +111,8 @@ function EditProductPage() {
           <ProductForm
             categories={categories}
             initial={{
+              flowerSpeciesEn: product.flowerSpeciesEn,
+              occasionTagsEn: product.occasionTagsEn,
               categoryId: product.categoryId,
               nameEn: product.nameEn,
               nameSi: product.nameSi,
@@ -129,6 +132,8 @@ function EditProductPage() {
                 data: {
                   productId,
                   patch: {
+                    flowerSpeciesEn: payload.flowerSpeciesEn,
+                    occasionTagsEn: payload.occasionTagsEn,
                     categoryId: payload.categoryId,
                     nameEn: payload.nameEn,
                     nameSi: payload.nameSi,

@@ -42,6 +42,10 @@ export interface ProductWriteOptions {
 export type ProductStatus = "draft" | "active" | "paused" | "archived";
 
 export interface CreateProductInput {
+  flowerSpeciesEn?: string | null;
+  flowerSpeciesSi?: string | null;
+  occasionTagsEn?: string[];
+  occasionTagsSi?: string[] | null;
   categoryId: string;
   nameEn: string;
   nameSi?: string | null;
@@ -59,6 +63,10 @@ export interface CreateProductInput {
 }
 
 export interface UpdateProductInput {
+  flowerSpeciesEn?: string | null;
+  flowerSpeciesSi?: string | null;
+  occasionTagsEn?: string[];
+  occasionTagsSi?: string[] | null;
   categoryId?: string;
   nameEn?: string;
   nameSi?: string | null;
@@ -100,6 +108,10 @@ export interface OwnerProductListItem {
   status: ProductStatus;
   moderationStatus: ModerationStatus;
   moderationNote: string | null;
+  flowerSpeciesEn?: string | null;
+  flowerSpeciesSi?: string | null;
+  occasionTagsEn?: string[];
+  occasionTagsSi?: string[] | null;
   categoryId: string;
   categorySlug: string;
   categoryNameEn: string;
@@ -112,6 +124,10 @@ export interface OwnerProductDetail {
   id: string;
   shopId: string;
   slug: string;
+  flowerSpeciesEn?: string | null;
+  flowerSpeciesSi?: string | null;
+  occasionTagsEn?: string[];
+  occasionTagsSi?: string[] | null;
   categoryId: string;
   nameEn: string;
   nameSi: string | null;
@@ -400,6 +416,10 @@ export async function getShopProduct(
     id: product.id,
     shopId: product.shopId,
     slug: product.slug,
+    flowerSpeciesEn: product.flowerSpeciesEn,
+    flowerSpeciesSi: product.flowerSpeciesSi,
+    occasionTagsEn: product.occasionTagsEn,
+    occasionTagsSi: product.occasionTagsSi,
     categoryId: product.categoryId,
     nameEn: product.nameEn,
     nameSi: product.nameSi,
@@ -459,6 +479,7 @@ export async function createProduct(
   opts: ProductWriteOptions = {},
 ): Promise<ActionResult<{ id: string; slug: string }>> {
   const errors = validateCreateProductInput(input);
+  if ((input.flowerSpeciesEn?.length ?? 0) > 200 || (input.occasionTagsEn?.length ?? 0) > 20 || input.occasionTagsEn?.some(tag => typeof tag !== "string" || tag.length > 100)) return err("validation", "Use a species name up to 200 characters and up to 20 occasion tags.");
   if (errors.length > 0) {
     return err("validation", errors.map((e) => e.message).join(" "));
   }
@@ -473,6 +494,10 @@ export async function createProduct(
       .insert(schema.products)
       .values({
         shopId,
+        flowerSpeciesEn: input.flowerSpeciesEn?.trim() || null,
+        flowerSpeciesSi: input.flowerSpeciesSi?.trim() || null,
+        occasionTagsEn: input.occasionTagsEn ?? [],
+        occasionTagsSi: input.occasionTagsSi ?? null,
         categoryId: input.categoryId,
         slug,
         nameEn,
@@ -514,13 +539,18 @@ export async function updateProduct(
   opts: ProductWriteOptions = {},
 ): Promise<ActionResult<{ id: string }>> {
   const errors = validateUpdateProductInput(patch);
+  if ((patch.flowerSpeciesEn?.length ?? 0) > 200 || (patch.occasionTagsEn?.length ?? 0) > 20 || patch.occasionTagsEn?.some(tag => typeof tag !== "string" || tag.length > 100)) return err("validation", "Use a species name up to 200 characters and up to 20 occasion tags.");
   if (errors.length > 0) {
     return err("validation", errors.map((e) => e.message).join(" "));
   }
 
   type ProductUpdate = {
     updatedAt: Date;
-    categoryId?: string;
+    flowerSpeciesEn?: string | null;
+  flowerSpeciesSi?: string | null;
+  occasionTagsEn?: string[];
+  occasionTagsSi?: string[] | null;
+  categoryId?: string;
     nameEn?: string;
     nameSi?: string | null;
     descriptionEn?: string | null;
@@ -536,6 +566,10 @@ export async function updateProduct(
   };
 
   const set: ProductUpdate = { updatedAt: new Date() };
+  if ("flowerSpeciesSi" in patch) set.flowerSpeciesSi = patch.flowerSpeciesSi?.trim() || null;
+  if ("occasionTagsSi" in patch) set.occasionTagsSi = patch.occasionTagsSi ?? null;
+  if ("flowerSpeciesEn" in patch) set.flowerSpeciesEn = patch.flowerSpeciesEn?.trim() || null;
+  if (patch.occasionTagsEn !== undefined) set.occasionTagsEn = patch.occasionTagsEn;
   if (patch.categoryId !== undefined) set.categoryId = patch.categoryId;
   if (patch.nameEn !== undefined) set.nameEn = patch.nameEn.trim();
   if ("nameSi" in patch) set.nameSi = patch.nameSi ?? null;

@@ -28,6 +28,10 @@ export const products = pgTable(
     shopId: uuid("shop_id")
       .references(() => shops.id)
       .notNull(),
+    flowerSpeciesEn: text("flower_species_en"),
+    flowerSpeciesSi: text("flower_species_si"),
+    occasionTagsEn: text("occasion_tags_en").array().notNull().default([]),
+    occasionTagsSi: text("occasion_tags_si").array(),
     categoryId: uuid("category_id")
       .references(() => categories.id)
       .notNull(),

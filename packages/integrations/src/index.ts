@@ -5,3 +5,4 @@ export * from "./payhere";
 export * from "./quotation";
 export * from "./rfqMessages";
 export * from "./whatsapp";
+export * from "./supplier-notifications";

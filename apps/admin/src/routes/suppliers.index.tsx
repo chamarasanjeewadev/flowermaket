@@ -39,6 +39,7 @@ import { Input } from "@flowers/ui/components/input";
 import { cn } from "@flowers/ui/lib/utils";
 import {
   listSuppliersForReview,
+  verifyNotificationNumberFn,
   reviewSupplierFn,
   setSupplierSellerTypesFn,
 } from "../server/suppliers";
@@ -459,6 +460,13 @@ function SupplierSheet({
 
               <Separator />
 
+              <Field label="WhatsApp notifications">
+                <div className="space-y-2"><p>{shop.notificationPhone ?? "No number"} · {shop.notificationVerifiedAt ? "Verified" : "Not verified"} · {shop.notificationConsentAt ? "Opted in" : "No consent"}</p>
+                {shop.notificationPhone && !shop.notificationVerifiedAt && <Button size="sm" variant="outline" onClick={() => {
+                  if (!confirm(`Confirm that you have checked ownership of ${shop.notificationPhone} with this supplier?`)) return;
+                  void verifyNotificationNumberFn({ data: { shopId: shop.id, phone: shop.notificationPhone! } }).then(result => { if (!result.ok) alert(result.message); else window.location.reload(); });
+                }}>Verify number ownership</Button>}</div>
+              </Field>
               <Field label="Owner">{titleCase(shop.ownerFullName)}</Field>
               <div className="grid grid-cols-1 gap-3">
                 <Field label="Email">{shop.ownerEmail}</Field>

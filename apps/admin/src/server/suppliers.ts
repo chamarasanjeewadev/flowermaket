@@ -6,6 +6,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import {
   getEnv,
+  verifySupplierNotificationNumber,
   tryCreateDb,
   adminCreateSupplier,
   getUserByEmail,
@@ -346,3 +347,12 @@ export const setSupplierSellerTypesFn = createServerFn({ method: "POST" })
       return adminSetShopSellerTypes(db, data.shopId, data.sellerTypes);
     },
   );
+
+export const verifyNotificationNumberFn = createServerFn({ method: "POST" })
+  .validator((input: { shopId: string; phone: string }) => input)
+  .handler(async ({ data }) => {
+    await requireAdmin();
+    const db = tryCreateDb();
+    if (!db) return { ok: false as const, message: "Database unavailable." };
+    return verifySupplierNotificationNumber(db, data.shopId, data.phone);
+  });

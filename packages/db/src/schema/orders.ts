@@ -1,5 +1,5 @@
 import {
-  date, index, integer, pgTable, text, timestamp, uniqueIndex, uuid,
+  date, index, integer, jsonb, pgTable, text, timestamp, uniqueIndex, uuid,
 } from "drizzle-orm/pg-core";
 import { awardStatus, language, orderSource, orderStatus, rfqStatus } from "./enums";
 import { users } from "./users";
@@ -25,6 +25,7 @@ export const orders = pgTable(
     notesInternal: text("notes_internal"),
     notesCustomer: text("notes_customer"),
     status: orderStatus("status").notNull().default("draft"),
+    statusHistory: jsonb("status_history").$type<{ status: string; at: string }[]>().notNull().default([]),
     createdByUserId: uuid("created_by_user_id").references(() => users.id).notNull(),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
@@ -63,6 +64,13 @@ export const rfqs = pgTable(
     status: rfqStatus("status").notNull().default("sent"),
     message: text("message"),
     quoteNotes: text("quote_notes"),
+    quoteDeliveryCost: integer("quote_delivery_cost").notNull().default(0),
+    quoteRevisions: jsonb("quote_revisions").$type<{ submittedAt: string; notes: string | null; validUntil: string | null; deliveryCost: number; lines: { orderItemId: string; availableQty: number; unitPrice: number; leadTimeDays: number | null; notes: string | null }[] }[]>().notNull().default([]),
+    supplierQuestions: jsonb("supplier_questions").$type<{ text: string; createdAt: string }[]>().notNull().default([]),
+    notificationProviderId: text("notification_provider_id"),
+    notificationStatus: text("notification_status").notNull().default("pending"),
+    notificationError: text("notification_error"),
+    notificationAttemptedAt: timestamp("notification_attempted_at", { withTimezone: true }),
     quoteValidUntil: timestamp("quote_valid_until", { withTimezone: true }),
     sentAt: timestamp("sent_at", { withTimezone: true }),
     viewedAt: timestamp("viewed_at", { withTimezone: true }),
@@ -101,6 +109,8 @@ export const orderItemAwards = pgTable(
     orderItemId: uuid("order_item_id").references(() => orderItems.id, { onDelete: "cascade" }).notNull(),
     supplierShopId: uuid("supplier_shop_id").references(() => shops.id).notNull(),
     rfqQuoteLineId: uuid("rfq_quote_line_id").references(() => rfqQuoteLines.id),
+    fulfilmentStatus: text("fulfilment_status").notNull().default("confirmed"),
+    fulfilmentHistory: jsonb("fulfilment_history").$type<{ status: string; at: string; userId: string }[]>().notNull().default([]),
     awardedQty: integer("awarded_qty").notNull(),
     unitCost: integer("unit_cost").notNull(),
     status: awardStatus("status").notNull().default("pending"),
@@ -113,3 +123,18 @@ export const orderItemAwards = pgTable(
     index("order_item_awards_supplier_idx").on(t.supplierShopId),
   ],
 );
+
+/** Durable outbox. Dispatch is an explicit admin action after reviewing the exact message. */
+export const supplierAlerts = pgTable("supplier_alerts", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  orderId: uuid("order_id").references(() => orders.id).notNull(),
+  shopId: uuid("shop_id").references(() => shops.id).notNull(),
+  eventKey: text("event_key").notNull(),
+  message: text("message").notNull(),
+  providerId: text("provider_id"),
+  phone: text("phone"),
+  status: text("status").notNull().default("pending"),
+  error: text("error"),
+  attemptedAt: timestamp("attempted_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, t => [uniqueIndex("supplier_alerts_event_shop_uq").on(t.eventKey, t.shopId)]);

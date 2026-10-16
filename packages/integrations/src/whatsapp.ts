@@ -49,6 +49,7 @@ export interface BuildEnquiryTextInput {
   /** Canonical site origin, e.g. `https://flowermarket.lk` (trailing slash ok). */
   siteUrl: string;
   /** Optional single line noting an attached AI bouquet design. */
+  sourceShop?: { name: string; slug: string };
   designNote?: string;
   /** Public URL of the AI-generated bouquet image to include in the message. */
   designImageUrl?: string;
@@ -62,6 +63,7 @@ export function buildEnquiryText(input: BuildEnquiryTextInput): string {
   const { items, form, locale, siteUrl, designNote, designImageUrl } = input;
   const base = siteUrl.replace(/\/$/, "");
   const lines: string[] = ["Hello FlowerMarket.lk 🌸", ""];
+  if (input.sourceShop) lines.push(`Requested shop: ${input.sourceShop.name}`, `${base}/${locale}/shops/${input.sourceShop.slug}`, "");
   if (designNote?.trim()) lines.push(`— ${designNote.trim()} —`, "");
   if (designImageUrl?.trim()) lines.push(`🖼 AI bouquet design: ${designImageUrl.trim()}`, "");
 

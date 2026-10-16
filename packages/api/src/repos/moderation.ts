@@ -28,6 +28,10 @@ export type ProductActor = "owner" | "admin";
 /** Fields buyers see; changing any of them needs re-review. */
 const REVIEWED_FIELDS = [
   "categoryId",
+  "flowerSpeciesEn",
+  "flowerSpeciesSi",
+  "occasionTagsEn",
+  "occasionTagsSi",
   "nameEn",
   "nameSi",
   "descriptionEn",

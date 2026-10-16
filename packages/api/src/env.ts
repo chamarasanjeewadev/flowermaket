@@ -6,6 +6,16 @@
  * is bound. Always call `getEnv()` inside a request handler / server function.
  */
 export interface AppEnv {
+  WHATSAPP_SUPPLIER_PROVIDER: string | undefined;
+  TWILIO_ACCOUNT_SID: string | undefined;
+  TWILIO_AUTH_TOKEN: string | undefined;
+  TWILIO_WHATSAPP_FROM: string | undefined;
+  TWILIO_MESSAGING_SERVICE_SID: string | undefined;
+  SUPPLIER_RFQ_TEMPLATE_EN: string | undefined;
+  SUPPLIER_RFQ_TEMPLATE_SI: string | undefined;
+  SUPPLIER_ORDER_TEMPLATE_EN: string | undefined;
+  SUPPLIER_ORDER_TEMPLATE_SI: string | undefined;
+
   DATABASE_URL: string | undefined;
   SUPABASE_URL: string | undefined;
   SUPABASE_ANON_KEY: string | undefined;
@@ -67,6 +77,15 @@ function read(name: string): string | undefined {
 
 export function getEnv(): AppEnv {
   return {
+    WHATSAPP_SUPPLIER_PROVIDER: read("WHATSAPP_SUPPLIER_PROVIDER"),
+    TWILIO_ACCOUNT_SID: read("TWILIO_ACCOUNT_SID"),
+    TWILIO_AUTH_TOKEN: read("TWILIO_AUTH_TOKEN"),
+    TWILIO_WHATSAPP_FROM: read("TWILIO_WHATSAPP_FROM"),
+    TWILIO_MESSAGING_SERVICE_SID: read("TWILIO_MESSAGING_SERVICE_SID"),
+    SUPPLIER_RFQ_TEMPLATE_EN: read("SUPPLIER_RFQ_TEMPLATE_EN"),
+    SUPPLIER_RFQ_TEMPLATE_SI: read("SUPPLIER_RFQ_TEMPLATE_SI"),
+    SUPPLIER_ORDER_TEMPLATE_EN: read("SUPPLIER_ORDER_TEMPLATE_EN"),
+    SUPPLIER_ORDER_TEMPLATE_SI: read("SUPPLIER_ORDER_TEMPLATE_SI"),
     DATABASE_URL: read("DATABASE_URL"),
     SUPABASE_URL: read("SUPABASE_URL"),
     SUPABASE_ANON_KEY: read("SUPABASE_ANON_KEY"),

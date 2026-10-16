@@ -14,6 +14,8 @@ export type ProductStatus = "draft" | "active" | "paused" | "archived";
 
 /** Normalized payload the form emits (money already in LKR cents). */
 export interface ProductFormPayload {
+  flowerSpeciesEn: string | null;
+  occasionTagsEn: string[];
   categoryId: string;
   nameEn: string;
   nameSi: string | null;
@@ -29,6 +31,8 @@ export interface ProductFormPayload {
 }
 
 export interface ProductFormInitial {
+  flowerSpeciesEn?: string | null;
+  occasionTagsEn?: string[];
   categoryId?: string;
   nameEn?: string;
   nameSi?: string | null;
@@ -91,11 +95,15 @@ export function ProductForm({
   onSubmit,
   onSuccess,
 }: ProductFormProps) {
-  const { t } = useT();
+  const { t, locale } = useT();
+  const [preview, setPreview] = React.useState(false);
   const [serverError, setServerError] = React.useState<string | null>(null);
 
   const form = useForm({
     defaultValues: {
+      flowerSpeciesEn: initial?.flowerSpeciesEn ?? "",
+      occasionTagsEn: initial?.occasionTagsEn?.join(", ") ?? "",
+      availability: initial?.stockQty == null ? "made_to_order" : initial.stockQty === 0 ? "unavailable" : "in_stock",
       categoryId: initial?.categoryId ?? "",
       nameEn: initial?.nameEn ?? "",
       nameSi: initial?.nameSi ?? "",
@@ -115,6 +123,8 @@ export function ProductForm({
     onSubmit: async ({ value }) => {
       setServerError(null);
       const payload: ProductFormPayload = {
+        flowerSpeciesEn: value.flowerSpeciesEn.trim() || null,
+        occasionTagsEn: value.occasionTagsEn.split(",").map(tag => tag.trim()).filter(Boolean),
         categoryId: value.categoryId,
         nameEn: value.nameEn.trim(),
         nameSi: value.nameSi.trim() || null,
@@ -123,7 +133,7 @@ export function ProductForm({
         listingType: value.listingType,
         price: toCents(value.price) ?? 0,
         compareAtPrice: toCents(value.compareAtPrice),
-        stockQty: toIntOrNull(value.stockQty),
+        stockQty: value.availability === "made_to_order" ? null : value.availability === "unavailable" ? 0 : toIntOrNull(value.stockQty),
         minOrderQty: toIntOrNull(value.minOrderQty),
         leadTimeDays: toIntOrNull(value.leadTimeDays),
         ...(showStatus ? { status: value.status } : {}),
@@ -153,7 +163,8 @@ export function ProductForm({
         </Alert>
       )}
 
-      {/* Category (flower type) — required */}
+      <h2 className="text-lg font-semibold">{locale === "si" ? "විස්තර" : "Details"}</h2>
+      {/* Product category — required */}
       <form.Field
         name="categoryId"
         validators={{
@@ -227,7 +238,24 @@ export function ProductForm({
         )}
       </form.Field>
 
-      {/* Name (Sinhala) */}
+      {/* Description (English) */}
+      <form.Field name="descriptionEn">
+        {(field) => (
+          <div className="space-y-1.5">
+            <Label htmlFor={field.name}>{t.products.descriptionEn}</Label>
+            <Textarea
+              id={field.name}
+              name={field.name}
+              rows={3}
+              value={field.state.value}
+              onBlur={field.handleBlur}
+              onChange={(e) => field.handleChange(e.target.value)}
+            />
+          </div>
+        )}
+      </form.Field>
+
+      <details className="rounded-lg border border-border p-3"><summary className="min-h-11 cursor-pointer py-2 text-sm">{locale === "si" ? "විකල්ප සිංහල පරිවර්තන" : "Optional Sinhala translations"}</summary><div className="space-y-4 pt-3">      {/* Name (Sinhala) */}
       <form.Field name="nameSi">
         {(field) => (
           <div className="space-y-1.5">
@@ -245,6 +273,29 @@ export function ProductForm({
         )}
       </form.Field>
 
+      {/* Description (Sinhala) */}
+      <form.Field name="descriptionSi">
+        {(field) => (
+          <div className="space-y-1.5">
+            <Label htmlFor={field.name}>{t.products.descriptionSi}</Label>
+            <Textarea
+              id={field.name}
+              name={field.name}
+              rows={3}
+              value={field.state.value}
+              onBlur={field.handleBlur}
+              onChange={(e) => field.handleChange(e.target.value)}
+            />
+          </div>
+        )}
+      </form.Field>
+
+</div></details>
+      <section className="space-y-3 border-t border-border pt-4"><h2 className="font-semibold">{locale === "si" ? "මල් වර්ගය සහ අවස්ථා" : "Flower species & occasions"}</h2>
+        <form.Field name="flowerSpeciesEn">{field => <div className="space-y-2"><Label htmlFor="flower-species">{locale === "si" ? "මල් වර්ගය (විකල්පයි)" : "Flower species (optional)"}</Label><Input id="flower-species" maxLength={200} value={field.state.value} onChange={e => field.handleChange(e.target.value)} /></div>}</form.Field>
+        <form.Field name="occasionTagsEn">{field => <div className="space-y-2"><Label htmlFor="occasion-tags">{locale === "si" ? "අවස්ථා (කොමාවෙන් වෙන් කරන්න)" : "Occasion tags (comma separated, optional)"}</Label><Input id="occasion-tags" maxLength={500} value={field.state.value} onChange={e => field.handleChange(e.target.value)} /></div>}</form.Field>
+      </section>
+      <h2 className="border-t border-border pt-5 text-lg font-semibold">{locale === "si" ? "මිල සහ ලබා ගත හැකි බව" : "Pricing & availability"}</h2>
       {/* Selling type */}
       <form.Field name="listingType">
         {(field) => (
@@ -338,8 +389,9 @@ export function ProductForm({
           )}
         </form.Field>
 
-        {/* Available quantity */}
-        <form.Field name="stockQty">
+        <form.Field name="availability">{field => <div className="space-y-2"><Label htmlFor="availability">{locale === "si" ? "ලබා ගත හැකි බව" : "Availability"}</Label><select id="availability" className={selectClassName} value={field.state.value} onChange={e => { field.handleChange(e.target.value); if (e.target.value === "in_stock") form.setFieldValue("stockQty", "1"); }}><option value="in_stock">{locale === "si" ? "තොග ඇත" : "In stock"}</option><option value="made_to_order">{locale === "si" ? "ඇණවුමට සකස් කරයි" : "Made to order"}</option><option value="unavailable">{locale === "si" ? "දැනට නොමැත" : "Unavailable"}</option></select></div>}</form.Field>
+      {/* Available quantity */}
+        <form.Subscribe selector={state => state.values.availability}>{availability => availability === "in_stock" ? <form.Field name="stockQty" validators={{ onChange: ({ value }) => !Number.isSafeInteger(Number(value)) || Number(value) < 1 ? "Enter a quantity of at least 1." : undefined }}>
           {(field) => (
             <div className="space-y-1.5">
               <Label htmlFor={field.name}>{t.products.stockQty}</Label>
@@ -347,7 +399,7 @@ export function ProductForm({
                 id={field.name}
                 name={field.name}
                 type="number"
-                min="0"
+                min="1"
                 step="1"
                 inputMode="numeric"
                 value={field.state.value}
@@ -355,11 +407,11 @@ export function ProductForm({
                 onChange={(e) => field.handleChange(e.target.value)}
               />
               <p className="text-xs text-muted-foreground">
-                {t.products.stockHint}
+                {field.state.meta.errors[0] ?? t.products.stockHint}
               </p>
             </div>
           )}
-        </form.Field>
+        </form.Field> : null}</form.Subscribe>
 
         {/* Minimum order quantity — most relevant for wholesale */}
         <form.Subscribe selector={(s) => s.values.listingType}>
@@ -413,40 +465,8 @@ export function ProductForm({
         </form.Field>
       </div>
 
-      {/* Description (English) */}
-      <form.Field name="descriptionEn">
-        {(field) => (
-          <div className="space-y-1.5">
-            <Label htmlFor={field.name}>{t.products.descriptionEn}</Label>
-            <Textarea
-              id={field.name}
-              name={field.name}
-              rows={3}
-              value={field.state.value}
-              onBlur={field.handleBlur}
-              onChange={(e) => field.handleChange(e.target.value)}
-            />
-          </div>
-        )}
-      </form.Field>
-
-      {/* Description (Sinhala) */}
-      <form.Field name="descriptionSi">
-        {(field) => (
-          <div className="space-y-1.5">
-            <Label htmlFor={field.name}>{t.products.descriptionSi}</Label>
-            <Textarea
-              id={field.name}
-              name={field.name}
-              rows={3}
-              value={field.state.value}
-              onBlur={field.handleBlur}
-              onChange={(e) => field.handleChange(e.target.value)}
-            />
-          </div>
-        )}
-      </form.Field>
-
+      {beforeSubmit}
+      <h2 className="border-t border-border pt-5 text-lg font-semibold">{locale === "si" ? "ප්‍රකාශනය" : "Publishing"}</h2>
       {/* Visibility (create flow only) */}
       {showStatus && (
         <form.Field name="status">
@@ -464,7 +484,7 @@ export function ProductForm({
                 className={selectClassName}
               >
                 <option value="draft">{t.products.statusDraft}</option>
-                <option value="active">{t.products.statusActive}</option>
+                <option value="active">{locale === "si" ? "සමාලෝචනයට ඉදිරිපත් කරන්න" : "Submit for review"}</option>
               </select>
               <p className="text-xs text-muted-foreground">
                 {t.products.publishHint}
@@ -474,10 +494,11 @@ export function ProductForm({
         </form.Field>
       )}
 
-      {beforeSubmit}
+      <Button type="button" variant="outline" onClick={() => setPreview(!preview)}>{locale === "si" ? "පෙරදසුන" : "Preview"}</Button>
+      {preview && <form.Subscribe selector={state => state.values}>{values => <section aria-label="Product preview" className="rounded-xl border border-border bg-card p-5"><h2 className="font-display text-2xl">{values.nameEn || "Untitled product"}</h2><p className="mt-2 whitespace-pre-wrap">{values.descriptionEn}</p><p className="mt-3 font-semibold">LKR {values.price || "0"}</p><p className="text-sm text-muted-foreground">{values.availability.replaceAll("_", " ")}</p></section>}</form.Subscribe>}
 
-      <form.Subscribe selector={(state) => [state.canSubmit, state.isSubmitting]}>
-        {([canSubmit, isSubmitting]) => (
+      <form.Subscribe selector={(state) => [state.canSubmit, state.isSubmitting, state.values.status] as const}>
+        {([canSubmit, isSubmitting, status]) => (
           <Button
             type="submit"
             variant="brand"
@@ -486,7 +507,7 @@ export function ProductForm({
             {isSubmitting ? (
               <Loader2 className="mr-2 size-4 animate-spin" />
             ) : null}
-            {isSubmitting ? submittingLabel : submitLabel}
+            {isSubmitting ? submittingLabel : showStatus ? status === "active" ? (locale === "si" ? "සමාලෝචනයට ඉදිරිපත් කරන්න" : "Submit for review") : (locale === "si" ? "කෙටුම්පත සුරකින්න" : "Save draft") : submitLabel}
           </Button>
         )}
       </form.Subscribe>

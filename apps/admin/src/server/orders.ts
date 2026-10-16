@@ -13,6 +13,15 @@ import {
   requireDb,
   tryCreateDb,
   getEnv,
+  updateRfqAlertDelivery,
+  updateSupplierAlertDelivery,
+  listSupplierAlertsLanguage,
+  confirmCustomerQuotation,
+  listOrderSupplierAlerts,
+  claimOrderSupplierAlert,
+  recordOrderSupplierAlert,
+  claimRfqNotification,
+  recordRfqNotification,
   createOrder,
   getOrder,
   listOrders,
@@ -24,7 +33,6 @@ import {
   orderCostRollup,
   buildDocumentDraft,
   issueDocument,
-  acceptDocument,
   markPaid,
   updateOrderStatus,
   type ActionResult,
@@ -41,6 +49,9 @@ import {
   sendWhatsappText,
   buildRfqNudge,
   buildDocumentLinkMessage,
+  sendSupplierNotification,
+  getSupplierNotificationDelivery,
+  type SupplierNotificationConfig,
   type EvolutionConfig,
 } from "@flowers/integrations";
 import { resolveAdminSession } from "./session";
@@ -167,6 +178,7 @@ export interface SendRfqsInput {
   orderId: string;
   supplierShopIds: string[];
   message?: string;
+  expiresAt?: string;
 }
 
 export const sendRfqsFn = createServerFn({ method: "POST" })
@@ -179,7 +191,7 @@ export const sendRfqsFn = createServerFn({ method: "POST" })
       const db = requireDb();
 
       // 1. Create RFQs (commits the transaction + transitions order draft→sourcing).
-      const rfqResult = await createRfqs(db, data.orderId, data.supplierShopIds, data.message);
+      const rfqResult = await createRfqs(db, data.orderId, data.supplierShopIds, data.message, data.expiresAt ? new Date(data.expiresAt) : null);
       if (!rfqResult.ok) {
         // Surface conflict and other errors to the caller without partial dispatch.
         return rfqResult;
@@ -205,11 +217,6 @@ export const sendRfqsFn = createServerFn({ method: "POST" })
 
       // Build Evolution config from env — all fields may be absent in dev.
       const env = getEnv();
-      const evolutionConfig: EvolutionConfig = {
-        apiUrl: env.EVOLUTION_API_URL ?? "",
-        apiKey: env.EVOLUTION_API_KEY ?? "",
-        instance: env.EVOLUTION_INSTANCE ?? "",
-      };
       const supplierPortalUrl = env.SUPPLIER_PORTAL_URL ?? "";
 
       // orderNo is returned from resolveRfqDispatchInfo; fall back to orderId
@@ -222,24 +229,29 @@ export const sendRfqsFn = createServerFn({ method: "POST" })
           const shopName = row?.shopName ?? rfqId;
           const phone = row?.phone ?? null;
 
-          if (!phone) {
+          if (!phone || !row?.consent || !row?.verified) {
+            await recordRfqNotification(db, rfqId, false, "Supplier notification number is not verified and opted in.");
             return {
               supplierShopId: row?.supplierShopId ?? rfqId,
               shopName,
               sent: false,
-              error: "Supplier has no phone number on record.",
+              error: "Supplier notification number must be verified and opted in.",
             };
           }
 
+          if (!await claimRfqNotification(db, rfqId, false, phone)) return { supplierShopId: row!.supplierShopId, shopName, sent: false, error: "Alert already sent or in progress." };
           const portalUrl = `${supplierPortalUrl}/rfqs/${rfqId}`;
           const message = buildRfqNudge({
             shopName,
             orderNo,
             portalUrl,
-            locale: "en",
+            locale: row?.language === "si" ? "si" : "en",
+            requiredDate: row?.neededByDate, deliveryArea: row?.deliveryArea,
+            responseDeadline: row?.expiresAt?.toLocaleString("en-GB", { timeZone: "Asia/Colombo" }),
           });
 
-          const sendResult = await sendWhatsappText(evolutionConfig, phone, message);
+          const sendResult = await sendSupplierNotification(supplierNotificationConfig(), { phone, text: message, templateSid: row?.language === "si" ? env.SUPPLIER_RFQ_TEMPLATE_SI : env.SUPPLIER_RFQ_TEMPLATE_EN, variables: { "1": shopName, "2": orderNo, "3": portalUrl } });
+          await recordRfqNotification(db, rfqId, sendResult.ok, sendResult.ok ? undefined : sendResult.message, sendResult.ok ? sendResult.providerId : undefined, !sendResult.ok && !!sendResult.uncertain);
 
           if (sendResult.ok) {
             return { supplierShopId: row?.supplierShopId ?? rfqId, shopName, sent: true };
@@ -283,34 +295,33 @@ export const resendRfqNudgeFn = createServerFn({ method: "POST" })
     if (!row) {
       return { ok: false, code: "not_found", message: "RFQ not found on this order." };
     }
-    if (!row.phone) {
+    if (!row.phone || !row.consent || !row.verified) {
       return {
         ok: true,
         data: {
           supplierShopId: row.supplierShopId,
           shopName: row.shopName,
           sent: false,
-          error: "Supplier has no phone number on record.",
+          error: "Supplier notification number must be verified and opted in.",
         },
       };
     }
 
+    if (!await claimRfqNotification(db, data.rfqId, true, row.phone)) return { ok: true, data: { supplierShopId: row.supplierShopId, shopName: row.shopName, sent: false, error: "Alert already sent or in progress." } };
     const env = getEnv();
-    const evolutionConfig: EvolutionConfig = {
-      apiUrl: env.EVOLUTION_API_URL ?? "",
-      apiKey: env.EVOLUTION_API_KEY ?? "",
-      instance: env.EVOLUTION_INSTANCE ?? "",
-    };
     const supplierPortalUrl = env.SUPPLIER_PORTAL_URL ?? "";
 
     const message = buildRfqNudge({
       shopName: row.shopName,
       orderNo: row.orderNo,
       portalUrl: `${supplierPortalUrl}/rfqs/${data.rfqId}`,
-      locale: "en",
+      locale: row.language === "si" ? "si" : "en",
+      requiredDate: row.neededByDate, deliveryArea: row.deliveryArea,
+      responseDeadline: row.expiresAt?.toLocaleString("en-GB", { timeZone: "Asia/Colombo" }),
     });
 
-    const sendResult = await sendWhatsappText(evolutionConfig, row.phone, message);
+    const sendResult = await sendSupplierNotification(supplierNotificationConfig(), { phone: row.phone, text: message, templateSid: row.language === "si" ? env.SUPPLIER_RFQ_TEMPLATE_SI : env.SUPPLIER_RFQ_TEMPLATE_EN, variables: { "1": row.shopName, "2": row.orderNo, "3": `${supplierPortalUrl}/rfqs/${data.rfqId}` } });
+    await recordRfqNotification(db, data.rfqId, sendResult.ok, sendResult.ok ? undefined : sendResult.message, sendResult.ok ? sendResult.providerId : undefined, !sendResult.ok && !!sendResult.uncertain);
     return {
       ok: true,
       data: {
@@ -455,13 +466,7 @@ export const acceptDocumentFn = createServerFn({ method: "POST" })
       if (!resolved.ok) return authError<void>();
 
       const db = requireDb();
-      const acceptResult = await acceptDocument(db, data.docId);
-      if (!acceptResult.ok) return acceptResult;
-
-      // Quotation accepted → order confirmed.
-      await updateOrderStatus(db, data.orderId, "confirmed");
-
-      return acceptResult;
+      return confirmCustomerQuotation(db, data.orderId, data.docId);
     },
   );
 
@@ -560,3 +565,50 @@ export const markPaidFn = createServerFn({ method: "POST" })
       return paidResult;
     },
   );
+
+export const listSupplierAlertsFn = createServerFn({ method: "GET" }).validator((orderId: string) => orderId).handler(async ({ data }) => {
+  const resolved = await resolveAdminUserId(); if (!resolved.ok) return [];
+  const alerts = await listOrderSupplierAlerts(requireDb(), data);
+  const portalUrl = (getEnv().SUPPLIER_PORTAL_URL ?? "").replace(/\/$/, "");
+  return alerts.map(alert => ({ ...alert, previewText: `${alert.message}\n${portalUrl}/orders` }));
+});
+export const sendSupplierAlertFn = createServerFn({ method: "POST" }).validator((input: { alertId: string; orderId: string }) => input).handler(async ({ data }) => {
+  const resolved = await resolveAdminUserId(); if (!resolved.ok) return authError<void>();
+  const db = requireDb(); const alert = await claimOrderSupplierAlert(db, data.alertId, data.orderId);
+  if (!alert?.phone) return { ok: false as const, message: "Alert is already sent, in progress, or the number is not verified and opted in." };
+  const env = getEnv();
+  const text = `${alert.message}\n${(env.SUPPLIER_PORTAL_URL ?? "").replace(/\/$/, "")}/orders`;
+  const result = await sendSupplierNotification(supplierNotificationConfig(), { phone: alert.phone, text, templateSid: (await listSupplierAlertsLanguage(db, alert.shopId)) === "si" ? env.SUPPLIER_ORDER_TEMPLATE_SI : env.SUPPLIER_ORDER_TEMPLATE_EN, variables: { "1": alert.message, "2": `${(env.SUPPLIER_PORTAL_URL ?? "").replace(/\/$/, "")}/orders` } });
+  await recordOrderSupplierAlert(db, alert.id, result.ok, result.ok ? undefined : result.message, result.ok ? result.providerId : undefined, !result.ok && !!result.uncertain);
+  return result;
+});
+export const updateOrderLifecycleFn = createServerFn({ method: "POST" }).validator((input: { orderId: string; status: "fulfilling" | "completed" | "cancelled" }) => input).handler(async ({ data }) => {
+  const resolved = await resolveAdminUserId(); if (!resolved.ok) return authError<void>();
+  if (!["fulfilling", "completed", "cancelled"].includes(data.status)) return { ok: false as const, message: "Invalid order action." };
+  return updateOrderStatus(requireDb(), data.orderId, data.status);
+});
+
+function supplierNotificationConfig(): SupplierNotificationConfig {
+  const env = getEnv();
+  return { provider: env.WHATSAPP_SUPPLIER_PROVIDER === "twilio" ? "twilio" : "evolution", evolution: { apiUrl: env.EVOLUTION_API_URL ?? "", apiKey: env.EVOLUTION_API_KEY ?? "", instance: env.EVOLUTION_INSTANCE ?? "" }, accountSid: env.TWILIO_ACCOUNT_SID, authToken: env.TWILIO_AUTH_TOKEN, from: env.TWILIO_WHATSAPP_FROM, messagingServiceSid: env.TWILIO_MESSAGING_SERVICE_SID };
+}
+
+export const checkSupplierAlertDeliveryFn = createServerFn({ method: "POST" }).validator((input: { alertId: string; orderId: string }) => input).handler(async ({ data }) => {
+  const resolved = await resolveAdminUserId(); if (!resolved.ok) return { ok: false as const, message: "Admin access required." };
+  const db = requireDb(); const alerts = await listOrderSupplierAlerts(db, data.orderId);
+  const alert = alerts.find(row => row.id === data.alertId);
+  if (!alert?.providerId) return { ok: false as const, message: "No provider message ID is available." };
+  const result = await getSupplierNotificationDelivery(supplierNotificationConfig(), alert.providerId);
+  if (result.ok) await updateSupplierAlertDelivery(db, alert.id, data.orderId, result.status);
+  return result;
+});
+
+export const checkRfqAlertDeliveryFn = createServerFn({ method: "POST" }).validator((input: { rfqId: string; orderId: string }) => input).handler(async ({ data }) => {
+  const resolved = await resolveAdminUserId(); if (!resolved.ok) return { ok: false as const, message: "Admin access required." };
+  const db = requireDb(); const order = await getOrder(db, data.orderId);
+  const rfq = order.ok ? order.data.rfqs.find(row => row.id === data.rfqId) : null;
+  if (!rfq?.notificationProviderId) return { ok: false as const, message: "No provider message ID is available." };
+  const result = await getSupplierNotificationDelivery(supplierNotificationConfig(), rfq.notificationProviderId);
+  if (result.ok) await updateRfqAlertDelivery(db, rfq.id, data.orderId, result.status);
+  return result;
+});

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { assertOwnsRfq, canSubmitQuote, dedupeSupplierIds } from "./rfqs";
+import { assertOwnsRfq, canSubmitQuote, quoteContentKey, dedupeSupplierIds } from "./rfqs";
 
 describe("assertOwnsRfq — pure tenant guard", () => {
   it("rejects RFQ owned by another shop", () => {
@@ -74,4 +74,11 @@ describe("dedupeSupplierIds — pure helper", () => {
   it("preserves order of requested", () => {
     expect(dedupeSupplierIds(["A"], ["Z", "B", "A", "C"])).toEqual(["Z", "B", "C"]);
   });
+});
+
+it("compares quote content regardless of JSONB key and line order", () => {
+  const line = { orderItemId: "a", availableQty: 1, unitPrice: 100, leadTimeDays: null, notes: null };
+  const other = { ...line, orderItemId: "b" };
+  const stored = { deliveryCost: 0, validUntil: null, lines: [other, { notes: null, unitPrice: 100, availableQty: 1, orderItemId: "a", leadTimeDays: null }], notes: null };
+  expect(quoteContentKey(stored)).toBe(quoteContentKey({ notes: null, validUntil: null, deliveryCost: 0, lines: [line, other] }));
 });

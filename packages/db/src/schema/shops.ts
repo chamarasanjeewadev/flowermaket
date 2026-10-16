@@ -40,6 +40,11 @@ export const shops = pgTable(
     /** Commission in basis points; null = use platform default. */
     commissionRateBps: integer("commission_rate_bps"),
     bankDetails: jsonb("bank_details"),
+    serviceSettings: jsonb("service_settings").$type<{ areas: string; delivery: boolean; collection: boolean; preparationDays: number }>(),
+    notificationPhone: text("notification_phone"),
+    notificationConsentAt: timestamp("notification_consent_at", { withTimezone: true }),
+    notificationVerifiedAt: timestamp("notification_verified_at", { withTimezone: true }),
+    notificationLanguage: text("notification_language").notNull().default("en"),
     /** Subscription seam. "free" for everyone today; gated features read this later. */
     plan: text("plan").notNull().default("free"),
     verificationNotes: text("verification_notes"),

@@ -136,3 +136,9 @@ describe("buildWhatsappUrl", () => {
     expect(url).toBe("https://wa.me/94778540633?text=hi");
   });
 });
+
+it("preserves the requested shop in the marketplace WhatsApp handoff", () => {
+  const message = buildEnquiryText({ items: [], locale: "en", siteUrl: "https://flowermarket.lk", sourceShop: { name: "Test Florist", slug: "test-florist" } });
+  expect(message).toContain("Requested shop: Test Florist");
+  expect(message).toContain("https://flowermarket.lk/en/shops/test-florist");
+});

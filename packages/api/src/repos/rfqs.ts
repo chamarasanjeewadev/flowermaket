@@ -47,6 +47,8 @@ export interface SupplierRfqSummary {
   /** A brief label derived from the first item's descriptionEn. */
   firstItemDescription: string | null;
   itemCount: number;
+  neededByDate?: string | null;
+  deliveryArea?: string | null;
 }
 
 export interface SupplierRfqOrderItem {
@@ -74,6 +76,7 @@ export interface SupplierRfqDetail {
   id: string;
   orderId: string;
   orderNo: string;
+  orderStatus?: string;
   supplierShopId: string;
   status: string;
   message: string | null;
@@ -87,6 +90,12 @@ export interface SupplierRfqDetail {
   updatedAt: Date;
   items: SupplierRfqOrderItem[];
   quoteLines: SupplierRfqQuoteLine[];
+  neededByDate?: string | null;
+  deliveryArea?: string | null;
+  customerNotes?: string | null;
+  deliveryCost?: number;
+  revisions?: { submittedAt: string; notes: string | null; validUntil: string | null; deliveryCost: number; lines: SupplierQuoteLineInput[] }[];
+  questions?: { text: string; createdAt: string }[];
 }
 
 // ---------------------------------------------------------------------------
@@ -208,6 +217,9 @@ export async function listSupplierRfqs(
         id: schema.rfqs.id,
         orderId: schema.rfqs.orderId,
         orderNo: schema.orders.orderNo,
+        orderStatus: schema.orders.status,
+        neededByDate: schema.orders.neededByDate,
+        deliveryArea: schema.orders.deliveryDistrict,
         status: schema.rfqs.status,
         sentAt: schema.rfqs.sentAt,
         expiresAt: schema.rfqs.expiresAt,
@@ -250,7 +262,9 @@ export async function listSupplierRfqs(
         id: r.id,
         orderId: r.orderId,
         orderNo: r.orderNo,
-        status: r.status,
+        neededByDate: r.neededByDate,
+        deliveryArea: r.deliveryArea,
+        status: ["draft", "sourcing", "quoted"].includes(r.orderStatus) || ["awarded", "declined", "expired", "closed"].includes(r.status) ? r.status : "closed",
         sentAt: r.sentAt,
         expiresAt: r.expiresAt,
         createdAt: r.createdAt,
@@ -286,10 +300,17 @@ export async function getSupplierRfq(
         id: schema.rfqs.id,
         orderId: schema.rfqs.orderId,
         orderNo: schema.orders.orderNo,
+        orderStatus: schema.orders.status,
+        neededByDate: schema.orders.neededByDate,
+        deliveryArea: schema.orders.deliveryDistrict,
         supplierShopId: schema.rfqs.supplierShopId,
+        customerNotes: schema.orders.notesCustomer,
         status: schema.rfqs.status,
         message: schema.rfqs.message,
         quoteNotes: schema.rfqs.quoteNotes,
+        deliveryCost: schema.rfqs.quoteDeliveryCost,
+        revisions: schema.rfqs.quoteRevisions,
+        questions: schema.rfqs.supplierQuestions,
         quoteValidUntil: schema.rfqs.quoteValidUntil,
         sentAt: schema.rfqs.sentAt,
         viewedAt: schema.rfqs.viewedAt,
@@ -344,8 +365,15 @@ export async function getSupplierRfq(
       id: rfqRow.id,
       orderId: rfqRow.orderId,
       orderNo: rfqRow.orderNo,
+      orderStatus: rfqRow.orderStatus,
+      customerNotes: rfqRow.customerNotes,
+      neededByDate: rfqRow.neededByDate,
+      deliveryArea: rfqRow.deliveryArea,
+      deliveryCost: rfqRow.deliveryCost,
+      revisions: rfqRow.revisions,
+      questions: rfqRow.questions,
       supplierShopId: rfqRow.supplierShopId,
-      status: rfqRow.status,
+      status: ["draft", "sourcing", "quoted"].includes(rfqRow.orderStatus) || ["awarded", "declined", "expired", "closed"].includes(rfqRow.status) ? rfqRow.status : "closed",
       message: rfqRow.message,
       quoteNotes: rfqRow.quoteNotes,
       quoteValidUntil: rfqRow.quoteValidUntil,
@@ -404,6 +432,12 @@ export interface RfqDispatchInfo {
   shopName: string;
   phone: string | null;
   orderNo: string;
+  language: string;
+  consent: Date | null;
+  verified: Date | null;
+  neededByDate?: string | null;
+  deliveryArea?: string | null;
+  expiresAt?: Date | null;
 }
 
 export async function resolveRfqDispatchInfo(
@@ -418,8 +452,15 @@ export async function resolveRfqDispatchInfo(
         rfqId: schema.rfqs.id,
         supplierShopId: schema.rfqs.supplierShopId,
         shopName: schema.shops.nameEn,
-        phone: schema.users.phone,
+        expiresAt: schema.rfqs.expiresAt,
+        phone: schema.shops.notificationPhone,
+        language: schema.shops.notificationLanguage,
+        consent: schema.shops.notificationConsentAt,
+        verified: schema.shops.notificationVerifiedAt,
         orderNo: schema.orders.orderNo,
+        orderStatus: schema.orders.status,
+        neededByDate: schema.orders.neededByDate,
+        deliveryArea: schema.orders.deliveryDistrict,
       })
       .from(schema.rfqs)
       .innerJoin(schema.shops, eq(schema.shops.id, schema.rfqs.supplierShopId))
@@ -459,7 +500,9 @@ export async function createRfqs(
   orderId: string,
   supplierShopIds: string[],
   message?: string,
+  expiresAt?: Date | null,
 ): Promise<ActionResult<{ created: string[] }>> {
+  if (expiresAt && (!Number.isFinite(expiresAt.getTime()) || expiresAt <= new Date())) return err("validation", "Response deadline must be in the future.");
   try {
     const created = await db.transaction(async (tx) => {
       // 1. Find existing RFQs for this order to avoid duplicates
@@ -484,6 +527,7 @@ export async function createRfqs(
               status: "sent" as const,
               sentAt: now,
               message: message ?? null,
+              expiresAt: expiresAt ?? null,
             })),
           )
           .returning({ id: schema.rfqs.id });
@@ -546,6 +590,12 @@ export interface SupplierQuoteLineInput {
  *   new set inserted in one transaction, so re-submitting updates the quote
  *   instead of accumulating duplicate line versions.
  */
+export function quoteContentKey(input: { notes: string | null; validUntil: string | null; deliveryCost: number; lines: SupplierQuoteLineInput[] }): string {
+  return JSON.stringify({ notes: input.notes, validUntil: input.validUntil, deliveryCost: input.deliveryCost,
+    lines: input.lines.map(line => ({ id: line.orderItemId, quantity: line.availableQty, price: line.unitPrice, days: line.leadTimeDays ?? null, notes: line.notes ?? null })).sort((a, b) => a.id.localeCompare(b.id)),
+  });
+}
+
 export async function recordSupplierQuote(
   db: Db,
   rfqId: string,
@@ -553,10 +603,12 @@ export async function recordSupplierQuote(
   lines: SupplierQuoteLineInput[],
   quoteNotes?: string | null,
   validUntil?: Date | null,
+  deliveryCost = 0,
 ): Promise<ActionResult<void>> {
   try {
+    return await db.transaction(async (tx) => {
     // 1. Fetch RFQ for tenant + state guards
-    const [rfqRow] = await db
+    const [rfqRow] = await tx
       .select({
         id: schema.rfqs.id,
         supplierShopId: schema.rfqs.supplierShopId,
@@ -566,7 +618,7 @@ export async function recordSupplierQuote(
       })
       .from(schema.rfqs)
       .where(eq(schema.rfqs.id, rfqId))
-      .limit(1);
+      .limit(1).for("update");
 
     if (!rfqRow) return err("not_found", "RFQ not found.");
 
@@ -578,14 +630,18 @@ export async function recordSupplierQuote(
 
     // 2. Validate lines — reject empty quotes so a supplier can't advance the
     //    RFQ to 'quoted' with zero lines (would break downstream award logic).
+    if (!Number.isSafeInteger(deliveryCost) || deliveryCost < 0) return err("validation", "Delivery cost must be a non-negative amount in cents.");
+    if (validUntil && (!Number.isFinite(validUntil.getTime()) || validUntil <= new Date())) return err("validation", "Quote expiry must be in the future.");
+    if (new Set(lines.map(l => l.orderItemId)).size !== lines.length) return err("validation", "Quote items must not be duplicated.");
     if (lines.length === 0) {
       return err("validation", "At least one quote line is required.");
     }
     for (const line of lines) {
-      if (line.availableQty < 0) {
+      if (line.leadTimeDays != null && (!Number.isSafeInteger(line.leadTimeDays) || line.leadTimeDays < 0)) return err("validation", "Preparation time must be a non-negative number of days.");
+      if (!Number.isSafeInteger(line.availableQty) || line.availableQty < 0) {
         return err("validation", `availableQty must be >= 0 (got ${line.availableQty}).`);
       }
-      if (line.unitPrice < 0) {
+      if (!Number.isSafeInteger(line.unitPrice) || line.unitPrice < 0) {
         return err("validation", `unitPrice must be >= 0 (got ${line.unitPrice}).`);
       }
     }
@@ -598,7 +654,7 @@ export async function recordSupplierQuote(
 
     // 3. Cross-order guard — each quote line's orderItemId must belong to the
     //    order that this RFQ was created for.
-    const orderItemRows = await db
+    const orderItemRows = await tx
       .select({ id: schema.orderItems.id })
       .from(schema.orderItems)
       .where(eq(schema.orderItems.orderId, rfqRow.orderId));
@@ -609,12 +665,27 @@ export async function recordSupplierQuote(
       }
     }
 
+    const [order] = await tx.select({ status: schema.orders.status }).from(schema.orders).where(eq(schema.orders.id, rfqRow.orderId)).for("update");
+    if (!order || !["draft", "sourcing", "quoted"].includes(order.status)) return err("validation", "This customer enquiry is no longer open for supplier quotes.");
     const now = new Date();
 
     // 4. Replace lines + update RFQ atomically. The delete makes re-submission
     //    an update rather than an append — without it, each submit would add a
     //    second set of lines and the award matrix would show stale duplicates.
-    await db.transaction(async (tx) => {
+    const [current] = await tx.select().from(schema.rfqs).where(eq(schema.rfqs.id, rfqId));
+    const revision = { submittedAt: now.toISOString(), notes: quoteNotes ?? null, validUntil: validUntil?.toISOString() ?? null, deliveryCost,
+      lines: lines.map(l => ({ ...l, leadTimeDays: l.leadTimeDays ?? null, notes: l.notes ?? null })) };
+    const previous = current.quoteRevisions.at(-1);
+    const equal = previous && quoteContentKey(previous) === quoteContentKey(revision);
+    if (equal) return ok(undefined);
+    // Preserve a legacy quote before the first revision after upgrading.
+    const revisions = [...current.quoteRevisions];
+    if (!revisions.length && current.status === "quoted") {
+      const oldLines = await tx.select().from(schema.rfqQuoteLines).where(eq(schema.rfqQuoteLines.rfqId, rfqId));
+      revisions.push({ submittedAt: (current.respondedAt ?? current.updatedAt).toISOString(), notes: current.quoteNotes, validUntil: current.quoteValidUntil?.toISOString() ?? null, deliveryCost: current.quoteDeliveryCost,
+        lines: oldLines.map(l => ({ orderItemId: l.orderItemId, availableQty: l.availableQty, unitPrice: l.unitPrice, leadTimeDays: l.leadTimeDays, notes: l.notes })) });
+    }
+    {
       await tx
         .delete(schema.rfqQuoteLines)
         .where(eq(schema.rfqQuoteLines.rfqId, rfqId));
@@ -635,14 +706,17 @@ export async function recordSupplierQuote(
         .set({
           status: "quoted",
           respondedAt: now,
+          quoteDeliveryCost: deliveryCost,
+          quoteRevisions: [...revisions, revision],
           quoteNotes: quoteNotes ?? null,
           quoteValidUntil: validUntil ?? null,
           updatedAt: now,
         })
         .where(eq(schema.rfqs.id, rfqId));
-    });
+    }
 
     return ok(undefined);
+    });
   } catch (e) {
     if (isPgError(e, "23503")) {
       // Awards reference the existing quote lines — they can no longer be replaced.
@@ -696,7 +770,7 @@ export async function markRfqViewed(
     await db
       .update(schema.rfqs)
       .set({ status: "viewed", viewedAt: now, updatedAt: now })
-      .where(eq(schema.rfqs.id, rfqId));
+      .where(and(eq(schema.rfqs.id, rfqId), eq(schema.rfqs.status, "sent")));
 
     return ok(undefined);
   } catch (e) {

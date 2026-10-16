@@ -21,8 +21,11 @@ import { getInvite } from "../server/auth";
 import { createShopFn } from "../server/shops";
 import { useT } from "../i18n/react";
 
+import { safeRedirectPath } from "@flowers/api/redirect";
+
 export const Route = createFileRoute("/onboarding")({
-  validateSearch: (search: Record<string, unknown>): { invite?: string } => ({
+  validateSearch: (search: Record<string, unknown>): { invite?: string; redirect?: string } => ({
+    redirect: typeof search.redirect === "string" ? safeRedirectPath(search.redirect) : undefined,
     invite: typeof search.invite === "string" ? search.invite : undefined,
   }),
   loaderDeps: ({ search }) => ({ invite: search.invite }),
@@ -38,6 +41,7 @@ export const Route = createFileRoute("/onboarding")({
 function OnboardingPage() {
   const { t } = useT();
   const router = useRouter();
+  const { redirect: returnTo } = Route.useSearch();
   const { invite } = Route.useSearch();
   const { invite: inviteDetails } = Route.useLoaderData();
   const [serverError, setServerError] = React.useState<string | null>(null);
@@ -71,7 +75,7 @@ function OnboardingPage() {
         return;
       }
       await router.invalidate();
-      await router.navigate({ to: "/" });
+      await router.navigate({ to: safeRedirectPath(returnTo) });
     },
   });
 

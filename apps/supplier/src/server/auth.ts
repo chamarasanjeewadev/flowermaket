@@ -2,6 +2,7 @@
  * Auth server functions for the Supplier Portal.
  */
 import { createServerFn } from "@tanstack/react-start";
+import { safeRedirectPath } from "@flowers/api/redirect";
 import type { SellerType } from "@flowers/api/constants";
 import { getCookies, setCookie, getRequestUrl } from "@tanstack/react-start/server";
 import { getEnv, tryCreateDb, getInviteByToken } from "@flowers/api";
@@ -159,7 +160,7 @@ export const getGoogleAuthUrl = createServerFn({ method: "POST" })
 
       const callback = new URL(`${currentOrigin()}/auth/callback`);
       if (data.redirect?.startsWith("/")) {
-        callback.searchParams.set("redirect", data.redirect);
+        callback.searchParams.set("redirect", safeRedirectPath(data.redirect));
       }
       const { data: res, error } = await supabase.auth.signInWithOAuth({
         provider: "google",

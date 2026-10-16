@@ -200,7 +200,7 @@ function ShopPage() {
               {shop.verificationStatus === "verified" && (
                 <span className="inline-flex items-center gap-1 rounded-full bg-sage px-2.5 py-1 text-xs font-semibold text-sage-deep">
                   <BadgeCheck className="size-3.5" aria-hidden="true" />
-                  {t.catalog.verified}
+                  {locale === "si" ? "තහවුරු කළ ව්‍යාපාරයකි" : "Verified business"}
                 </span>
               )}
             </div>
@@ -241,6 +241,10 @@ function ShopPage() {
       </header>
 
       {/* Products */}
+      <div className="my-6 rounded-xl border border-border bg-card p-5">
+        <Link to="/$locale/enquiry" params={{ locale }} search={{ shop: shop.slug }} className={cn(buttonVariants({ variant: "brand" }), "min-h-11")}><MessageCircle className="size-4" aria-hidden="true" />{locale === "si" ? "මෙම සාප්පුවෙන් මිල යෝජනාවක් ඉල්ලන්න" : "Request a quote from this shop"}</Link>
+        <p className="mt-3 text-sm text-muted-foreground">{locale === "si" ? "FlowerMarket ඉල්ලීම සහ තහවුරු කිරීම සම්බන්ධීකරණය කරයි." : "FlowerMarket coordinates your enquiry and order confirmation."}</p>
+      </div>
       <section aria-labelledby="shop-products" className="mt-12">
         <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <h2 id="shop-products" className="font-display text-2xl sm:text-3xl">
@@ -291,6 +295,7 @@ function ShopPage() {
               <Link
                 to="/$locale/enquiry"
                 params={{ locale }}
+                search={{ shop: shop.slug }}
                 className={cn(buttonVariants({ size: "pill" }))}
               >
                 <MessageCircle className="size-4" aria-hidden="true" />

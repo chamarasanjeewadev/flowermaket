@@ -18,6 +18,7 @@ import {
 import { Badge } from "@flowers/ui/components/badge";
 import { Button } from "@flowers/ui/components/button";
 import { Checkbox } from "@flowers/ui/components/checkbox";
+import { Label } from "@flowers/ui/components/label";
 import { Input } from "@flowers/ui/components/input";
 import {
   AlertCircle,
@@ -35,6 +36,7 @@ import {
 } from "lucide-react";
 import {
   getOrderFn,
+  listSupplierAlertsFn,
   matchSuppliersFn,
   sendRfqsFn,
   resendRfqNudgeFn,
@@ -64,13 +66,15 @@ import type {
 // Route
 // ---------------------------------------------------------------------------
 
+import { EnquiryDeliveryCheck, SupplierOrderOperations } from "../components/SupplierOrderOperations";
+
 export const Route = createFileRoute("/orders/$orderId")({
   loader: async ({ params }) => {
     const result = await getOrderFn({ data: params.orderId });
     if (!result.ok) {
       throw notFound();
     }
-    return { order: result.data };
+    return { order: result.data, supplierAlerts: await listSupplierAlertsFn({ data: params.orderId }) };
   },
   notFoundComponent: OrderNotFound,
   component: OrderDetailPage,
@@ -123,6 +127,7 @@ function SourcingPanel({ orderId, rfqs }: SourcingPanelProps) {
   const [matchLoading, setMatchLoading] = useState(false);
   const [matchError, setMatchError] = useState<string | null>(null);
 
+  const [responseDeadline, setResponseDeadline] = useState("");
   const [dispatchLoading, setDispatchLoading] = useState(false);
   const [dispatchResults, setDispatchResults] = useState<DispatchResult[] | null>(null);
   const [dispatchError, setDispatchError] = useState<string | null>(null);
@@ -198,6 +203,7 @@ function SourcingPanel({ orderId, rfqs }: SourcingPanelProps) {
       data: {
         orderId,
         supplierShopIds: Array.from(selected),
+        expiresAt: responseDeadline ? `${responseDeadline}:00+05:30` : undefined,
       },
     });
 
@@ -376,6 +382,7 @@ function SourcingPanel({ orderId, rfqs }: SourcingPanelProps) {
             </div>
           )}
 
+          <div className="space-y-2"><Label htmlFor="response-deadline">Response deadline (Sri Lanka time, optional)</Label><Input id="response-deadline" type="datetime-local" value={responseDeadline} onChange={event => setResponseDeadline(event.target.value)} /></div>
           {/* Send RFQs button */}
           {matched.length > 0 && (
             <div className="flex items-center gap-3 flex-wrap">
@@ -411,6 +418,14 @@ function SourcingPanel({ orderId, rfqs }: SourcingPanelProps) {
         </div>
       )}
 
+      {rfqs.some(rfq => rfq.notificationStatus || rfq.supplierQuestions?.length || rfq.quoteRevisions?.length) && <div className="space-y-3 rounded-xl border p-4">
+        <h3 className="font-semibold">Supplier activity & alert history</h3>
+        {rfqs.map(rfq => <div key={rfq.id} className="space-y-2 border-t pt-3 text-sm"><p className="font-medium">{rfq.supplierShopName ?? rfq.supplierShopId}</p><p>WhatsApp: {rfq.notificationStatus ?? "Unknown"} {rfq.notificationError && `· ${rfq.notificationError}`}</p>
+          {rfq.notificationProviderId && <EnquiryDeliveryCheck orderId={orderId} rfqId={rfq.id} />}
+          {rfq.supplierQuestions?.map(q => <p key={q.createdAt}>Question: {q.text}</p>)}
+          {!!rfq.quoteRevisions?.length && <details><summary className="cursor-pointer">Quote revisions ({rfq.quoteRevisions.length}) · Delivery cost: {formatRupees(rfq.quoteDeliveryCost ?? 0)}</summary>{rfq.quoteRevisions.map((revision, index) => <p key={revision.submittedAt}>#{index + 1} · {revision.submittedAt} · {formatRupees(revision.lines.reduce((sum, line) => sum + line.availableQty * line.unitPrice, revision.deliveryCost))} · {revision.notes}</p>)}</details>}
+        </div>)}
+      </div>}
       {/* Dispatch results */}
       {dispatchResults && dispatchResults.length > 0 && (
         <div className="space-y-1.5">
@@ -1789,7 +1804,7 @@ function DocumentsPanel({ order }: DocumentsPanelProps) {
 // ---------------------------------------------------------------------------
 
 function OrderDetailPage() {
-  const { order } = Route.useLoaderData() as { order: OrderDetail };
+  const { order, supplierAlerts } = Route.useLoaderData();
 
   return (
     <div className="mx-auto max-w-4xl space-y-6">
@@ -1801,6 +1816,7 @@ function OrderDetailPage() {
         Back to orders
       </Link>
 
+      <SupplierOrderOperations order={order} alerts={supplierAlerts} />
       {/* Header */}
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="space-y-1">

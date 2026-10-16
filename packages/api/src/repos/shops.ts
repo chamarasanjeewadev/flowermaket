@@ -243,15 +243,18 @@ export async function createShop(
 
   try {
     return await db.transaction(async (tx) => {
+      // Lock the owner even when no shop exists yet: concurrent setup submissions serialize.
+      const [owner] = await tx.select({ id: schema.users.id }).from(schema.users).where(eq(schema.users.id, ownerUserId)).for("update");
+      if (!owner) return err("not_found", "Shop owner not found.");
       // One shop per owner.
       const [existing] = await tx
-        .select({ id: schema.shops.id })
+        .select({ id: schema.shops.id, slug: schema.shops.slug })
         .from(schema.shops)
         .where(eq(schema.shops.ownerUserId, ownerUserId))
         .limit(1);
 
       if (existing) {
-        return err("conflict", "You already have a shop.");
+        return ok(existing);
       }
 
       const [shop] = await tx
@@ -266,7 +269,7 @@ export async function createShop(
           district: input.district,
           city: input.city ?? null,
           sellerTypes: normalizeSellerTypes(input.sellerTypes) ?? ["florist"],
-          verificationStatus: opts?.verificationStatus ?? "pending",
+          verificationStatus: opts?.verificationStatus ?? "unverified",
         })
         .returning({ id: schema.shops.id, slug: schema.shops.slug });
 
@@ -366,6 +369,9 @@ export interface ReviewableShop {
   city: string | null;
   descriptionEn: string | null;
   descriptionSi: string | null;
+  notificationPhone?: string | null;
+  notificationConsentAt?: Date | null;
+  notificationVerifiedAt?: Date | null;
   verificationStatus: VerificationStatus;
   verificationNotes: string | null;
   verificationSubmittedAt: Date | null;
@@ -398,6 +404,9 @@ export async function listShopsForReview(
       city: schema.shops.city,
       descriptionEn: schema.shops.descriptionEn,
       descriptionSi: schema.shops.descriptionSi,
+      notificationPhone: schema.shops.notificationPhone,
+      notificationConsentAt: schema.shops.notificationConsentAt,
+      notificationVerifiedAt: schema.shops.notificationVerifiedAt,
       verificationStatus: schema.shops.verificationStatus,
       verificationNotes: schema.shops.verificationNotes,
       verificationSubmittedAt: schema.shops.verificationSubmittedAt,

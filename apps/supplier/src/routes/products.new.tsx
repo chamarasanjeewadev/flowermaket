@@ -4,7 +4,6 @@ import {
   Card,
   CardContent,
   CardHeader,
-  CardTitle,
 } from "@flowers/ui/components/card";
 import {
   listCategoriesFn,
@@ -56,9 +55,9 @@ function NewProductPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="font-display text-2xl">
+          <h1 className="font-display text-2xl">
             {t.products.newTitle}
-          </CardTitle>
+          </h1>
         </CardHeader>
         <CardContent>
           <ProductForm
@@ -74,6 +73,8 @@ function NewProductPage() {
             onSubmit={async (payload) => {
               const result = await createProductFn({
                 data: {
+                  flowerSpeciesEn: payload.flowerSpeciesEn,
+                  occasionTagsEn: payload.occasionTagsEn,
                   categoryId: payload.categoryId,
                   nameEn: payload.nameEn,
                   nameSi: payload.nameSi,

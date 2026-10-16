@@ -1,14 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Badge } from "@flowers/ui/components/badge";
 import { EmptyState } from "@flowers/ui/components/empty-state";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@flowers/ui/components/table";
+
 import { Inbox } from "lucide-react";
 import { listRfqsFn } from "../server/rfqs";
 import { useT } from "../i18n/react";
@@ -90,46 +83,13 @@ function RfqInboxPage() {
           description={t.rfqs.emptyDescription}
         />
       ) : (
-        <div className="rounded-xl border border-border">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>{t.rfqs.colOrder}</TableHead>
-                <TableHead>{t.rfqs.colItems}</TableHead>
-                <TableHead>{t.rfqs.colStatus}</TableHead>
-                <TableHead>{t.rfqs.colSent}</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {rfqs.map((rfq) => (
-                <TableRow key={rfq.id}>
-                  <TableCell>
-                    <Link
-                      to="/rfqs/$rfqId"
-                      params={{ rfqId: rfq.id }}
-                      className="font-medium text-foreground hover:text-brand hover:underline"
-                    >
-                      {rfq.orderNo}
-                    </Link>
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {rfq.firstItemDescription
-                      ? rfq.itemCount > 1
-                        ? `${rfq.firstItemDescription} +${rfq.itemCount - 1} more`
-                        : rfq.firstItemDescription
-                      : `${rfq.itemCount} item${rfq.itemCount !== 1 ? "s" : ""}`}
-                  </TableCell>
-                  <TableCell>
-                    <RfqStatusBadge status={rfq.status} />
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {formatDate(rfq.sentAt)}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
+        <div className="space-y-4">{rfqs.map(rfq => <article key={rfq.id} className="space-y-3 rounded-xl border border-border bg-card p-5">
+          <div className="flex flex-wrap justify-between gap-3"><h2 className="font-semibold">{rfq.orderNo}</h2><RfqStatusBadge status={rfq.expiresAt && new Date(rfq.expiresAt) <= new Date() && ["sent", "viewed", "quoted"].includes(rfq.status) ? "expired" : rfq.status} /></div>
+          <p>{rfq.firstItemDescription ?? `${rfq.itemCount} items`}{rfq.itemCount > 1 && ` +${rfq.itemCount - 1}`}</p>
+          <p className="text-sm text-muted-foreground">Required: {rfq.neededByDate ?? "—"} · Area: {rfq.deliveryArea ?? "—"}</p>
+          <p className="text-sm text-muted-foreground">Respond by: {formatDate(rfq.expiresAt)}</p>
+          <Link to="/rfqs/$rfqId" params={{ rfqId: rfq.id }} className="inline-flex min-h-11 items-center rounded-md bg-brand px-4 text-sm font-medium text-white focus-visible:ring-2 focus-visible:ring-ring">{t.rfqs.statusQuoted === rfq.status ? "Review quote" : "Review & quote"}</Link>
+        </article>)}</div>
       )}
     </div>
   );

@@ -18,7 +18,12 @@ import { siteUrl } from "../../lib/site";
 import { useEnquiry } from "../../lib/enquiry";
 import { track } from "../../lib/analytics";
 
+import { getShopBySlug } from "../../server/catalog";
+
 export const Route = createFileRoute("/$locale/enquiry")({
+  validateSearch: (search: Record<string, unknown>): { shop?: string } => ({ shop: typeof search.shop === "string" && /^[a-z0-9-]{1,120}$/.test(search.shop) ? search.shop : undefined }),
+  loaderDeps: ({ search }) => ({ shop: search.shop }),
+  loader: async ({ deps }) => ({ sourceShop: deps.shop ? (await getShopBySlug({ data: deps.shop }))?.shop ?? null : null }),
   head: ({ params }) => {
     const locale = params.locale as Locale;
     return {
@@ -45,6 +50,7 @@ function formatRupees(cents: number): string {
 
 function EnquiryPage() {
   const { t, locale } = useT();
+  const { sourceShop } = Route.useLoaderData();
   const { items, hydrated, setQty, remove, clear } = useEnquiry();
   const [form, setForm] = React.useState<EnquiryForm>({});
 
@@ -53,7 +59,7 @@ function EnquiryPage() {
   }
 
   const waHref = buildWhatsappUrl(
-    buildEnquiryText({ items, form, locale, siteUrl: siteUrl() }),
+    buildEnquiryText({ items, form, locale, siteUrl: siteUrl(), sourceShop: sourceShop ? { name: localizedName(sourceShop, locale), slug: sourceShop.slug } : undefined }),
     WHATSAPP_NUMBER,
   );
 
@@ -73,7 +79,7 @@ function EnquiryPage() {
     );
   }
 
-  if (items.length === 0) {
+  if (items.length === 0 && !sourceShop) {
     return (
       <div className="mx-auto max-w-3xl px-4 py-16 text-center">
         <h1 className="font-display text-3xl sm:text-4xl">{t.enquiry.title}</h1>
@@ -100,6 +106,7 @@ function EnquiryPage() {
         </p>
       </header>
 
+      {sourceShop && <div className="mb-6 rounded-xl border border-border bg-accent p-4"><p className="font-semibold">{locale === "si" ? "සාප්පුව සඳහා ඉල්ලීම" : "Enquiry for"}: {localizedName(sourceShop, locale)}</p><p className="mt-2 text-sm text-muted-foreground">{locale === "si" ? "FlowerMarket ඔබේ ඉල්ලීම සහ ඇණවුම් තහවුරු කිරීම සම්බන්ධීකරණය කරයි. මෙය තහවුරු කළ ඇණවුමක් නොවේ." : "FlowerMarket coordinates your enquiry with this shop and confirms availability and the final offer. This is not a confirmed order."}</p></div>}
       {/* Items */}
       <ul className="flex flex-col divide-y divide-border rounded-lg border border-border">
         {items.map((item) => (

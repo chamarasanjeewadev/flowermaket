@@ -25,6 +25,7 @@ import {
   TableRow,
 } from "@flowers/ui/components/table";
 import { Loader2 } from "lucide-react";
+import { askQuestionFn } from "../server/portal";
 import { getRfqFn, submitQuoteFn, declineRfqFn } from "../server/rfqs";
 import { toast } from "../components/toaster";
 import { useT } from "../i18n/react";
@@ -125,7 +126,7 @@ function initLineState(items: SupplierRfqOrderItem[], quoteLines: SupplierRfqQuo
 // ---------------------------------------------------------------------------
 
 function RfqDetailPage() {
-  const { t } = useT();
+  const { t, locale } = useT();
   const { rfq } = Route.useLoaderData();
 
   if (!rfq) {
@@ -142,7 +143,7 @@ function RfqDetailPage() {
   // A quoted RFQ stays editable (re-submitting replaces the quote) until it is
   // awarded/closed — matches the server-side canSubmitQuote guard.
   const isEditable =
-    rfq.status === "sent" || rfq.status === "viewed" || rfq.status === "quoted";
+    (rfq.status === "sent" || rfq.status === "viewed" || rfq.status === "quoted") && (!rfq.expiresAt || new Date(rfq.expiresAt) > new Date());
   const isRequoting = rfq.status === "quoted";
 
   return (
@@ -165,6 +166,15 @@ function RfqDetailPage() {
         <RfqStatusBadge status={rfq.status} />
       </div>
 
+      <Alert><AlertDescription>{locale === "si" ? "මෙය මිල ඉල්ලීමකි. FlowerMarket ඇණවුම තහවුරු කරන තෙක් මල් සකස් කිරීම ආරම්භ නොකරන්න." : "This is an enquiry, not a confirmed order. FlowerMarket reviews your quote and confirms whether work is assigned to you. Do not start preparing flowers yet."}</AlertDescription></Alert>
+      <dl className="grid gap-3 rounded-xl border border-border p-4 text-sm sm:grid-cols-3">
+        <div><dt className="text-muted-foreground">{locale === "si" ? "අවශ්‍ය දිනය" : "Required date"}</dt><dd>{rfq.neededByDate ?? "—"}</dd></div>
+        <div><dt className="text-muted-foreground">{locale === "si" ? "බෙදාහැරීමේ ප්‍රදේශය" : "Delivery area"}</dt><dd>{rfq.deliveryArea ?? "—"}</dd></div>
+        <div><dt className="text-muted-foreground">{locale === "si" ? "ප්‍රතිචාර අවසාන දිනය" : "Response deadline"}</dt><dd>{formatDate(rfq.expiresAt)}</dd></div>
+      </dl>
+      {!!rfq.revisions?.length && <details className="rounded-xl border border-border p-4"><summary className="cursor-pointer py-2">{locale === "si" ? "මිල යෝජනා ඉතිහාසය" : "Quote revision history"} ({rfq.revisions.length})</summary>{rfq.revisions.map((revision, i) => <div key={revision.submittedAt} className="mt-3 border-t border-border pt-3 text-sm"><p>#{i + 1} · {formatDate(revision.submittedAt)} · {formatRupees(revision.lines.reduce((sum, line) => sum + line.availableQty * line.unitPrice, revision.deliveryCost))}</p><p>{revision.notes}</p></div>)}</details>}
+      {!!rfq.questions?.length && <section className="rounded-xl border border-border p-4 text-sm"><h2 className="font-semibold">{locale === "si" ? "FlowerMarket වෙත ප්‍රශ්න" : "Questions for FlowerMarket"}</h2>{rfq.questions.map(question => <p key={question.createdAt} className="mt-2">{question.text}</p>)}</section>}
+      {rfq.customerNotes && <Alert><AlertDescription>{rfq.customerNotes}</AlertDescription></Alert>}
       {/* Admin message if any */}
       {rfq.message && (
         <Alert>
@@ -172,6 +182,7 @@ function RfqDetailPage() {
         </Alert>
       )}
 
+      {rfq.orderStatus === "cancelled" && <Alert variant="destructive"><AlertDescription>{locale === "si" ? "පාරිභෝගික ඉල්ලීම අවලංගු කර ඇත." : "The customer enquiry has been cancelled. Quotes are closed."}</AlertDescription></Alert>}
       {/* Already responded / re-quote notice */}
       {!isEditable && (
         <Alert>
@@ -186,7 +197,7 @@ function RfqDetailPage() {
 
       {/* Items table + quote form or read-only display */}
       {isEditable ? (
-        <QuoteForm rfq={rfq} />
+        <QuoteForm key={rfq.id} rfq={rfq} />
       ) : (
         <ReadOnlyView rfq={rfq} />
       )}
@@ -294,13 +305,16 @@ function ReadOnlyView({ rfq }: { rfq: SupplierRfqDetail }) {
 // ---------------------------------------------------------------------------
 
 function QuoteForm({ rfq }: { rfq: SupplierRfqDetail }) {
-  const { t } = useT();
+  const { t, locale } = useT();
   const router = useRouter();
 
   const isRequoting = rfq.status === "quoted";
   const [lines, setLines] = React.useState<LineState[]>(() =>
     initLineState(rfq.items, rfq.quoteLines),
   );
+  const [deliveryCost, setDeliveryCost] = React.useState(String((rfq.deliveryCost ?? 0) / 100));
+  const [question, setQuestion] = React.useState("");
+  const [asking, setAsking] = React.useState(false);
   const [quoteNotes, setQuoteNotes] = React.useState(rfq.quoteNotes ?? "");
   const [validUntil, setValidUntil] = React.useState(() =>
     rfq.quoteValidUntil
@@ -323,6 +337,7 @@ function QuoteForm({ rfq }: { rfq: SupplierRfqDetail }) {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (submitting || declining || asking) return;
     setError(null);
 
     // Validate and convert rupees → cents
@@ -352,7 +367,8 @@ function QuoteForm({ rfq }: { rfq: SupplierRfqDetail }) {
           rfqId: rfq.id,
           lines: convertedLines,
           quoteNotes: quoteNotes.trim() || null,
-          validUntil: validUntil || null,
+          validUntil: validUntil ? `${validUntil}T23:59:59+05:30` : null,
+          deliveryCost: Math.round(Number(deliveryCost) * 100),
         },
       });
       if (result.ok) {
@@ -392,101 +408,21 @@ function QuoteForm({ rfq }: { rfq: SupplierRfqDetail }) {
       {/* Order items + per-line inputs */}
       <section className="space-y-3">
         <h2 className="text-lg font-semibold">{t.rfqs.itemsLabel}</h2>
-        <div className="overflow-x-auto rounded-xl border border-border">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="min-w-[180px]">{t.rfqs.colItemDescription}</TableHead>
-                <TableHead>{t.rfqs.colQtyRequested}</TableHead>
-                <TableHead className="min-w-[110px]">{t.rfqs.colAvailableQty}</TableHead>
-                <TableHead className="min-w-[130px]">{t.rfqs.colUnitPrice}</TableHead>
-                <TableHead className="min-w-[110px]">{t.rfqs.colLeadTime}</TableHead>
-                <TableHead className="min-w-[180px]">{t.rfqs.colNotes}</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {rfq.items.map((item, idx) => {
-                const line = lines[idx];
-                if (!line) return null;
-                return (
-                  <TableRow key={item.id}>
-                    {/* Item description */}
-                    <TableCell>
-                      <div className="font-medium">{item.descriptionEn}</div>
-                      {item.variant && (
-                        <div className="text-xs text-muted-foreground">{item.variant}</div>
-                      )}
-                      {item.notes && (
-                        <div className="text-xs text-muted-foreground">{item.notes}</div>
-                      )}
-                    </TableCell>
-
-                    {/* Qty requested — read-only */}
-                    <TableCell className="text-muted-foreground">
-                      {item.quantity} {item.unit}
-                    </TableCell>
-
-                    {/* Available qty */}
-                    <TableCell>
-                      <Input
-                        type="number"
-                        min="0"
-                        step="1"
-                        className="w-24"
-                        value={line.availableQty}
-                        onChange={(e) =>
-                          updateLine(idx, "availableQty", e.target.value)
-                        }
-                        required
-                      />
-                    </TableCell>
-
-                    {/* Unit price (rupees) */}
-                    <TableCell>
-                      <Input
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        className="w-28"
-                        placeholder={t.rfqs.unitPricePlaceholder}
-                        value={line.unitPriceRupees}
-                        onChange={(e) =>
-                          updateLine(idx, "unitPriceRupees", e.target.value)
-                        }
-                        required
-                      />
-                    </TableCell>
-
-                    {/* Lead time (days) */}
-                    <TableCell>
-                      <Input
-                        type="number"
-                        min="0"
-                        step="1"
-                        className="w-24"
-                        value={line.leadTimeDays}
-                        onChange={(e) =>
-                          updateLine(idx, "leadTimeDays", e.target.value)
-                        }
-                      />
-                    </TableCell>
-
-                    {/* Notes */}
-                    <TableCell>
-                      <Input
-                        type="text"
-                        className="w-44"
-                        value={line.notes}
-                        onChange={(e) =>
-                          updateLine(idx, "notes", e.target.value)
-                        }
-                      />
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
+        <div className="space-y-4">
+          {rfq.items.map((item, idx) => {
+            const line = lines[idx]; if (!line) return null;
+            const fields = [
+              { field: "availableQty", label: t.rfqs.colAvailableQty, type: "number", step: "1", required: true },
+              { field: "unitPriceRupees", label: t.rfqs.colUnitPrice, type: "number", step: "0.01", required: true },
+              { field: "leadTimeDays", label: t.rfqs.colLeadTime, type: "number", step: "1", required: false },
+              { field: "notes", label: t.rfqs.colNotes, type: "text", required: false },
+            ] as const;
+            return <article key={item.id} className="rounded-xl border border-border bg-card p-4">
+              <h3 className="font-semibold">{item.descriptionEn} {item.variant && `· ${item.variant}`}</h3>
+              <p className="mt-1 text-sm text-muted-foreground">{t.rfqs.colQtyRequested}: {item.quantity} {item.unit} {item.notes && `· ${item.notes}`}</p>
+              <div className="mt-4 grid gap-4 sm:grid-cols-2">{fields.map(field => <div key={field.field} className="space-y-2"><Label htmlFor={`${item.id}-${field.field}`}>{field.label}</Label><Input id={`${item.id}-${field.field}`} className="min-h-11" type={field.type} min={field.type === "number" ? 0 : undefined} step={"step" in field ? field.step : undefined} required={field.required} value={line[field.field]} onChange={e => updateLine(idx, field.field, e.target.value)} /></div>)}</div>
+            </article>;
+          })}
         </div>
       </section>
 
@@ -494,6 +430,8 @@ function QuoteForm({ rfq }: { rfq: SupplierRfqDetail }) {
       <section className="space-y-4">
         <h2 className="text-lg font-semibold">{t.rfqs.quoteSection}</h2>
 
+        <div className="space-y-2"><Label htmlFor="delivery-cost">{locale === "si" ? "බෙදාහැරීමේ මිල (රු.)" : "Delivery cost (LKR), if you offer delivery"}</Label><Input id="delivery-cost" type="number" min="0" step="0.01" required value={deliveryCost} onChange={e => setDeliveryCost(e.target.value)} /><p className="text-sm text-muted-foreground">{locale === "si" ? "බෙදාහැරීම පිළිබඳ විස්තර සටහන් කරන්න." : "State delivery or collection arrangements in your notes. FlowerMarket must confirm responsibility."}</p></div>
+        <p className="text-sm text-muted-foreground">{locale === "si" ? "මෙය ඔබේ සැපයුම් මිලයි. පාරිභෝගික මිල FlowerMarket තීරණය කරයි. ගෙවීම් කොන්දේසි වෙනම තහවුරු කළ යුතුයි." : "These are your supply prices to FlowerMarket. FlowerMarket sets the customer offer; payment and settlement terms require separate confirmation."}</p>
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-2">
             <Label htmlFor="quoteNotes">{t.rfqs.notesLabel}</Label>
@@ -518,6 +456,14 @@ function QuoteForm({ rfq }: { rfq: SupplierRfqDetail }) {
         </div>
       </section>
 
+      <section className="space-y-2 rounded-xl border border-border p-4">
+        <Label htmlFor="supplier-question">{locale === "si" ? "FlowerMarket වෙත ප්‍රශ්නයක්" : "Ask FlowerMarket a question"}</Label>
+        <Textarea id="supplier-question" maxLength={2000} value={question} onChange={e => setQuestion(e.target.value)} />
+        <Button type="button" variant="outline" disabled={asking || submitting || declining || !question.trim()} onClick={() => {
+          setAsking(true); setError(null);
+          void askQuestionFn({ data: { rfqId: rfq.id, text: question } }).then(async result => { if (!result.ok) setError(result.message); else { setQuestion(""); await router.invalidate(); } }).catch(() => setError(t.common.error)).finally(() => setAsking(false));
+        }}>{locale === "si" ? "ප්‍රශ්නය යවන්න" : "Send question"}</Button>
+      </section>
       {/* Error */}
       {error && (
         <Alert variant="destructive">
@@ -526,8 +472,8 @@ function QuoteForm({ rfq }: { rfq: SupplierRfqDetail }) {
       )}
 
       {/* Actions */}
-      <div className="flex flex-wrap gap-3">
-        <Button type="submit" variant="brand" disabled={submitting || declining}>
+      <div className="sticky bottom-0 flex flex-wrap gap-3 border-t border-border bg-background py-4">
+        <Button type="submit" variant="brand" disabled={submitting || declining || asking}>
           {submitting ? (
             <>
               <Loader2 className="mr-2 size-4 animate-spin" />
@@ -546,7 +492,7 @@ function QuoteForm({ rfq }: { rfq: SupplierRfqDetail }) {
           <Button
             type="button"
             variant="outline"
-            disabled={submitting || declining}
+            disabled={submitting || declining || asking}
             onClick={() => void handleDecline()}
           >
             {declining ? (

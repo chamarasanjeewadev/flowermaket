@@ -17,15 +17,20 @@ export function buildRfqNudge(input: {
   orderNo: string;
   portalUrl: string;
   locale: MessageLocale;
+  requiredDate?: string | null;
+  deliveryArea?: string | null;
+  responseDeadline?: string | null;
 }): string {
   const { shopName, orderNo, portalUrl, locale } = input;
 
   if (locale === "si") {
     return (
-      `ඔබ සඳහා නව ඇණවුම් ඉල්ලීමක් ඇත 📋\n` +
+      `ඔබ සඳහා නව මල් විමසීමක් ඇත\n` +
       `\n` +
       `ඉල්ලීම අංකය: ${orderNo}\n` +
       `ගබඩාව: ${shopName}\n` +
+      `අවශ්‍ය දිනය: ${input.requiredDate ?? "සඳහන් කර නැත"} · ප්‍රදේශය: ${input.deliveryArea ?? "සඳහන් කර නැත"}\n` +
+      `ප්‍රතිචාර අවසාන දිනය: ${input.responseDeadline ?? "සඳහන් කර නැත"}\n` +
       `\n` +
       `සම්පූර්ණ විස්තර ලබා ගැනීමට මෙහි ක්ලික් කරන්න:\n` +
       `${portalUrl}\n` +
@@ -36,12 +41,14 @@ export function buildRfqNudge(input: {
 
   // English
   return (
-    `You have a new order request 📋\n` +
+    `New flower enquiry\n` +
     `\n` +
     `Request #: ${orderNo}\n` +
     `Shop: ${shopName}\n` +
+    `Required: ${input.requiredDate ?? "Not specified"} · Area: ${input.deliveryArea ?? "Not specified"}\n` +
+    `Respond by: ${input.responseDeadline ?? "Not specified"}\n` +
     `\n` +
-    `View full details:\n` +
+    `View enquiry & quote:\n` +
     `${portalUrl}\n` +
     `\n` +
     `FlowerMarket.lk 🌸`
