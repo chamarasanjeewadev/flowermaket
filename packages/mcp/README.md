@@ -39,6 +39,7 @@ cwd = repo root. Debug with `pnpm --filter @flowers/mcp inspect` (MCP Inspector)
 | --- | --- | --- | --- |
 | Marketplace | `list_shops`, `list_products_for_moderation`, `list_categories`, `get_pending_supplier_invite` | `review_shop`, `set_shop_seller_types`, `moderate_product`, `approve_products` | `invite_supplier` (delivery=whatsapp) |
 | Orders | `list_orders`, `get_order`, `match_suppliers`, `get_cost_rollup` | `create_order`, `update_order_status`, `create_award`, `cancel_award`, `create_document_draft`, `issue_document`, `accept_quotation`, `mark_invoice_paid` | `send_rfqs`, `resend_rfq_nudge`, `send_document_link` |
+| Florist directory | `list_florist_listings`, `search_google_florists` | `import_florist_listing`, `link_listing_to_shop`, `set_listing_location`, `set_listing_status`, `refresh_florist_ratings` | `invite_florist_listing` (message must contain `{link}`) |
 | WhatsApp | `whatsapp_status`, `list_whatsapp_conversations`, `get_whatsapp_conversation` | `mark_whatsapp_conversation_read` | `send_whatsapp_reply` |
 
 Every WhatsApp message an agent sends is also logged into the admin inbox

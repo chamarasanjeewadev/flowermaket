@@ -14,7 +14,9 @@
       "mcp__flowers__get_cost_rollup",
       "mcp__flowers__whatsapp_status",
       "mcp__flowers__list_whatsapp_conversations",
-      "mcp__flowers__get_whatsapp_conversation"
+      "mcp__flowers__get_whatsapp_conversation",
+      "mcp__flowers__list_florist_listings",
+      "mcp__flowers__search_google_florists"
     ]
   }
 }

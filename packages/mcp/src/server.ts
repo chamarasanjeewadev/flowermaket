@@ -1,11 +1,17 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { Ctx } from "./context";
 import type { AnyTool } from "./tool";
+import { floristTools } from "./tools/florists";
 import { marketplaceTools } from "./tools/marketplace";
 import { orderTools } from "./tools/orders";
 import { whatsappTools } from "./tools/whatsapp";
 
-export const allTools: readonly AnyTool[] = [...marketplaceTools, ...orderTools, ...whatsappTools];
+export const allTools: readonly AnyTool[] = [
+  ...marketplaceTools,
+  ...orderTools,
+  ...whatsappTools,
+  ...floristTools,
+];
 
 const INSTRUCTIONS = `FlowerMarket.lk admin operations (Sri Lanka flower marketplace).
 - Money is always integer LKR cents (Rs 1,250.00 = 125000). Never pass rupees or floats.

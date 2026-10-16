@@ -55,6 +55,40 @@ describe("flowers MCP server", () => {
     expect(names).not.toContain("create_order");
   });
 
+  it("registers the florist directory tools with the right kinds", () => {
+    const expected: Record<string, string> = {
+      list_florist_listings: "read",
+      search_google_florists: "read",
+      import_florist_listing: "write",
+      link_listing_to_shop: "write",
+      set_listing_location: "write",
+      set_listing_status: "write",
+      refresh_florist_ratings: "write",
+      invite_florist_listing: "send",
+    };
+    for (const [name, kind] of Object.entries(expected)) {
+      expect(allTools.find((t) => t.name === name)?.kind, name).toBe(kind);
+    }
+  });
+
+  it("exposes only the florist read tools in read-only mode", async () => {
+    const names = (await (await connect(true)).listTools()).tools.map((t) => t.name);
+    expect(names).toContain("list_florist_listings");
+    expect(names).toContain("search_google_florists");
+    expect(names).not.toContain("invite_florist_listing");
+    expect(names).not.toContain("import_florist_listing");
+  });
+
+  it("requires {link} in florist invites before touching the database", async () => {
+    const client = await connect(false);
+    const res = await client.callTool({
+      name: "invite_florist_listing",
+      arguments: { listingId: "00000000-0000-4000-8000-000000000001", message: "Hi, join us" },
+    });
+    expect(res.isError).toBe(true);
+    expect(text(res)).toContain("{link}");
+  });
+
   it("rejects invalid input before touching the database", async () => {
     const client = await connect(false);
     const res = await client.callTool({ name: "get_order", arguments: { orderId: "nope" } });
