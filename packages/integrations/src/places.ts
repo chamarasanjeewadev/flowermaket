@@ -67,7 +67,7 @@ export async function searchFloristsText(apiKey: string, query: string, opts?: {
 }
 
 export async function searchFloristsNearby(apiKey: string, lat: number, lng: number, radiusM: number): Promise<PlacesResult<PlaceSummary[]>> {
-  const body = { includedTypes: ["florist"], locationRestriction: { circle: { center: { latitude: lat, longitude: lng }, radius: radiusM } } };
+  const body = { includedTypes: ["florist"], locationRestriction: { circle: { center: { latitude: lat, longitude: lng }, radius: Math.min(Math.max(radiusM, 1), 50000) } } };
   const r = await call(apiKey, "/places:searchNearby", LIST_MASK, { method: "POST", body });
   return r.ok ? { ok: true, data: parsePlaces(r.data) } : r;
 }
@@ -94,7 +94,7 @@ export async function autocompletePlaces(apiKey: string, input: string, sessionT
 }
 
 export async function geocodeText(apiKey: string, text: string): Promise<PlacesResult<{ lat: number; lng: number; label: string }>> {
-  const r = await call(apiKey, "/places:searchText", "places.displayName,places.formattedAddress,places.location", { method: "POST", body: { textQuery: text, regionCode: "lk", pageSize: 1 } });
+  const r = await call(apiKey, "/places:searchText", "places.id,places.displayName,places.formattedAddress,places.location", { method: "POST", body: { textQuery: text, regionCode: "lk", pageSize: 1 } });
   if (!r.ok) return r;
   const first = parsePlaces(r.data)[0];
   if (!first) return { ok: false, message: "No matching location found." };

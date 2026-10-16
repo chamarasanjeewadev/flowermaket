@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { parsePlace, searchFloristsText } from "./places";
+import { autocompletePlaces, geocodeText, getPlaceDetails, parsePlace, searchFloristsNearby, searchFloristsText } from "./places";
 
 const fixture = {
   id: "ChIJx", displayName: { text: "Rose Florist" }, formattedAddress: "12 Main St, Kurunegala",
@@ -44,5 +44,48 @@ describe("searchFloristsText", () => {
   it("does not throw on network error", async () => {
     vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("boom")));
     expect((await searchFloristsText("K", "x")).ok).toBe(false);
+  });
+});
+
+describe("geocodeText", () => {
+  it("returns lat/lng/label from a place response", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ places: [fixture] }), { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+    const result = await geocodeText("KEY", "Kurunegala");
+    expect(result).toEqual({ ok: true, data: { lat: 7.48, lng: 80.36, label: "12 Main St, Kurunegala" } });
+    const headers = (fetchMock.mock.calls[0] as [string, RequestInit])[1].headers as Record<string, string>;
+    expect(headers["X-Goog-FieldMask"]).toContain("places.id");
+  });
+});
+
+describe("getPlaceDetails", () => {
+  it("GETs the place with an unprefixed field mask", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify(fixture), { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+    const result = await getPlaceDetails("KEY", "ChIJx");
+    expect(result.ok && result.data.placeId).toBe("ChIJx");
+    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe("https://places.googleapis.com/v1/places/ChIJx");
+    expect(init.method).toBe("GET");
+    const mask = (init.headers as Record<string, string>)["X-Goog-FieldMask"];
+    expect(mask).toContain("googleMapsUri");
+    expect(mask).not.toContain("places.");
+  });
+});
+
+describe("autocompletePlaces", () => {
+  it("parses suggestions", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify({ suggestions: [{ placePrediction: { placeId: "p1", text: { text: "Kandy, Sri Lanka" } } }, { queryPrediction: {} }] }), { status: 200 })));
+    expect(await autocompletePlaces("KEY", "kan", "tok")).toEqual({ ok: true, data: [{ placeId: "p1", text: "Kandy, Sri Lanka" }] });
+  });
+});
+
+describe("searchFloristsNearby", () => {
+  it("clamps radius to 50000", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({}), { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+    await searchFloristsNearby("KEY", 7, 80, 90000);
+    const body = JSON.parse(((fetchMock.mock.calls[0] as [string, RequestInit])[1].body) as string);
+    expect(body.locationRestriction.circle.radius).toBe(50000);
   });
 });
