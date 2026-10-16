@@ -10,6 +10,10 @@
 
 type Lang = "en" | "si";
 
+/**
+ * Dates (neededOn), time windows, budget labels and amounts (totalRupees) are
+ * display strings: callers must pre-format them; the builders do no formatting.
+ */
 export interface RequestSummary {
   ref: string;
   area: string;
@@ -39,7 +43,7 @@ function summaryBlock(s: RequestSummary, lang: Lang): string {
   );
   lines.push(en ? `Needed: ${s.neededOn}, ${s.window}` : `අවශ්‍ය වන්නේ: ${s.neededOn}, ${s.window}`);
   if (s.occasion) lines.push(en ? `Occasion: ${s.occasion}` : `අවස්ථාව: ${s.occasion}`);
-  lines.push(en ? `Budget: ${s.budgetLabel}` : `අයවැය: ${s.budgetLabel}`);
+  lines.push(en ? `Budget: ${s.budgetLabel}` : `ඔබේ වියදම් සීමාව: ${s.budgetLabel}`);
   if (s.flowerLines.length) {
     lines.push(en ? "Flowers:" : "මල්:");
     for (const f of s.flowerLines) lines.push(`- ${f}`);
@@ -64,8 +68,8 @@ export function buildRequestOpenedText(
   if (lang === "si") {
     const body =
       i.floristCount > 0
-        ? `ඔබගේ ඉල්ලීම *${i.ref}* මල් වෙළඳුන් ${i.floristCount} දෙනෙකුට යවා ඇත. ඔවුන්ගේ මිල ගණන් ලැබෙන විට අපි දන්වන්නෙමු.`
-        : `ඔබගේ ඉල්ලීම *${i.ref}* ලැබුණා. ${i.area} අවට මල් වෙළඳුන් සොයමින් සිටිමු; කවුරුන් හෝ ලැබුණු විට දන්වන්නෙමු.`;
+        ? `ඔබගේ ඉල්ලීම *${i.ref}* මල් වෙළඳුන් ${i.floristCount} දෙනෙකුට යවා ඇත. ඔවුන්ගේ මිල ගණන් ලැබෙන විට අපි ඔබට දන්වන්නම්.`
+        : `ඔබගේ ඉල්ලීම *${i.ref}* ලැබුණා. ${i.area} අවට මල් වෙළඳුන් සොයමින් සිටිනවා; මල් වෙළඳුන් ලැබුණු විට ඔබට දන්වන්නම්.`;
     return `${body}\n\nඉල්ලීම බලන්න: ${i.pageUrl}\n\nFlowerMarket.lk`;
   }
   const body =
@@ -104,17 +108,15 @@ export function buildUnclaimedIntroText(
       `ආයුබෝවන් ${i.listingName},\n\n` +
       `මේ FlowerMarket.lk. ඔබේ ප්‍රදේශයේ ගනුදෙනුකරුවෙකු මල් සඳහා මිල ගණන් ඉල්ලා සිටී (*${i.summary.ref}*):\n\n` +
       `${summaryBlock(i.summary, lang)}\n\n` +
-      `විස්තර බලා මිල ලබාදීමට: ${i.leadUrl}\n` +
-      `මිල ලබාදීම නොමිලේ.\n\n` +
-      `තවත් පණිවිඩ නොවෙනවා නම් STOP හෝ නවත්වන්න ලෙස පිළිතුරු දෙන්න; අපි ඔබට නැවත පණිවිඩ නොයවමු.`
+      `විස්තර බලා මිල ලබාදීමට: ${i.leadUrl}\n\n` +
+      `තවත් පණිවිඩ අවශ්‍ය නැතිනම් STOP හෝ නවත්වන්න ලෙස පිළිතුරු දෙන්න. එවිට අපි ඔබට නැවත පණිවිඩ නොඑවමු.`
     );
   }
   return (
     `Hi ${i.listingName},\n\n` +
     `This is FlowerMarket.lk. A customer near you is asking for flower quotes (*${i.summary.ref}*):\n\n` +
     `${summaryBlock(i.summary, lang)}\n\n` +
-    `View details and send a quote: ${i.leadUrl}\n` +
-    `Quoting is free.\n\n` +
+    `View details and send a quote: ${i.leadUrl}\n\n` +
     `Reply STOP and we won't message you again.`
   );
 }

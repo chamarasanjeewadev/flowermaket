@@ -85,6 +85,15 @@ describe("copy", () => {
   it("si unclaimed intro mentions STOP keyword", () => {
     expect(buildUnclaimedIntroText({ listingName: "Rose Hut", summary, leadUrl: URL }, "si")).toContain("STOP");
   });
+  it("unclaimed intro makes no pricing claim", () => {
+    for (const l of ["en", "si"] as const) {
+      const t = buildUnclaimedIntroText({ listingName: "Rose Hut", summary, leadUrl: URL }, l);
+      expect(t).not.toMatch(/free|නොමිලේ/i);
+    }
+    const si = buildUnclaimedIntroText({ listingName: "Rose Hut", summary, leadUrl: URL }, "si");
+    expect(si).toContain("STOP");
+    expect(si).toContain("නවත්වන්න");
+  });
   it("customer accepted says pay directly", () => {
     const t = buildCustomerAcceptedText({ ref: "LR-1", shopName: "Rose Hut", shopPhone: "94770000000", totalRupees: "6,500" }, "en");
     expect(t).toContain("You'll pay Rose Hut directly");
