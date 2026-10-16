@@ -53,6 +53,7 @@ import {
   getSupplierNotificationDelivery,
   type SupplierNotificationConfig,
   type EvolutionConfig,
+  notificationConfigFromEnv,
 } from "@flowers/integrations";
 import { resolveAdminSession } from "./session";
 
@@ -589,8 +590,7 @@ export const updateOrderLifecycleFn = createServerFn({ method: "POST" }).validat
 });
 
 function supplierNotificationConfig(): SupplierNotificationConfig {
-  const env = getEnv();
-  return { provider: env.WHATSAPP_SUPPLIER_PROVIDER === "twilio" ? "twilio" : "evolution", evolution: { apiUrl: env.EVOLUTION_API_URL ?? "", apiKey: env.EVOLUTION_API_KEY ?? "", instance: env.EVOLUTION_INSTANCE ?? "" }, accountSid: env.TWILIO_ACCOUNT_SID, authToken: env.TWILIO_AUTH_TOKEN, from: env.TWILIO_WHATSAPP_FROM, messagingServiceSid: env.TWILIO_MESSAGING_SERVICE_SID };
+  return notificationConfigFromEnv(getEnv());
 }
 
 export const checkSupplierAlertDeliveryFn = createServerFn({ method: "POST" }).validator((input: { alertId: string; orderId: string }) => input).handler(async ({ data }) => {

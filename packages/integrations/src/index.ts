@@ -6,3 +6,5 @@ export * from "./quotation";
 export * from "./rfqMessages";
 export * from "./whatsapp";
 export * from "./supplier-notifications";
+export * from "./notification-config";
+export * from "./places";
