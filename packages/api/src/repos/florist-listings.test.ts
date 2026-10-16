@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isListingStale, listingFromPlace, type PlaceInput } from "./florist-listings";
+import { isListingStale, linkDecision, listingFromPlace, type PlaceInput } from "./florist-listings";
 
 const now = new Date("2026-10-16T00:00:00Z");
 const daysAgo = (n: number) => new Date(now.getTime() - n * 86_400_000);
@@ -37,4 +37,15 @@ describe("isListingStale", () => {
   it("null is stale", () => expect(isListingStale(null, now)).toBe(true));
   it("29 days is fresh", () => expect(isListingStale(daysAgo(29), now)).toBe(false));
   it("31 days is stale", () => expect(isListingStale(daysAgo(31), now)).toBe(true));
+});
+
+describe("linkDecision", () => {
+  const link = (status: "unclaimed" | "invited" | "opted_out" | "blocked", shopId: string | null, to = "s1") =>
+    linkDecision({ status, shopId }, to);
+  it("unclaimed -> claimed", () => expect(link("unclaimed", null)).toEqual({ ok: true, data: { status: "claimed" } }));
+  it("invited -> claimed", () => expect(link("invited", null)).toEqual({ ok: true, data: { status: "claimed" } }));
+  it("opted_out stays", () => expect(link("opted_out", null)).toEqual({ ok: true, data: { status: "opted_out" } }));
+  it("blocked stays", () => expect(link("blocked", null)).toEqual({ ok: true, data: { status: "blocked" } }));
+  it("other shop conflicts", () => expect(link("unclaimed", "s2").ok).toBe(false));
+  it("same shop ok", () => expect(link("unclaimed", "s1").ok).toBe(true));
 });

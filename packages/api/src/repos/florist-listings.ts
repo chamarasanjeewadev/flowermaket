@@ -283,18 +283,41 @@ export async function listingsInBox(
   }));
 }
 
+/**
+ * Decide the outcome of linking a listing to a shop. Opt-out/block is never
+ * lifted implicitly; a listing linked to a different shop is a conflict.
+ */
+export function linkDecision(
+  current: { status: ListingStatus; shopId: string | null },
+  shopId: string,
+): ActionResult<{ status: ListingStatus }> {
+  if (current.shopId !== null && current.shopId !== shopId) {
+    return err("conflict", "Listing is already linked to a different shop.");
+  }
+  if (current.status === "opted_out" || current.status === "blocked") {
+    return ok({ status: current.status });
+  }
+  return ok({ status: "claimed" });
+}
+
 export async function linkListingToShop(
   db: Db,
   listingId: string,
   shopId: string,
 ): Promise<ActionResult<void>> {
   try {
-    const rows = await db
-      .update(schema.floristListings)
-      .set({ shopId, status: "claimed", updatedAt: new Date() })
+    const [current] = await db
+      .select({ status: schema.floristListings.status, shopId: schema.floristListings.shopId })
+      .from(schema.floristListings)
       .where(eq(schema.floristListings.id, listingId))
-      .returning({ id: schema.floristListings.id });
-    if (rows.length === 0) return err("not_found", "Listing not found.");
+      .limit(1);
+    if (!current) return err("not_found", "Listing not found.");
+    const decision = linkDecision({ status: asStatus(current.status), shopId: current.shopId }, shopId);
+    if (!decision.ok) return err(decision.code, decision.message);
+    await db
+      .update(schema.floristListings)
+      .set({ shopId, status: decision.data.status, updatedAt: new Date() })
+      .where(eq(schema.floristListings.id, listingId));
     return ok(undefined);
   } catch (e) {
     if (isPgError(e, "23505")) return err("conflict", "That shop is already linked to a listing.");
@@ -308,12 +331,16 @@ export async function setListingLocation(
   loc: LatLng,
   source: "owner" | "admin",
 ): Promise<ActionResult<void>> {
-  const rows = await db
-    .update(schema.floristListings)
-    .set({ lat: loc.lat, lng: loc.lng, locationSource: source, updatedAt: new Date() })
-    .where(eq(schema.floristListings.id, listingId))
-    .returning({ id: schema.floristListings.id });
-  return rows.length === 0 ? err("not_found", "Listing not found.") : ok(undefined);
+  try {
+    const rows = await db
+      .update(schema.floristListings)
+      .set({ lat: loc.lat, lng: loc.lng, locationSource: source, updatedAt: new Date() })
+      .where(eq(schema.floristListings.id, listingId))
+      .returning({ id: schema.floristListings.id });
+    return rows.length === 0 ? err("not_found", "Listing not found.") : ok(undefined);
+  } catch (e) {
+    return err("unknown", e instanceof Error ? e.message : "Failed to set location.");
+  }
 }
 
 export async function setListingStatus(
@@ -321,13 +348,17 @@ export async function setListingStatus(
   listingId: string,
   status: "unclaimed" | "opted_out" | "blocked",
 ): Promise<ActionResult<void>> {
-  const now = new Date();
-  const rows = await db
-    .update(schema.floristListings)
-    .set({ status, optedOutAt: status === "opted_out" ? now : null, updatedAt: now })
-    .where(eq(schema.floristListings.id, listingId))
-    .returning({ id: schema.floristListings.id });
-  return rows.length === 0 ? err("not_found", "Listing not found.") : ok(undefined);
+  try {
+    const now = new Date();
+    const rows = await db
+      .update(schema.floristListings)
+      .set({ status, optedOutAt: status === "opted_out" ? now : null, updatedAt: now })
+      .where(eq(schema.floristListings.id, listingId))
+      .returning({ id: schema.floristListings.id });
+    return rows.length === 0 ? err("not_found", "Listing not found.") : ok(undefined);
+  } catch (e) {
+    return err("unknown", e instanceof Error ? e.message : "Failed to set status.");
+  }
 }
 
 /** Opt out every listing with this phone. Returns rows updated. */
@@ -341,7 +372,7 @@ export async function optOutByPhone(db: Db, rawPhone: string): Promise<number> {
     .where(
       and(
         eq(schema.floristListings.phone, phone),
-        notInArray(schema.floristListings.status, ["opted_out"]),
+        notInArray(schema.floristListings.status, EXCLUDED_STATUSES),
       ),
     )
     .returning({ id: schema.floristListings.id });
@@ -362,6 +393,7 @@ export async function listStaleListingIds(db: Db, now: Date, limit: number): Pro
         or(isNull(t.googleSyncedAt), lt(t.googleSyncedAt, cutoff)),
       ),
     )
+    // Drizzle has no helper for NULLS FIRST; never-synced listings must come first.
     .orderBy(sql`${t.googleSyncedAt} asc nulls first`)
     .limit(limit);
   return rows.map((r) => r.id);
