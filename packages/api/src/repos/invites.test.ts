@@ -129,3 +129,16 @@ describe("buildInviteMessage", () => {
     expect(msg).toContain(joinUrl);
   });
 });
+
+import { shouldReuseInvite as _shouldReuseInvite } from "./invites";
+import { describe as _d, it as _it, expect as _e } from "vitest";
+_d("shouldReuseInvite", () => {
+  const now = new Date("2026-01-10T00:00:00Z");
+  _it("reuses null or future expiry", () => {
+    _e(_shouldReuseInvite({ expiresAt: null }, now)).toBe(true);
+    _e(_shouldReuseInvite({ expiresAt: new Date("2026-02-01T00:00:00Z") }, now)).toBe(true);
+  });
+  _it("rejects past expiry", () => {
+    _e(_shouldReuseInvite({ expiresAt: new Date("2026-01-01T00:00:00Z") }, now)).toBe(false);
+  });
+});

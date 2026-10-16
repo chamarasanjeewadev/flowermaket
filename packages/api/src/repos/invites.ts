@@ -199,3 +199,16 @@ export async function getActiveInviteByPhone(
     .limit(1);
   return row ? (row as InviteRow) : null;
 }
+
+/** An invite can be reused unless its expiry has passed. */
+export function shouldReuseInvite(invite: { expiresAt: Date | null }, now: Date): boolean {
+  return invite.expiresAt === null || invite.expiresAt.getTime() > now.getTime();
+}
+
+/** Mark a pending invite expired so a fresh one can be created for the phone. */
+export async function expireInvite(db: Db, inviteId: string): Promise<void> {
+  await db
+    .update(schema.supplierInvites)
+    .set({ status: "expired" })
+    .where(and(eq(schema.supplierInvites.id, inviteId), eq(schema.supplierInvites.status, "sent")));
+}

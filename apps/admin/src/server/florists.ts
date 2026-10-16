@@ -24,6 +24,8 @@ import {
   applyInviteLink,
   normalizeLkPhone,
   getActiveInviteByPhone,
+  shouldReuseInvite,
+  expireInvite,
   INVITE_LINK_PLACEHOLDER,
   recordOutboundMessage,
   type ActionResult,
@@ -257,7 +259,11 @@ export const inviteFloristFn = createServerFn({ method: "POST" })
 
       const env = getEnv();
       // Reuse a pending invite for this number instead of hitting the one-active-invite rule.
-      const existing = await getActiveInviteByPhone(db, phone);
+      let existing = await getActiveInviteByPhone(db, phone);
+      if (existing && !shouldReuseInvite(existing, new Date())) {
+        await expireInvite(db, existing.id);
+        existing = null;
+      }
       let token: string;
       let inviteId: string;
       if (existing) {
