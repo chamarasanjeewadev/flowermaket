@@ -53,6 +53,7 @@ export function ProductCard({
         <PriceBlock
           price={product.price}
           compareAtPrice={product.compareAtPrice}
+          priceMax={product.priceMax}
           listingType={product.listingType}
           size="sm"
         />

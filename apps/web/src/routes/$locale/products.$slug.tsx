@@ -243,6 +243,7 @@ function ProductDetailPage() {
           <PriceBlock
             price={product.price}
             compareAtPrice={product.compareAtPrice}
+            priceMax={product.priceMax}
             listingType={product.listingType}
             size="lg"
           />

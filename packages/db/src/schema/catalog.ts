@@ -43,6 +43,8 @@ export const products = pgTable(
     /** Price in LKR minor units (cents). */
     price: integer("price").notNull(),
     compareAtPrice: integer("compare_at_price"),
+    /** Optional upper bound: when set, `price` is the low end of a displayed range. */
+    priceMax: integer("price_max"),
     /** null = made-to-order */
     stockQty: integer("stock_qty"),
     leadTimeDays: integer("lead_time_days"),

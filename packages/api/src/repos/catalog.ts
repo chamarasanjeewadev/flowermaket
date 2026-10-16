@@ -42,6 +42,7 @@ export interface ProductListItem {
   nameSi: string | null;
   price: number;
   compareAtPrice: number | null;
+  priceMax: number | null;
   listingType: ListingType;
   minOrderQty: number | null;
   stockQty: number | null;
@@ -107,6 +108,7 @@ export interface ProductDetail {
   descriptionSi: string | null;
   price: number;
   compareAtPrice: number | null;
+  priceMax: number | null;
   stockQty: number | null;
   leadTimeDays: number | null;
   listingType: ListingType;
@@ -184,6 +186,7 @@ async function selectListItems(
       nameSi: schema.products.nameSi,
       price: schema.products.price,
       compareAtPrice: schema.products.compareAtPrice,
+      priceMax: schema.products.priceMax,
       listingType: schema.products.listingType,
       minOrderQty: schema.products.minOrderQty,
       stockQty: schema.products.stockQty,
@@ -358,6 +361,7 @@ export async function getActiveProductBySlug(
     descriptionSi: row.product.descriptionSi,
     price: row.product.price,
     compareAtPrice: row.product.compareAtPrice,
+    priceMax: row.product.priceMax,
     stockQty: row.product.stockQty,
     leadTimeDays: row.product.leadTimeDays,
     listingType: row.product.listingType,
