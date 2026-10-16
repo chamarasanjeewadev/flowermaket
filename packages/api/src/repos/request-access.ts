@@ -6,7 +6,7 @@
  * the code via `opts.onCode`.
  */
 
-import { and, count, desc, eq, gt, isNull } from "drizzle-orm";
+import { and, count, desc, eq, gt, isNull, sql } from "drizzle-orm";
 import { schema } from "@flowers/db/client";
 import type { Db } from "../db";
 import { err, ok, type ActionResult } from "../errors";
@@ -132,11 +132,17 @@ export async function verifyRequestOtp(
       .select({
         id: schema.bouquetRequests.id,
         phoneVerifiedAt: schema.bouquetRequests.phoneVerifiedAt,
+        customerPhone: schema.bouquetRequests.customerPhone,
       })
       .from(schema.bouquetRequests)
       .where(eq(schema.bouquetRequests.id, requestId))
       .limit(1);
     if (!req) return err("validation", GENERIC_ERROR);
+
+    // Defence in depth: the phone must be the customer's own number.
+    if (!phoneMatchesCustomer(phone, req.customerPhone)) {
+      return err("validation", GENERIC_ERROR);
+    }
 
     return await db.transaction(async (tx) => {
       const [otp] = await tx
@@ -161,11 +167,19 @@ export async function verifyRequestOtp(
         .limit(1);
       if (!otp) return err("validation", GENERIC_ERROR);
 
-      const newAttempts = otp.attempts + 1;
-      await tx
+      // Atomic increment: concurrent guesses each get a distinct count.
+      const [bumped] = await tx
         .update(schema.bouquetRequestOtps)
-        .set({ attempts: newAttempts })
-        .where(eq(schema.bouquetRequestOtps.id, otp.id));
+        .set({ attempts: sql`${schema.bouquetRequestOtps.attempts} + 1` })
+        .where(
+          and(
+            eq(schema.bouquetRequestOtps.id, otp.id),
+            isNull(schema.bouquetRequestOtps.consumedAt),
+          ),
+        )
+        .returning({ attempts: schema.bouquetRequestOtps.attempts });
+      if (!bumped) return err("validation", GENERIC_ERROR);
+      const newAttempts = bumped.attempts;
 
       const suppliedHash = await hashOtp(code, secret);
       const verdict = otpVerdict(
