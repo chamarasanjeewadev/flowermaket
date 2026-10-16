@@ -8,3 +8,4 @@ export * from "./documents";
 export * from "./bouquet-generations";
 export * from "./flowers";
 export * from "./whatsapp";
+export * from "./local-requests";

@@ -114,7 +114,8 @@ admin or MCP, an operator links a Google place or sets a pin by hand.
 | language | language enum | en \| si; used for every customer message |
 | design | jsonb | `{ flowers:[{flowerId,nameEn,qty}], fillers:[…], wrapping, addons:[…], cardMessage?, notes?, previewImagePath? }` (typed in `@flowers/api`) |
 | occasion | text null | from a fixed list |
-| budget_min_cents, budget_max_cents | integer | from fixed bands (§6.1), integer LKR cents |
+| budget_min_cents | integer | from fixed bands (§6.1), integer LKR cents |
+| budget_max_cents | integer null | null for the open-ended 20,000+ band; otherwise > budget_min_cents |
 | fulfilment | text | `delivery` \| `pickup` |
 | delivery_lat, delivery_lng | double precision | |
 | delivery_area | text | suburb/city label, the only location shops see before acceptance |
@@ -122,8 +123,11 @@ admin or MCP, an operator links a Google place or sets a pin by hand.
 | needed_on | date | |
 | needed_window | text | `morning` \| `afternoon` \| `evening` \| `any` |
 | radius_km | integer | 10, or 25 after widening |
-| quote_deadline_at | timestamptz | default: 24 h after open, or 2 h before the start of `needed_window` on `needed_on` if that is sooner, with a minimum of 1 h |
-| accepted_offer_id | uuid null | |
+| quote_deadline_at | timestamptz null | set when the request opens: 24 h after open, or 2 h before the start of `needed_window` on `needed_on` if that is sooner, with a minimum of 1 h. It closes *quoting* only: the customer may still accept a received quote until the end of `needed_on` (Asia/Colombo), after which the effective status is `expired` |
+| accepted_offer_id | uuid null | no FK (avoids a cycle with offers) |
+| no_florists_in_range | boolean default false | |
+| customer_notified_at | timestamptz null | last "N quotes so far" digest; drives the 2 h throttle |
+| bouquet_generation_id | uuid null → bouquet_generations | AI preview, if generated |
 | utm | jsonb null | attribution |
 | created_at, updated_at | timestamptz | |
 
@@ -152,11 +156,16 @@ Guard: a phone number can have at most 3 `open` requests at once.
 Unique `(request_id, listing_id)`. Money is integer cents with
 `CHECK (price_cents > 0)` and `CHECK (delivery_fee_cents >= 0)`.
 
-Customer OTP: generalise `documentAccess` (hashOtp, signed cookie, attempt
-limits) into a small `phoneAccess` helper keyed by `(kind, id)`, so requests use
-the same HMAC (`DOC_ACCESS_SECRET`) and limits as documents without a second
-implementation. The document flow keeps its behaviour, and its existing tests
-must still pass.
+### `bouquet_request_otps`
+`id`, `request_id` (→ bouquet_requests, cascade), `phone`, `code_hash`,
+`expires_at`, `attempts` (default 0), `max_attempts` (default 5), `consumed_at`
+null, `created_at`.
+
+Customer OTP: requests use their own `bouquet_request_otps` table and reuse the
+exported pure helpers from `documentAccess.ts` (`generateOtpCode`, `hashOtp`,
+`otpVerdict`, `signDocCookie`, `verifyDocCookie`), so there is no second crypto
+implementation (same HMAC secret `DOC_ACCESS_SECRET` and limits). `documentAccess`
+itself is unchanged.
 
 ## 5. Matching (pure, unit-tested)
 
@@ -205,6 +214,9 @@ doesn't lose it.
   re-verifies by OTP.
 - It shows the design summary, status, deadline countdown, and the shops
   contacted ("8 florists near Kurunegala are looking at your request").
+- Quoting closes at `quote_deadline_at`, but the customer may still accept a
+  received quote until the end of `needed_on` (Asia/Colombo). After that the
+  effective status is `expired`.
 - **Quote cards**: shop name, distance, ★ Google rating (number of reviews)
   with "Google" attribution and a Maps link, a Verified badge when
   `shops.verification_status = verified`, price + delivery fee = total, ready
@@ -219,8 +231,8 @@ doesn't lose it.
 - The OTP code.
 - "Request LR-XXXX sent to N florists near {area}" with the page link.
 - On the **first** quote: "You have a quote", with the link. After that, at most
-  one "N quotes so far" message per 2 hours while the request is open. No cron:
-  this is checked when a quote is saved.
+  one "N quotes so far" message per 2 hours while the request is open, throttled
+  by `customer_notified_at`. No cron: this is checked when a quote is saved.
 - On acceptance: the shop's contact details and a reminder to pay the shop
   directly.
 
@@ -350,7 +362,7 @@ supports it at implementation time)
 
 ## 12. Errors, abuse, privacy
 
-- OTP limits and attempt lockout are reused from documentAccess. There is also
+- OTP limits and attempt lockout reuse the documentAccess helpers (own `bouquet_request_otps` table). There is also
   a honeypot field and a cap of 3 open requests per phone.
 - Tokens are 32 random bytes, stored only as hashes and never logged. Customer
   phone numbers never appear in URLs.
@@ -359,12 +371,14 @@ supports it at implementation time)
   the request.
 - Opted-out or blocked listings are never selected, even manually (the tool
   refuses).
-- Expiry is computed when records are read (`open` past the deadline with no
-  acceptance → shown and treated as `expired`), and persisted the next time the
+- Expiry is computed when records are read (`open` and past the end of
+  `needed_on` in Asia/Colombo with no acceptance → shown and treated as `expired`;
+  `quote_deadline_at` only closes quoting), and persisted the next time the
   record is written.
 - Places API failure: autocomplete falls back to "Use my location" or a free-text
-  area with district select (geocoded on the server, or the district centroid
-  from a static table).
+  area plus district. Without a GPS pin the server geocodes the area + district
+  with Places Text Search; if that fails, the form asks the customer to use
+  "Use my location".
 
 ## 13. Testing
 
