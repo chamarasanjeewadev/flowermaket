@@ -20,6 +20,7 @@ export const OCCASIONS = [
   "birthday", "anniversary", "love", "congratulations", "get_well",
   "sympathy", "thank_you", "wedding", "other",
 ] as const;
+export type Occasion = (typeof OCCASIONS)[number];
 /** Local start hours: 8, 12, 16, 8. */
 export const NEEDED_WINDOWS = ["morning", "afternoon", "evening", "any"] as const;
 export type NeededWindow = (typeof NEEDED_WINDOWS)[number];

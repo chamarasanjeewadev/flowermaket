@@ -30,3 +30,4 @@ export * from "./repos/whatsapp";
 export * from "./repos/webhook-auth";
 export * from "./repos/supplier-portal";
 export * from "./repos/florist-listings";
+export * from "./repos/local-requests";
