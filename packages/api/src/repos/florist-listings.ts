@@ -314,10 +314,18 @@ export async function linkListingToShop(
     if (!current) return err("not_found", "Listing not found.");
     const decision = linkDecision({ status: asStatus(current.status), shopId: current.shopId }, shopId);
     if (!decision.ok) return err(decision.code, decision.message);
-    await db
+    // Guard in the WHERE so a concurrent link to another shop cannot be overwritten.
+    const rows = await db
       .update(schema.floristListings)
       .set({ shopId, status: decision.data.status, updatedAt: new Date() })
-      .where(eq(schema.floristListings.id, listingId));
+      .where(
+        and(
+          eq(schema.floristListings.id, listingId),
+          or(isNull(schema.floristListings.shopId), eq(schema.floristListings.shopId, shopId)),
+        ),
+      )
+      .returning({ id: schema.floristListings.id });
+    if (rows.length === 0) return err("conflict", "Listing was linked to a different shop concurrently.");
     return ok(undefined);
   } catch (e) {
     if (isPgError(e, "23505")) return err("conflict", "That shop is already linked to a listing.");
