@@ -3,7 +3,7 @@
  * seeded, registered or claimed). Distance is computed in TypeScript; SQL only
  * narrows by bounding box.
  */
-import { and, between, eq, isNotNull, isNull, lt, notInArray, or, sql } from "drizzle-orm";
+import { and, between, eq, inArray, isNotNull, isNull, lt, notInArray, or, sql } from "drizzle-orm";
 import { schema } from "@flowers/db/client";
 import type { Db } from "../db";
 import { DISTRICTS } from "../constants";
@@ -405,4 +405,54 @@ export async function listStaleListingIds(db: Db, now: Date, limit: number): Pro
     .orderBy(sql`${t.googleSyncedAt} asc nulls first`)
     .limit(limit);
   return rows.map((r) => r.id);
+}
+
+export interface ListingInviteInfo {
+  id: string;
+  name: string;
+  phone: string | null;
+  status: ListingStatus;
+}
+
+export async function getListingInviteInfo(db: Db, listingId: string): Promise<ListingInviteInfo | null> {
+  const [row] = await db
+    .select({
+      id: schema.floristListings.id,
+      name: schema.floristListings.name,
+      phone: schema.floristListings.phone,
+      status: schema.floristListings.status,
+    })
+    .from(schema.floristListings)
+    .where(eq(schema.floristListings.id, listingId))
+    .limit(1);
+  return row ? { ...row, status: asStatus(row.status) } : null;
+}
+
+/**
+ * Record that an invite was sent: sets supplier_invite_id and status `invited`.
+ * Only unclaimed/invited listings move; opted_out, blocked and claimed are refused.
+ */
+export async function markListingInvited(
+  db: Db,
+  listingId: string,
+  inviteId: string,
+): Promise<ActionResult<void>> {
+  try {
+    const rows = await db
+      .update(schema.floristListings)
+      .set({ supplierInviteId: inviteId, status: "invited", updatedAt: new Date() })
+      .where(
+        and(
+          eq(schema.floristListings.id, listingId),
+          inArray(schema.floristListings.status, ["unclaimed", "invited"]),
+        ),
+      )
+      .returning({ id: schema.floristListings.id });
+    if (rows.length === 0) {
+      return err("validation", "Only unclaimed or already-invited listings can be invited.");
+    }
+    return ok(undefined);
+  } catch (e) {
+    return err("unknown", e instanceof Error ? e.message : "Failed to mark listing invited.");
+  }
 }
