@@ -23,6 +23,7 @@ export * from "./redirect";
 export * from "./pricing";
 export * from "./repos/documents";
 export * from "./repos/documentAccess";
+export * from "./repos/request-access";
 export * from "./repos/bouquet-gen";
 export * from "./repos/flowers";
 export * from "./repos/whatsapp";
