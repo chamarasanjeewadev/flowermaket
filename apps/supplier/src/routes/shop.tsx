@@ -64,7 +64,7 @@ function ShopSettingsPage() {
   if (!shop) {
     return (
       <div className="space-y-4">
-        <h1 className="font-display text-3xl sm:text-4xl">{t.shop.title}</h1>
+        <h1 className="font-display text-[2rem] leading-[1.08] sm:text-[2.5rem]">{t.shop.title}</h1>
         <p className="text-muted-foreground">{t.common.loading}</p>
       </div>
     );
@@ -115,7 +115,7 @@ function ShopSettings({ shop }: { shop: MyShopDTO }) {
     <div className="mx-auto max-w-2xl space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="font-display text-3xl sm:text-4xl">{t.shop.title}</h1>
+          <h1 className="font-display text-[2rem] leading-[1.08] sm:text-[2.5rem]">{t.shop.title}</h1>
           <div className="mt-3 flex flex-wrap items-center gap-3">
             <span className="text-sm text-muted-foreground">
               {t.shop.verificationStatus}:

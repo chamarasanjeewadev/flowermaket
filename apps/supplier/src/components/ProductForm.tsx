@@ -255,7 +255,7 @@ export function ProductForm({
         )}
       </form.Field>
 
-      <details className="rounded-lg border border-border p-3"><summary className="min-h-11 cursor-pointer py-2 text-sm">{locale === "si" ? "විකල්ප සිංහල පරිවර්තන" : "Optional Sinhala translations"}</summary><div className="space-y-4 pt-3">      {/* Name (Sinhala) */}
+      <details className="rounded-2xl border border-border p-3"><summary className="min-h-11 cursor-pointer py-2 text-sm">{locale === "si" ? "විකල්ප සිංහල පරිවර්තන" : "Optional Sinhala translations"}</summary><div className="space-y-4 pt-3">      {/* Name (Sinhala) */}
       <form.Field name="nameSi">
         {(field) => (
           <div className="space-y-1.5">
@@ -495,7 +495,7 @@ export function ProductForm({
       )}
 
       <Button type="button" variant="outline" onClick={() => setPreview(!preview)}>{locale === "si" ? "පෙරදසුන" : "Preview"}</Button>
-      {preview && <form.Subscribe selector={state => state.values}>{values => <section aria-label="Product preview" className="rounded-xl border border-border bg-card p-5"><h2 className="font-display text-2xl">{values.nameEn || "Untitled product"}</h2><p className="mt-2 whitespace-pre-wrap">{values.descriptionEn}</p><p className="mt-3 font-semibold">LKR {values.price || "0"}</p><p className="text-sm text-muted-foreground">{values.availability.replaceAll("_", " ")}</p></section>}</form.Subscribe>}
+      {preview && <form.Subscribe selector={state => state.values}>{values => <section aria-label="Product preview" className="rounded-2xl border border-border bg-card p-5"><h2 className="font-display text-2xl">{values.nameEn || "Untitled product"}</h2><p className="mt-2 whitespace-pre-wrap">{values.descriptionEn}</p><p className="mt-3 font-semibold">LKR {values.price || "0"}</p><p className="text-sm text-muted-foreground">{values.availability.replaceAll("_", " ")}</p></section>}</form.Subscribe>}
 
       <form.Subscribe selector={(state) => [state.canSubmit, state.isSubmitting, state.values.status] as const}>
         {([canSubmit, isSubmitting, status]) => (

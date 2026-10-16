@@ -21,7 +21,7 @@ function EmptyState({
   return (
     <div
       className={cn(
-        "flex w-full flex-col items-center justify-center gap-2 rounded-xl border border-dashed bg-muted/30 px-6 py-12 text-center",
+        "flex w-full flex-col items-center justify-center gap-2 rounded-3xl bg-muted/60 px-6 py-14 text-center",
         className,
       )}
       {...props}
@@ -31,7 +31,7 @@ function EmptyState({
           {icon}
         </div>
       ) : null}
-      <h3 className="text-base font-semibold text-foreground">{title}</h3>
+      <h3 className="text-[17px] font-semibold tracking-[-0.015em] text-foreground">{title}</h3>
       {description ? (
         <p className="max-w-sm text-sm text-muted-foreground">{description}</p>
       ) : null}

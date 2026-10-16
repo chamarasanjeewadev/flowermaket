@@ -92,7 +92,7 @@ function ShopsHeader() {
   const { t } = useT();
   return (
     <div className="mb-8 max-w-2xl">
-      <h1 className="font-display text-4xl sm:text-5xl">{t.shops.title}</h1>
+      <h1 className="font-display text-[2.25rem] leading-[1.05] sm:text-[3.25rem]">{t.shops.title}</h1>
       <p className="mt-3 text-base leading-relaxed text-muted-foreground">
         {t.shops.subtitle}
       </p>
@@ -106,7 +106,7 @@ function PendingShops() {
       <ShopsHeader />
       <ul className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
         {Array.from({ length: 6 }).map((_, i) => (
-          <li key={i} className="overflow-hidden rounded-xl border border-border/60">
+          <li key={i} className="overflow-hidden rounded-2xl border border-border/60">
             <Skeleton className="aspect-[16/10] w-full rounded-none" />
             <div className="space-y-2 p-5">
               <Skeleton className="h-5 w-2/3" />

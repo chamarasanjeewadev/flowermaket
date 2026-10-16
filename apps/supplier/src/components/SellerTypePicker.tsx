@@ -40,7 +40,7 @@ export function SellerTypePicker({
           <label
             key={type}
             className={cn(
-              "relative flex cursor-pointer flex-col gap-1.5 rounded-lg border p-3 text-left transition-colors has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring",
+              "relative flex cursor-pointer flex-col gap-1.5 rounded-2xl border p-3 text-left transition-colors has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring",
               checked
                 ? "border-brand bg-brand/5"
                 : "border-input hover:border-foreground/30",

@@ -95,8 +95,8 @@ function CategoryPage() {
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8">
-      <div className="mb-8 rounded-lg bg-sage px-6 py-10 sm:px-10 sm:py-12">
-        <h1 className="font-display text-4xl sm:text-5xl">
+      <div className="mb-8 rounded-3xl bg-stage px-6 py-10 sm:px-10 sm:py-12">
+        <h1 className="font-display text-[2.25rem] leading-[1.05] sm:text-[3.25rem]">
           {localizedName(category, locale)}
         </h1>
         <p className="mt-3 max-w-2xl text-sm text-foreground/70 sm:text-base">

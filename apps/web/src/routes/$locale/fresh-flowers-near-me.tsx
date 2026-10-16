@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { DISTRICTS } from "@flowers/api/constants";
 import { buttonVariants } from "@flowers/ui/components/button";
 import {
-  ArrowUpRight,
+  ChevronRight,
   CheckCircle2,
   MapPin,
   MessageCircle,
@@ -113,7 +113,7 @@ function FreshFlowersNearMePage() {
     <>
       <section className="grid-paper border-b border-border">
         <div className="mx-auto max-w-6xl px-4 py-12 sm:py-16">
-          <p className="text-xs font-semibold uppercase tracking-wide text-brand">
+          <p className="text-xs font-semibold text-brand-ink">
             {t.nearMe.eyebrow}
           </p>
           <h1 className="mt-3 max-w-3xl font-display text-4xl leading-tight sm:text-6xl">
@@ -129,7 +129,7 @@ function FreshFlowersNearMePage() {
               className={buttonVariants({ size: "pill" })}
             >
               {t.nearMe.browseAll}
-              <ArrowUpRight className="size-4" aria-hidden="true" />
+              <ChevronRight className="size-4" aria-hidden="true" />
             </Link>
             <Link
               to="/$locale/products"
@@ -181,11 +181,11 @@ function FreshFlowersNearMePage() {
                   params={{ locale }}
                   search={{ district: district.slug }}
                   aria-label={f(t.nearMe.districtLink, { district: name })}
-                  className="group flex min-h-20 items-center justify-between gap-3 rounded-lg border border-border/70 bg-background px-4 py-3 text-sm font-medium transition-colors hover:border-brand/50 hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  className="group flex min-h-20 items-center justify-between gap-3 rounded-2xl border border-border/70 bg-background px-4 py-3 text-sm font-medium transition-colors hover:border-brand/50 hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 >
                   <span>{name}</span>
-                  <ArrowUpRight
-                    className="size-4 shrink-0 text-muted-foreground transition-colors group-hover:text-brand"
+                  <ChevronRight
+                    className="size-4 shrink-0 text-muted-foreground transition-colors group-hover:text-brand-ink"
                     aria-hidden="true"
                   />
                 </Link>
@@ -232,7 +232,7 @@ function FreshFlowersNearMePage() {
 
       <section className="mx-auto max-w-6xl px-4 pb-14">
         <div className="flex max-w-3xl items-start gap-4 border-t border-border pt-8">
-          <CheckCircle2 className="mt-1 size-5 shrink-0 text-brand" aria-hidden="true" />
+          <CheckCircle2 className="mt-1 size-5 shrink-0 text-brand-ink" aria-hidden="true" />
           <div>
             <h2 className="font-display text-2xl">{t.nearMe.trustTitle}</h2>
             <p className="mt-2 text-sm leading-relaxed text-muted-foreground">

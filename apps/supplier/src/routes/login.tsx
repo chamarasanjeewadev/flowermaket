@@ -186,7 +186,7 @@ function LoginPage() {
                 </Button>
               </form>
 
-              <div className="rounded-lg border border-border p-3">
+              <div className="rounded-2xl border border-border p-3">
                 {!phoneMode ? (
                   <button
                     type="button"

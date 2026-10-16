@@ -29,10 +29,10 @@ function ProductsListPage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="font-display text-3xl sm:text-4xl">
+          <h1 className="font-display text-[2rem] leading-[1.08] sm:text-[2.5rem]">
             {t.products.title}
           </h1>
-          <p className="mt-1 max-w-xl text-sm text-muted-foreground">
+          <p className="mt-1 max-w-2xl text-lead">
             {t.products.subtitle}
           </p>
         </div>
@@ -58,7 +58,7 @@ function ProductsListPage() {
           }
         />
       ) : (
-        <div className="rounded-xl border border-border">
+        <div className="rounded-2xl border border-border">
           <Table>
             <TableHeader>
               <TableRow>
@@ -90,7 +90,7 @@ function ProductsListPage() {
                     <Link
                       to="/products/$productId"
                       params={{ productId: p.id }}
-                      className="font-medium text-foreground hover:text-brand hover:underline"
+                      className="font-medium text-foreground hover:text-brand-ink hover:underline"
                     >
                       {p.nameEn}
                     </Link>

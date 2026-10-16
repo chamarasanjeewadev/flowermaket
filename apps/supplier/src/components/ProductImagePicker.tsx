@@ -69,7 +69,7 @@ export function ProductImagePicker({
         {files.map((file, i) => (
           <div
             key={`${file.name}-${i}`}
-            className="group relative size-24 overflow-hidden rounded-lg border border-border bg-muted"
+            className="group relative size-24 overflow-hidden rounded-2xl border border-border bg-muted"
           >
             <img
               src={URL.createObjectURL(file)}
@@ -99,7 +99,7 @@ export function ProductImagePicker({
             type="button"
             onClick={() => inputRef.current?.click()}
             disabled={disabled}
-            className="flex size-24 flex-col items-center justify-center gap-1 rounded-lg border border-dashed border-border text-muted-foreground transition-colors hover:border-brand/50 hover:text-foreground disabled:opacity-50"
+            className="flex size-24 flex-col items-center justify-center gap-1 rounded-2xl border border-dashed border-border text-muted-foreground transition-colors hover:border-brand/50 hover:text-foreground disabled:opacity-50"
           >
             <ImagePlus className="size-5" />
             <span className="text-xs">{t.products.imagesAdd}</span>

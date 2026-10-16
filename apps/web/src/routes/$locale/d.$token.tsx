@@ -289,12 +289,12 @@ function DocumentView({
       </div>
 
       {/* Document */}
-      <div className="rounded-lg border border-border bg-background p-8 shadow-sm print:rounded-none print:border-0 print:shadow-none">
+      <div className="rounded-2xl border border-border bg-background p-8 print:rounded-none print:border-0 print:shadow-none">
         {/* Header */}
         <div className="mb-8 flex items-start justify-between">
           <div>
             <p className="font-display text-2xl font-semibold text-foreground">
-              FlowerMarket<span className="text-brand">.lk</span>
+              FlowerMarket<span className="text-brand-ink">.lk</span>
             </p>
             <p className="mt-1 text-sm text-muted-foreground">
               Sri Lanka&apos;s online flower marketplace
@@ -354,7 +354,7 @@ function DocumentView({
 
         {/* Customer block */}
         <div className="mb-8">
-          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+          <p className="mb-2 text-xs font-semibold text-muted-foreground">
             {isEn ? "Bill To" : "ලිපිනය"}
           </p>
           <p className="font-medium text-foreground">{doc.customerSnapshot.name}</p>
@@ -379,7 +379,7 @@ function DocumentView({
         {/* Line items */}
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-border text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            <tr className="border-b border-border text-left text-xs font-semibold text-muted-foreground">
               <th className="pb-2 pr-4">{isEn ? "Description" : "විස්තරය"}</th>
               <th className="pb-2 pr-4 text-center">{isEn ? "Qty" : "ගණන"}</th>
               <th className="pb-2 pr-4 text-center">{isEn ? "Unit" : "ඒකකය"}</th>

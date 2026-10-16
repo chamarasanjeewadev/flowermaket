@@ -21,7 +21,7 @@ export function FlowerPicker({ flowers, quantities, onChange, locale }: PickerPr
       {flowers.map((f) => {
         const qty = quantities[f.id] ?? 0;
         return (
-          <li key={f.id} className="flex flex-col rounded-lg border border-border p-3">
+          <li key={f.id} className="flex flex-col rounded-2xl border border-border p-3">
             {f.imageUrl ? (
               <img
                 src={f.imageUrl}

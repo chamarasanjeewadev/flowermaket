@@ -79,7 +79,7 @@ function SignupPage() {
 
   return (
     <div className="mx-auto grid max-w-6xl items-center gap-10 px-4 py-12 sm:py-16 lg:grid-cols-2">
-      <aside className="hidden overflow-hidden rounded-lg bg-sage-deep px-10 py-14 text-background lg:block">
+      <aside className="hidden overflow-hidden rounded-3xl bg-sage-deep px-10 py-14 text-background lg:block">
         <p className="font-display text-3xl">
           FlowerMarket<span className="text-butter">.lk</span>
         </p>
@@ -281,7 +281,7 @@ function SignupPage() {
             <Link
               to="/$locale/login"
               params={{ locale }}
-              className="font-medium text-brand hover:underline"
+              className="font-medium text-brand-ink hover:underline"
             >
               {t.nav.login}
             </Link>

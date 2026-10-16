@@ -51,7 +51,7 @@ export function FloatingWhatsApp() {
       rel="noopener noreferrer"
       onClick={() => track.whatsappLead("floating_button", hydrated ? items : [])}
       aria-label={t.enquiry.floatingLabel}
-      className="fixed bottom-4 right-4 z-50 flex size-12 sm:bottom-5 sm:right-5 sm:size-14 items-center justify-center rounded-full bg-[#25D366] text-white shadow-lg transition-transform hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#25D366] focus-visible:ring-offset-2"
+      className="fixed bottom-4 right-4 z-50 flex size-12 sm:bottom-5 sm:right-5 sm:size-14 items-center justify-center rounded-full bg-[#25D366] text-white shadow-float transition-transform hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#25D366] focus-visible:ring-offset-2"
     >
       <WhatsAppGlyph className="size-6 sm:size-7" />
       {hydrated && count > 0 && (

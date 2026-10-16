@@ -17,7 +17,7 @@ export function WholesaleInfo({
   const qty = minOrderQty ?? 1;
 
   return (
-    <div className="rounded-lg border bg-muted/40 p-4 text-sm">
+    <div className="rounded-2xl border bg-muted/40 p-4 text-sm">
       <div className="flex items-center gap-2 font-medium text-foreground">
         <Package className="size-4 text-primary" aria-hidden="true" />
         {f(t.catalog.minOrder, { qty })}

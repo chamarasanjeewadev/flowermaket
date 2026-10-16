@@ -84,9 +84,9 @@ function OnboardingPage() {
       <Card className="w-full max-w-lg">
         <CardHeader className="text-center">
           <div className="mx-auto mb-3 flex size-12 items-center justify-center rounded-full bg-brand/10">
-            <Flower className="size-6 text-brand" />
+            <Flower className="size-6 text-brand-ink" />
           </div>
-          <CardTitle className="font-display text-2xl sm:text-3xl">
+          <CardTitle className="font-display text-[1.75rem] leading-[1.1] sm:text-[2.125rem]">
             {t.onboarding.title}
           </CardTitle>
           <CardDescription>{t.onboarding.subtitle}</CardDescription>

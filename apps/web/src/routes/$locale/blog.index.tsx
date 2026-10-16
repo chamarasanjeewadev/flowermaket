@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowUpRight } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 import type { Locale } from "../../i18n";
 import { useT } from "../../i18n/react";
 import { absoluteUrl, hreflangLinks } from "../../lib/site";
@@ -58,7 +58,7 @@ function BlogIndexPage() {
   return (
     <div className="mx-auto max-w-4xl px-4 py-10">
       <header className="mb-10 max-w-2xl">
-        <h1 className="font-display text-4xl sm:text-5xl">{t.blog.title}</h1>
+        <h1 className="font-display text-[2.25rem] leading-[1.05] sm:text-[3.25rem]">{t.blog.title}</h1>
         <p className="mt-3 text-base text-muted-foreground">{t.blog.subtitle}</p>
       </header>
 
@@ -79,7 +79,7 @@ function BlogIndexPage() {
                   <span aria-hidden="true">·</span>
                   <span>{t.blog.readTime.replace("{min}", String(post.readingMinutes))}</span>
                 </div>
-                <h2 className="mt-2 font-display text-2xl leading-tight transition-colors group-hover:text-brand sm:text-3xl">
+                <h2 className="mt-2 font-display text-2xl leading-tight transition-colors group-hover:text-brand-ink sm:text-3xl">
                   {post.title}
                 </h2>
                 <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground">
@@ -87,7 +87,7 @@ function BlogIndexPage() {
                 </p>
               </div>
               <span className="mt-1 inline-flex size-10 shrink-0 items-center justify-center rounded-full border border-foreground/20 text-foreground transition-colors group-hover:bg-foreground group-hover:text-background">
-                <ArrowUpRight className="size-4" aria-hidden="true" />
+                <ChevronRight className="size-4" aria-hidden="true" />
               </span>
             </Link>
           </li>

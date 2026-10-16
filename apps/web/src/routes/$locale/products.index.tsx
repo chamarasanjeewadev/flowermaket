@@ -126,8 +126,8 @@ function BrowseHeader() {
   const { t } = useT();
   return (
     <div className="mb-8">
-      <h1 className="font-display text-4xl sm:text-5xl">{t.catalog.browseTitle}</h1>
-      <p className="mt-2 max-w-xl text-sm text-muted-foreground">
+      <h1 className="font-display text-[2.25rem] leading-[1.05] sm:text-[3.25rem]">{t.catalog.browseTitle}</h1>
+      <p className="mt-2 max-w-2xl text-lead">
         {t.catalog.browseSub}
       </p>
     </div>

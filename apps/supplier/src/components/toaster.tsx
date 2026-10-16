@@ -79,7 +79,7 @@ export function Toaster() {
         <div
           key={t.id}
           role="status"
-          className={`pointer-events-auto flex items-start gap-2 rounded-lg border p-3 shadow-lg ${VARIANT_STYLES[t.variant]}`}
+          className={`pointer-events-auto flex items-start gap-2 rounded-2xl border p-3 shadow-float ${VARIANT_STYLES[t.variant]}`}
         >
           <ToastIcon variant={t.variant} />
           <div className="min-w-0 flex-1">

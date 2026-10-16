@@ -25,7 +25,7 @@ export function ShopAvatar({
   return (
     <span
       className={cn(
-        "flex shrink-0 items-center justify-center overflow-hidden rounded-full border-2 border-background font-display text-foreground shadow-sm",
+        "flex shrink-0 items-center justify-center overflow-hidden rounded-full border-2 border-background font-display text-foreground",
         !logoUrl && SELLER_TYPE_STYLE[primary].tile,
         className,
       )}

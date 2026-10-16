@@ -23,7 +23,7 @@ function ActAsFailed() {
   return (
     <div className="mx-auto max-w-md space-y-4 py-16 text-center">
       <h1 className="font-display text-2xl">Can't manage this shop</h1>
-      <p className="text-sm text-muted-foreground">{message}</p>
+      <p className="text-lead">{message}</p>
       <Button asChild variant="outline">
         <Link to="/">Back to dashboard</Link>
       </Button>

@@ -100,7 +100,7 @@ function BouquetDesignPage() {
     <div>
       <div className="mb-6">
         <h1 className="font-display text-3xl">{t.nav.designBouquet}</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
+        <p className="mt-1 text-lead">
           Pick flowers and generate an AI bouquet preview. Up to 3 designs per day.
         </p>
       </div>
@@ -117,7 +117,7 @@ function BouquetDesignPage() {
                 return (
                   <div
                     key={fl.id}
-                    className="flex flex-col rounded-lg border border-border bg-card p-3"
+                    className="flex flex-col rounded-2xl border border-border bg-card p-3"
                   >
                     {fl.imageUrl ? (
                       <img
@@ -159,7 +159,7 @@ function BouquetDesignPage() {
         </section>
 
         <aside className="lg:sticky lg:top-6 lg:self-start">
-          <div className="overflow-hidden rounded-xl border border-border bg-card">
+          <div className="overflow-hidden rounded-2xl border border-border bg-card">
             {genStatus === "ready" && dataUrl ? (
               <img src={dataUrl} alt="AI-generated bouquet" className="w-full" />
             ) : (

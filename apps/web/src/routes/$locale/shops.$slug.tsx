@@ -218,7 +218,7 @@ function ShopPage() {
             )}
           </div>
 
-          <dl className="grid shrink-0 grid-cols-3 divide-x divide-border rounded-xl border border-border bg-card text-center">
+          <dl className="grid shrink-0 grid-cols-3 divide-x divide-border rounded-2xl border border-border bg-card text-center">
             <div className="px-4 py-3 sm:px-6">
               <dt className="text-xs text-muted-foreground">{t.shops.statProducts}</dt>
               <dd className="mt-0.5 font-display text-2xl">{products.length}</dd>
@@ -241,7 +241,7 @@ function ShopPage() {
       </header>
 
       {/* Products */}
-      <div className="my-6 rounded-xl border border-border bg-card p-5">
+      <div className="my-6 rounded-2xl border border-border bg-card p-5">
         <Link to="/$locale/enquiry" params={{ locale }} search={{ shop: shop.slug }} className={cn(buttonVariants({ variant: "brand" }), "min-h-11")}><MessageCircle className="size-4" aria-hidden="true" />{locale === "si" ? "මෙම සාප්පුවෙන් මිල යෝජනාවක් ඉල්ලන්න" : "Request a quote from this shop"}</Link>
         <p className="mt-3 text-sm text-muted-foreground">{locale === "si" ? "FlowerMarket ඉල්ලීම සහ තහවුරු කිරීම සම්බන්ධීකරණය කරයි." : "FlowerMarket coordinates your enquiry and order confirmation."}</p>
       </div>

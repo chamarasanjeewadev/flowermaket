@@ -156,10 +156,10 @@ function RfqDetailPage() {
       {/* Header */}
       <div className="flex flex-wrap items-start gap-4">
         <div className="flex-1">
-          <h1 className="font-display text-3xl sm:text-4xl">
+          <h1 className="font-display text-[2rem] leading-[1.08] sm:text-[2.5rem]">
             {t.rfqs.orderLabel}: {rfq.orderNo}
           </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
+          <p className="mt-1 text-lead">
             {t.rfqs.colSent}: {formatDate(rfq.sentAt)}
           </p>
         </div>
@@ -167,13 +167,13 @@ function RfqDetailPage() {
       </div>
 
       <Alert><AlertDescription>{locale === "si" ? "මෙය මිල ඉල්ලීමකි. FlowerMarket ඇණවුම තහවුරු කරන තෙක් මල් සකස් කිරීම ආරම්භ නොකරන්න." : "This is an enquiry, not a confirmed order. FlowerMarket reviews your quote and confirms whether work is assigned to you. Do not start preparing flowers yet."}</AlertDescription></Alert>
-      <dl className="grid gap-3 rounded-xl border border-border p-4 text-sm sm:grid-cols-3">
+      <dl className="grid gap-3 rounded-2xl border border-border p-4 text-sm sm:grid-cols-3">
         <div><dt className="text-muted-foreground">{locale === "si" ? "අවශ්‍ය දිනය" : "Required date"}</dt><dd>{rfq.neededByDate ?? "—"}</dd></div>
         <div><dt className="text-muted-foreground">{locale === "si" ? "බෙදාහැරීමේ ප්‍රදේශය" : "Delivery area"}</dt><dd>{rfq.deliveryArea ?? "—"}</dd></div>
         <div><dt className="text-muted-foreground">{locale === "si" ? "ප්‍රතිචාර අවසාන දිනය" : "Response deadline"}</dt><dd>{formatDate(rfq.expiresAt)}</dd></div>
       </dl>
-      {!!rfq.revisions?.length && <details className="rounded-xl border border-border p-4"><summary className="cursor-pointer py-2">{locale === "si" ? "මිල යෝජනා ඉතිහාසය" : "Quote revision history"} ({rfq.revisions.length})</summary>{rfq.revisions.map((revision, i) => <div key={revision.submittedAt} className="mt-3 border-t border-border pt-3 text-sm"><p>#{i + 1} · {formatDate(revision.submittedAt)} · {formatRupees(revision.lines.reduce((sum, line) => sum + line.availableQty * line.unitPrice, revision.deliveryCost))}</p><p>{revision.notes}</p></div>)}</details>}
-      {!!rfq.questions?.length && <section className="rounded-xl border border-border p-4 text-sm"><h2 className="font-semibold">{locale === "si" ? "FlowerMarket වෙත ප්‍රශ්න" : "Questions for FlowerMarket"}</h2>{rfq.questions.map(question => <p key={question.createdAt} className="mt-2">{question.text}</p>)}</section>}
+      {!!rfq.revisions?.length && <details className="rounded-2xl border border-border p-4"><summary className="cursor-pointer py-2">{locale === "si" ? "මිල යෝජනා ඉතිහාසය" : "Quote revision history"} ({rfq.revisions.length})</summary>{rfq.revisions.map((revision, i) => <div key={revision.submittedAt} className="mt-3 border-t border-border pt-3 text-sm"><p>#{i + 1} · {formatDate(revision.submittedAt)} · {formatRupees(revision.lines.reduce((sum, line) => sum + line.availableQty * line.unitPrice, revision.deliveryCost))}</p><p>{revision.notes}</p></div>)}</details>}
+      {!!rfq.questions?.length && <section className="rounded-2xl border border-border p-4 text-sm"><h2 className="font-semibold">{locale === "si" ? "FlowerMarket වෙත ප්‍රශ්න" : "Questions for FlowerMarket"}</h2>{rfq.questions.map(question => <p key={question.createdAt} className="mt-2">{question.text}</p>)}</section>}
       {rfq.customerNotes && <Alert><AlertDescription>{rfq.customerNotes}</AlertDescription></Alert>}
       {/* Admin message if any */}
       {rfq.message && (
@@ -221,7 +221,7 @@ function ReadOnlyView({ rfq }: { rfq: SupplierRfqDetail }) {
       {/* Order items */}
       <section className="space-y-3">
         <h2 className="text-lg font-semibold">{t.rfqs.itemsLabel}</h2>
-        <div className="rounded-xl border border-border">
+        <div className="rounded-2xl border border-border">
           <Table>
             <TableHeader>
               <TableRow>
@@ -255,7 +255,7 @@ function ReadOnlyView({ rfq }: { rfq: SupplierRfqDetail }) {
       {rfq.quoteLines.length > 0 && (
         <section className="space-y-3">
           <h2 className="text-lg font-semibold">{t.rfqs.existingQuote}</h2>
-          <div className="rounded-xl border border-border">
+          <div className="rounded-2xl border border-border">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -417,7 +417,7 @@ function QuoteForm({ rfq }: { rfq: SupplierRfqDetail }) {
               { field: "leadTimeDays", label: t.rfqs.colLeadTime, type: "number", step: "1", required: false },
               { field: "notes", label: t.rfqs.colNotes, type: "text", required: false },
             ] as const;
-            return <article key={item.id} className="rounded-xl border border-border bg-card p-4">
+            return <article key={item.id} className="rounded-2xl border border-border bg-card p-4">
               <h3 className="font-semibold">{item.descriptionEn} {item.variant && `· ${item.variant}`}</h3>
               <p className="mt-1 text-sm text-muted-foreground">{t.rfqs.colQtyRequested}: {item.quantity} {item.unit} {item.notes && `· ${item.notes}`}</p>
               <div className="mt-4 grid gap-4 sm:grid-cols-2">{fields.map(field => <div key={field.field} className="space-y-2"><Label htmlFor={`${item.id}-${field.field}`}>{field.label}</Label><Input id={`${item.id}-${field.field}`} className="min-h-11" type={field.type} min={field.type === "number" ? 0 : undefined} step={"step" in field ? field.step : undefined} required={field.required} value={line[field.field]} onChange={e => updateLine(idx, field.field, e.target.value)} /></div>)}</div>
@@ -456,7 +456,7 @@ function QuoteForm({ rfq }: { rfq: SupplierRfqDetail }) {
         </div>
       </section>
 
-      <section className="space-y-2 rounded-xl border border-border p-4">
+      <section className="space-y-2 rounded-2xl border border-border p-4">
         <Label htmlFor="supplier-question">{locale === "si" ? "FlowerMarket වෙත ප්‍රශ්නයක්" : "Ask FlowerMarket a question"}</Label>
         <Textarea id="supplier-question" maxLength={2000} value={question} onChange={e => setQuestion(e.target.value)} />
         <Button type="button" variant="outline" disabled={asking || submitting || declining || !question.trim()} onClick={() => {

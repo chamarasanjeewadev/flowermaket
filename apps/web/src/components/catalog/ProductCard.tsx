@@ -1,6 +1,5 @@
 import { Link } from "@tanstack/react-router";
 import { Badge } from "@flowers/ui/components/badge";
-import { cn } from "@flowers/ui/lib/utils";
 import { localizedName } from "../../i18n";
 import { useT } from "../../i18n/react";
 import type { ProductListItemDTO } from "../../server/catalog";
@@ -8,15 +7,11 @@ import { PriceBlock } from "./PriceBlock";
 import { AddToEnquiryButton } from "./AddToEnquiryButton";
 import { SELLER_TYPE_STYLE } from "../sellers/SellerTypeBadges";
 
-/** Rotating pastel tints for the image stage, echoing the reference's
- * colored blocks behind product photography. */
-const STAGE_TINTS = ["bg-sage", "bg-peach", "bg-butter", "bg-blush"] as const;
-
 export function ProductCard({
   product,
-  index = 0,
 }: {
   product: ProductListItemDTO;
+  /** @deprecated Cards share one neutral stage now; kept for call sites. */
   index?: number;
 }) {
   const { t, f, locale } = useT();
@@ -35,18 +30,14 @@ export function ProductCard({
   // z-index) so it stays independently interactive without nesting a <button>
   // inside an <a>.
   return (
-    <article className="group relative flex h-full flex-col overflow-hidden rounded-lg border border-border/60 bg-card transition-transform hover:-translate-y-0.5 focus-within:ring-2 focus-within:ring-ring">
+    <article className="group relative flex h-full flex-col rounded-2xl focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-4 focus-within:ring-offset-background">
       <div
-        className={cn(
-          "relative aspect-square overflow-hidden",
-          STAGE_TINTS[index % STAGE_TINTS.length],
-        )}
-      >
+        className="relative aspect-square overflow-hidden rounded-2xl bg-stage">
         <img
           src={img}
           alt={name}
           loading="lazy"
-          className="size-full object-cover mix-blend-multiply transition-transform duration-300 group-hover:scale-[1.04]"
+          className="size-full object-cover mix-blend-multiply transition-transform duration-700 ease-out group-hover:scale-[1.03] motion-reduce:transition-none"
         />
         <Badge
           variant={isWholesale ? "brand" : "sticker"}
@@ -55,8 +46,8 @@ export function ProductCard({
           {isWholesale ? t.catalog.wholesaleBadge : t.catalog.retailBadge}
         </Badge>
       </div>
-      <div className="flex flex-1 flex-col gap-1.5 p-3 sm:gap-2 sm:p-4">
-        <h3 className="font-display line-clamp-2 text-[15px] leading-snug text-foreground sm:text-base">
+      <div className="flex flex-1 flex-col gap-1 px-0.5 pt-3">
+        <h3 className="line-clamp-2 text-[15px] font-semibold leading-snug tracking-[-0.01em] text-foreground">
           {name}
         </h3>
         <PriceBlock
@@ -73,13 +64,13 @@ export function ProductCard({
         <Link
           to="/$locale/shops/$slug"
           params={{ locale, slug: product.shopSlug }}
-          className="relative z-20 mt-auto inline-flex min-w-0 items-center gap-1.5 self-start pt-1 text-xs text-muted-foreground hover:text-foreground hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className="relative z-20 mt-auto inline-flex min-w-0 max-w-full items-center gap-1.5 self-start pt-1 text-xs text-muted-foreground hover:text-foreground hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           title={t.catalog.sellerTypes[sellerType]}
         >
           <SellerIcon className="size-3.5 shrink-0" aria-hidden="true" />
           <span className="truncate">{f(t.catalog.soldBy, { shop: shopName })}</span>
         </Link>
-        <div className="relative z-20 pt-1.5 sm:pt-2">
+        <div className="relative z-20 pt-2">
           <AddToEnquiryButton
             product={{
               id: product.id,

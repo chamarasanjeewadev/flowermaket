@@ -100,22 +100,22 @@ function EnquiryPage() {
   return (
     <div className="mx-auto max-w-3xl px-4 py-10">
       <header className="mb-6">
-        <h1 className="font-display text-4xl sm:text-5xl">{t.enquiry.title}</h1>
-        <p className="mt-2 text-sm text-muted-foreground">
+        <h1 className="font-display text-[2.25rem] leading-[1.05] sm:text-[3.25rem]">{t.enquiry.title}</h1>
+        <p className="mt-2 text-lead">
           {t.enquiry.subtitle}
         </p>
       </header>
 
-      {sourceShop && <div className="mb-6 rounded-xl border border-border bg-accent p-4"><p className="font-semibold">{locale === "si" ? "සාප්පුව සඳහා ඉල්ලීම" : "Enquiry for"}: {localizedName(sourceShop, locale)}</p><p className="mt-2 text-sm text-muted-foreground">{locale === "si" ? "FlowerMarket ඔබේ ඉල්ලීම සහ ඇණවුම් තහවුරු කිරීම සම්බන්ධීකරණය කරයි. මෙය තහවුරු කළ ඇණවුමක් නොවේ." : "FlowerMarket coordinates your enquiry with this shop and confirms availability and the final offer. This is not a confirmed order."}</p></div>}
+      {sourceShop && <div className="mb-6 rounded-2xl border border-border bg-accent p-4"><p className="font-semibold">{locale === "si" ? "සාප්පුව සඳහා ඉල්ලීම" : "Enquiry for"}: {localizedName(sourceShop, locale)}</p><p className="mt-2 text-sm text-muted-foreground">{locale === "si" ? "FlowerMarket ඔබේ ඉල්ලීම සහ ඇණවුම් තහවුරු කිරීම සම්බන්ධීකරණය කරයි. මෙය තහවුරු කළ ඇණවුමක් නොවේ." : "FlowerMarket coordinates your enquiry with this shop and confirms availability and the final offer. This is not a confirmed order."}</p></div>}
       {/* Items */}
-      <ul className="flex flex-col divide-y divide-border rounded-lg border border-border">
+      <ul className="flex flex-col divide-y divide-border rounded-2xl border border-border">
         {items.map((item) => (
           <li key={item.id} className="flex items-center gap-3 p-4">
             <div className="min-w-0 flex-1">
               <Link
                 to="/$locale/products/$slug"
                 params={{ locale, slug: item.slug }}
-                className="line-clamp-1 font-medium text-foreground hover:text-brand"
+                className="line-clamp-1 font-medium text-foreground hover:text-brand-ink"
               >
                 {localizedName(item, locale)}
               </Link>

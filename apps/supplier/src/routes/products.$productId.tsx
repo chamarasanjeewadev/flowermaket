@@ -85,7 +85,7 @@ function EditProductPage() {
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-3">
-          <h1 className="font-display text-2xl sm:text-3xl">
+          <h1 className="font-display text-[1.75rem] leading-[1.1] sm:text-[2.125rem]">
             {product.nameEn}
           </h1>
           <ProductPublishingStatus product={product} shopVerified={readiness?.status === "Approved"} />
@@ -231,7 +231,7 @@ function ImageManager({
             {images.map((img) => (
               <div
                 key={img.id}
-                className="group relative overflow-hidden rounded-lg border border-border"
+                className="group relative overflow-hidden rounded-2xl border border-border"
               >
                 <div className="aspect-square bg-muted">
                   {img.url ? (

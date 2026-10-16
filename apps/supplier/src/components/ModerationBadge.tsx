@@ -34,8 +34,8 @@ export function ModerationNotice({
     <div
       className={
         blocked
-          ? "rounded-lg border border-destructive/40 bg-destructive/5 px-4 py-3 text-sm"
-          : "rounded-lg border border-warning/40 bg-warning/10 px-4 py-3 text-sm"
+          ? "rounded-2xl border border-destructive/40 bg-destructive/5 px-4 py-3 text-sm"
+          : "rounded-2xl border border-warning/40 bg-warning/10 px-4 py-3 text-sm"
       }
     >
       <p>{blocked ? t.products.moderationBlockedNote : t.products.moderationPendingNote}</p>

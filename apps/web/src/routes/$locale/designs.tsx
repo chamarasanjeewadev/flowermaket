@@ -54,7 +54,7 @@ function GalleryPage() {
     <div className="mx-auto max-w-6xl px-4 py-8">
       <header className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="font-display text-4xl sm:text-5xl">{t.gallery.title}</h1>
+          <h1 className="font-display text-[2.25rem] leading-[1.05] sm:text-[3.25rem]">{t.gallery.title}</h1>
           <p className="mt-2 text-sm text-foreground/70 sm:text-base">{t.gallery.subtitle}</p>
         </div>
         <Button asChild>
@@ -66,7 +66,7 @@ function GalleryPage() {
       </header>
 
       {items.length === 0 ? (
-        <div className="flex flex-col items-center gap-4 rounded-xl border border-dashed border-border py-20 text-center">
+        <div className="flex flex-col items-center gap-4 rounded-2xl border border-dashed border-border py-20 text-center">
           <Sparkles className="size-10 text-muted-foreground/30" />
           <p className="text-muted-foreground">{t.gallery.empty}</p>
           <Button asChild variant="outline">
@@ -82,7 +82,7 @@ function GalleryPage() {
             return (
               <div
                 key={item.id}
-                className="mb-4 break-inside-avoid overflow-hidden rounded-xl border border-border bg-card"
+                className="mb-4 break-inside-avoid overflow-hidden rounded-2xl border border-border bg-card"
               >
                 <img
                   src={item.imagePublicUrl!}
@@ -107,7 +107,7 @@ function GalleryPage() {
         </div>
       )}
 
-      <div className="mt-12 rounded-xl bg-sage px-6 py-8 text-center sm:px-10">
+      <div className="mt-12 rounded-3xl bg-stage px-6 py-8 text-center sm:px-10">
         <h2 className="font-display text-2xl">{t.gallery.designYours}</h2>
         <p className="mt-2 text-sm text-foreground/70">{t.design.subtitle}</p>
         <Button asChild className="mt-4">

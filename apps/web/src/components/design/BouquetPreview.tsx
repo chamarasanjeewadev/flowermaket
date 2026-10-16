@@ -14,7 +14,7 @@ export function BouquetPreview({ status, dataUrl, rateLimitMessage }: PreviewPro
   const { t } = useT();
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex aspect-square w-full items-center justify-center overflow-hidden rounded-lg border border-border bg-muted/40">
+      <div className="flex aspect-square w-full items-center justify-center overflow-hidden rounded-2xl border border-border bg-muted/40">
         {status === "ready" && dataUrl ? (
           <img src={dataUrl} alt={t.design.previewAlt} className="h-full w-full object-cover" />
         ) : status === "loading" ? (

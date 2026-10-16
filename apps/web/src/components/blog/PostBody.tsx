@@ -21,7 +21,7 @@ function renderInline(text: string, locale: Locale): React.ReactNode[] {
     if (start > lastIndex) nodes.push(text.slice(lastIndex, start));
     const isInternal = href!.startsWith("/");
     const linkClass =
-      "font-medium text-brand underline underline-offset-2 hover:no-underline";
+      "font-medium text-brand-ink underline underline-offset-2 hover:no-underline";
     if (isInternal) {
       nodes.push(
         <a key={key++} href={`/${locale}${href}`} className={linkClass}>
@@ -83,7 +83,7 @@ export function PostBody({
             return (
               <ul
                 key={i}
-                className="ml-5 flex list-disc flex-col gap-2 text-base leading-relaxed text-foreground marker:text-brand"
+                className="ml-5 flex list-disc flex-col gap-2 text-base leading-relaxed text-foreground marker:text-brand-ink"
               >
                 {block.items.map((item, j) => (
                   <li key={j}>{renderInline(item, locale)}</li>
@@ -94,7 +94,7 @@ export function PostBody({
             return (
               <ol
                 key={i}
-                className="ml-5 flex list-decimal flex-col gap-2 text-base leading-relaxed text-foreground marker:text-brand marker:font-semibold"
+                className="ml-5 flex list-decimal flex-col gap-2 text-base leading-relaxed text-foreground marker:text-brand-ink marker:font-semibold"
               >
                 {block.items.map((item, j) => (
                   <li key={j}>{renderInline(item, locale)}</li>

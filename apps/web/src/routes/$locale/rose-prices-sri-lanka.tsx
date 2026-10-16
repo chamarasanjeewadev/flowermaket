@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { buttonVariants } from "@flowers/ui/components/button";
 import {
-  ArrowUpRight,
+  ChevronRight,
   CheckCircle2,
   Leaf,
   MessageCircle,
@@ -163,7 +163,7 @@ function RosePricesPage() {
     <>
       <section className="grid-paper border-b border-border">
         <div className="mx-auto max-w-6xl px-4 py-12 sm:py-16">
-          <p className="text-xs font-semibold uppercase tracking-wide text-brand">
+          <p className="text-xs font-semibold text-brand-ink">
             Rose prices in Sri Lanka
           </p>
           <h1 className="mt-3 max-w-3xl font-display text-4xl leading-tight sm:text-6xl">
@@ -182,7 +182,7 @@ function RosePricesPage() {
               className={buttonVariants({ size: "pill" })}
             >
               Browse rose listings
-              <ArrowUpRight className="size-4" aria-hidden="true" />
+              <ChevronRight className="size-4" aria-hidden="true" />
             </Link>
             <Link
               to="/$locale/products"
@@ -220,7 +220,7 @@ function RosePricesPage() {
           {MARKUP_CHAIN.map((link, index) => (
             <li
               key={link.step}
-              className="rounded-lg border border-border/70 bg-background p-5"
+              className="rounded-2xl border border-border/70 bg-background p-5"
             >
               <span className="flex size-8 items-center justify-center rounded-full bg-accent text-sm font-semibold text-foreground">
                 {index + 1}
@@ -278,12 +278,12 @@ function RosePricesPage() {
         {roses.length > 0 ? (
           <ProductGrid products={roses} />
         ) : (
-          <p className="rounded-lg border border-dashed border-border/70 bg-background px-4 py-8 text-center text-sm text-muted-foreground">
+          <p className="rounded-2xl border border-dashed border-border/70 bg-background px-4 py-8 text-center text-sm text-muted-foreground">
             No rose listings are live right now.{" "}
             <Link
               to="/$locale/products"
               params={{ locale }}
-              className="font-medium text-brand underline-offset-4 hover:underline"
+              className="font-medium text-brand-ink underline-offset-4 hover:underline"
             >
               Browse all flowers
             </Link>{" "}
@@ -314,7 +314,7 @@ function RosePricesPage() {
       <section className="mx-auto max-w-6xl px-4 pb-14">
         <div className="flex max-w-3xl items-start gap-4 border-t border-border pt-8">
           <CheckCircle2
-            className="mt-1 size-5 shrink-0 text-brand"
+            className="mt-1 size-5 shrink-0 text-brand-ink"
             aria-hidden="true"
           />
           <div>
@@ -333,7 +333,7 @@ function RosePricesPage() {
                 className={buttonVariants({ size: "pill" })}
               >
                 Browse rose listings
-                <ArrowUpRight className="size-4" aria-hidden="true" />
+                <ChevronRight className="size-4" aria-hidden="true" />
               </Link>
             </div>
           </div>

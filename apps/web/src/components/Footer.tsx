@@ -15,16 +15,16 @@ const SISTER_PRODUCTS = [
 export function Footer() {
   const { t, f, locale } = useT();
   const linkClass =
-    "text-sm text-background/70 transition-colors hover:text-background";
+    "text-[13px] text-muted-foreground transition-colors hover:text-foreground";
   return (
-    <footer className="mt-4 bg-sage-deep text-background">
+    <footer className="border-t border-border/70 bg-stage text-foreground">
       <div className="mx-auto max-w-6xl px-4 py-10">
         <div className="flex flex-col gap-8 sm:flex-row sm:justify-between">
           <div>
-            <p className="font-display text-2xl text-background">
-              FlowerMarket<span className="text-butter">.lk</span>
+            <p className="font-display text-2xl">
+              FlowerMarket<span className="text-brand">.lk</span>
             </p>
-            <p className="mt-2 max-w-xs text-sm text-background/70">
+            <p className="mt-2 max-w-xs text-[13px] leading-relaxed text-muted-foreground">
               {t.footer.tagline}
             </p>
           </div>
@@ -32,7 +32,7 @@ export function Footer() {
             aria-label={t.footer.explore}
             className="flex flex-col gap-2 sm:items-end"
           >
-            <p className="text-xs font-semibold uppercase tracking-wide text-background/50">
+            <p className="text-[13px] font-semibold text-foreground">
               {t.footer.explore}
             </p>
             <Link
@@ -76,7 +76,7 @@ export function Footer() {
             aria-label={t.footer.contact}
             className="flex flex-col gap-2 sm:items-end"
           >
-            <p className="text-xs font-semibold uppercase tracking-wide text-background/50">
+            <p className="text-[13px] font-semibold text-foreground">
               {t.footer.contact}
             </p>
             <a href={`mailto:${CONTACT_EMAIL}`} className={linkClass}>
@@ -90,7 +90,7 @@ export function Footer() {
             aria-label={t.footer.moreFromGritTech}
             className="flex flex-col gap-2 sm:items-end"
           >
-            <p className="text-xs font-semibold uppercase tracking-wide text-background/50">
+            <p className="text-[13px] font-semibold text-foreground">
               {t.footer.moreFromGritTech}
             </p>
             {SISTER_PRODUCTS.map((p) => (
@@ -106,12 +106,12 @@ export function Footer() {
             ))}
           </nav>
         </div>
-        <div className="mt-8 flex flex-col gap-1 border-t border-background/15 pt-6 text-left">
-          <p className="text-xs text-background/70">
+        <div className="mt-8 flex flex-col gap-1 border-t border-border pt-6 text-left">
+          <p className="text-xs text-muted-foreground">
             {f(t.footer.copyright, { year: new Date().getFullYear() })}
           </p>
-          <p className="text-xs text-background/60">{t.footer.strip}</p>
-          <p className="text-xs text-background/60">
+          <p className="text-xs text-muted-foreground">{t.footer.strip}</p>
+          <p className="text-xs text-muted-foreground">
             {t.footer.builtBy}{" "}
             <a
               href="https://grittech.lk"

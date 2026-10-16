@@ -51,7 +51,7 @@ export function AddToEnquiryButton({
       ? "rounded-full px-6 py-3 text-sm"
       : "rounded-full px-3 py-1.5 text-xs";
   const byState = inList
-    ? "border border-brand/40 bg-brand/10 text-brand"
+    ? "border border-brand/40 bg-brand/10 text-brand-ink"
     : variant === "detail"
       ? "bg-foreground text-background hover:opacity-90"
       : "border border-border bg-background text-foreground hover:border-brand/50";

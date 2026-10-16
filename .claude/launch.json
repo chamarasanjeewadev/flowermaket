@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "web",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "@flowers/web", "exec", "vite", "dev", "--port", "3010"],
+      "port": 3010
+    },
+    {
+      "name": "supplier",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "@flowers/supplier", "dev"],
+      "port": 3001
+    }
+  ]
+}

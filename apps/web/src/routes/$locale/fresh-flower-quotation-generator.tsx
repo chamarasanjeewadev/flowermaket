@@ -47,7 +47,7 @@ import {
   SheetDescription,
 } from "@flowers/ui/components/sheet";
 import {
-  ArrowUpRight,
+  ChevronRight,
   Calculator,
   Check,
   ChevronDown,
@@ -413,7 +413,7 @@ function FlowerQuotationGeneratorPage() {
       {/* Hero — compact on mobile */}
       <section className="grid-paper border-b border-border">
         <div className="mx-auto max-w-6xl px-4 py-6 sm:py-10">
-          <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-brand">
+          <p className="flex items-center gap-2 text-xs font-semibold text-brand-ink">
             <Calculator className="size-4" aria-hidden="true" />
             {t.quotation.eyebrow}
           </p>
@@ -447,7 +447,7 @@ function FlowerQuotationGeneratorPage() {
         <div className="space-y-5">
 
           {/* Event details */}
-          <section aria-label={t.quotation.eventDetails} className="rounded-xl border border-border bg-accent/20 p-4">
+          <section aria-label={t.quotation.eventDetails} className="rounded-2xl border border-border bg-accent/20 p-4">
             <h2 className="font-display text-lg">{t.quotation.eventDetails}</h2>
             <p className="mt-0.5 text-xs text-muted-foreground">{t.quotation.eventDetailsHint}</p>
             <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -514,10 +514,10 @@ function FlowerQuotationGeneratorPage() {
             <button
               type="button"
               onClick={() => setFlowerSheetOpen(true)}
-              className="quotation-screen-only mt-4 flex w-full items-center gap-3 rounded-xl border border-dashed border-brand/40 bg-brand/5 px-4 py-3.5 text-left transition-colors hover:border-brand/60 hover:bg-brand/10 cursor-pointer"
+              className="quotation-screen-only mt-4 flex w-full items-center gap-3 rounded-2xl border border-dashed border-brand/40 bg-brand/5 px-4 py-3.5 text-left transition-colors hover:border-brand/60 hover:bg-brand/10 cursor-pointer"
             >
               <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-brand/10">
-                <Flower2 className="size-4 text-brand" aria-hidden="true" />
+                <Flower2 className="size-4 text-brand-ink" aria-hidden="true" />
               </div>
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-semibold text-foreground">
@@ -525,7 +525,7 @@ function FlowerQuotationGeneratorPage() {
                 </p>
                 <p className="text-xs text-muted-foreground">{t.quotation.flowerGalleryHint}</p>
               </div>
-              <ArrowUpRight className="size-4 shrink-0 text-brand" aria-hidden="true" />
+              <ChevronRight className="size-4 shrink-0 text-brand-ink" aria-hidden="true" />
             </button>
 
             {/* Sortable line items */}
@@ -569,7 +569,7 @@ function FlowerQuotationGeneratorPage() {
         </div>
 
         {/* Summary sidebar */}
-        <aside className="rounded-xl border border-border bg-card p-5 lg:sticky lg:top-24">
+        <aside className="rounded-2xl border border-border bg-card p-5 lg:sticky lg:top-24">
           <h2 className="font-display text-2xl">{t.quotation.summary}</h2>
           <p className="mt-1 text-sm text-muted-foreground">
             {f(t.quotation.itemCount, { count: pricedLines.length })}
@@ -589,7 +589,7 @@ function FlowerQuotationGeneratorPage() {
 
           <p className="flex items-start gap-2 text-xs leading-relaxed text-muted-foreground">
             <CircleAlert
-              className="mt-0.5 size-4 shrink-0 text-brand"
+              className="mt-0.5 size-4 shrink-0 text-brand-ink"
               aria-hidden="true"
             />
             <span>{t.quotation.estimateNotice}</span>
@@ -646,7 +646,7 @@ function FlowerQuotationGeneratorPage() {
             <button
               type="button"
               onClick={openQrCode}
-              className="flex w-full items-center gap-2 rounded-lg border border-border px-3 py-2.5 text-sm transition-colors hover:bg-accent/50 cursor-pointer"
+              className="flex w-full items-center gap-2 rounded-2xl border border-border px-3 py-2.5 text-sm transition-colors hover:bg-accent/50 cursor-pointer"
             >
               <QrCode className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
               <span className="flex-1 text-left">
@@ -655,7 +655,7 @@ function FlowerQuotationGeneratorPage() {
                   {t.quotation.qrCodeHint}
                 </span>
               </span>
-              <ArrowUpRight className="size-3.5 shrink-0 text-muted-foreground" aria-hidden="true" />
+              <ChevronRight className="size-3.5 shrink-0 text-muted-foreground" aria-hidden="true" />
             </button>
 
             {/* PDF / Print */}
@@ -675,7 +675,7 @@ function FlowerQuotationGeneratorPage() {
               className={buttonVariants({ variant: "ghost", className: "w-full" })}
             >
               {t.quotation.browseListings}
-              <ArrowUpRight className="size-4" aria-hidden="true" />
+              <ChevronRight className="size-4" aria-hidden="true" />
             </Link>
 
             <p className="text-center text-xs leading-relaxed text-muted-foreground">
@@ -762,7 +762,7 @@ function FlowerQuotationGeneratorPage() {
                         aria-label={`${t.quotation.addToQuote}: ${displayName}`}
                         aria-pressed={isAdded}
                         className={[
-                          "group relative w-full overflow-hidden rounded-xl border transition-all duration-200 cursor-pointer text-left",
+                          "group relative w-full overflow-hidden rounded-2xl border transition-all duration-200 cursor-pointer text-left",
                           isAdded
                             ? "border-brand/50 bg-brand/5 ring-1 ring-brand/30"
                             : "border-border bg-card hover:border-brand/30 hover:shadow-md",
@@ -827,7 +827,7 @@ function FlowerQuotationGeneratorPage() {
       </Sheet>
 
       {/* Mobile sticky bottom bar (hidden on lg+) */}
-      <div className="quotation-screen-only fixed bottom-0 inset-x-0 z-40 lg:hidden border-t border-border bg-background/95 shadow-lg backdrop-blur-sm">
+      <div className="quotation-screen-only fixed bottom-0 inset-x-0 z-40 lg:hidden border-t border-border bg-background/95 shadow-float backdrop-blur-sm">
         <div className="flex items-center gap-2 px-4 py-3">
           <div className="min-w-0 flex-1">
             <p className="text-[11px] text-muted-foreground leading-none">
@@ -874,7 +874,7 @@ function FlowerQuotationGeneratorPage() {
           onClick={() => setQrImageUrl(null)}
         >
           <div
-            className="w-full max-w-xs rounded-2xl border border-border bg-background p-6 shadow-xl"
+            className="w-full max-w-xs rounded-2xl border border-border bg-background p-6 shadow-float"
             onClick={(e) => e.stopPropagation()}
           >
             <p className="font-display text-xl">{t.quotation.createQrCode}</p>
@@ -887,13 +887,13 @@ function FlowerQuotationGeneratorPage() {
               <img
                 src={qrImageUrl}
                 alt="QR code for this quotation"
-                className="size-60 rounded-xl border border-border"
+                className="size-60 rounded-2xl border border-border"
               />
             </div>
             <button
               type="button"
               onClick={() => setQrImageUrl(null)}
-              className="mt-5 w-full rounded-lg border border-border py-2 text-sm font-medium transition-colors hover:bg-accent"
+              className="mt-5 w-full rounded-2xl border border-border py-2 text-sm font-medium transition-colors hover:bg-accent"
             >
               {locale === "si" ? "වසන්න" : "Close"}
             </button>
@@ -991,7 +991,7 @@ function SortableQuoteLineEditor({
     <article
       ref={setNodeRef}
       style={style}
-      className="rounded-xl border border-border bg-card p-3"
+      className="rounded-2xl border border-border bg-card p-3"
     >
       {/* Mobile layout (< lg) */}
       <div className="lg:hidden space-y-2">
@@ -1068,7 +1068,7 @@ function SortableQuoteLineEditor({
             <Link
               to="/$locale/products/$slug"
               params={{ locale, slug: line.productSlug }}
-              className="quotation-screen-only font-medium text-brand hover:underline"
+              className="quotation-screen-only font-medium text-brand-ink hover:underline"
             >
               {t.quotation.listedItem}
             </Link>
@@ -1192,7 +1192,7 @@ function SortableQuoteLineEditor({
             <Link
               to="/$locale/products/$slug"
               params={{ locale, slug: line.productSlug }}
-              className="quotation-screen-only font-medium text-brand hover:underline"
+              className="quotation-screen-only font-medium text-brand-ink hover:underline"
             >
               {t.quotation.listedItem}
             </Link>

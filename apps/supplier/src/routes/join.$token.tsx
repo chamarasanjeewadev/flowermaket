@@ -81,9 +81,9 @@ function JoinPage() {
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <div className="mx-auto mb-3 flex size-12 items-center justify-center rounded-full bg-brand/10">
-            <PartyPopper className="size-6 text-brand" />
+            <PartyPopper className="size-6 text-brand-ink" />
           </div>
-          <CardTitle className="font-display text-2xl sm:text-3xl">
+          <CardTitle className="font-display text-[1.75rem] leading-[1.1] sm:text-[2.125rem]">
             {invite.nameEn ? `Welcome, ${invite.nameEn}!` : "You're invited!"}
           </CardTitle>
           <CardDescription>
@@ -94,7 +94,7 @@ function JoinPage() {
           <ul className="space-y-2 text-sm">
             {benefits.map((b) => (
               <li key={b} className="flex items-start gap-2">
-                <Flower className="mt-0.5 size-4 shrink-0 text-brand" />
+                <Flower className="mt-0.5 size-4 shrink-0 text-brand-ink" />
                 <span>{b}</span>
               </li>
             ))}

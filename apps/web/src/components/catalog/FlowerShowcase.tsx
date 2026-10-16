@@ -47,7 +47,7 @@ export function FlowerShowcase({
             {href ? (
               <Link
                 to={href}
-                className="mt-3 w-fit text-sm font-semibold text-brand hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className="mt-3 w-fit text-sm font-semibold text-brand-ink hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
                 {ctaLabel} &rarr;
               </Link>
@@ -55,7 +55,7 @@ export function FlowerShowcase({
               <button
                 type="button"
                 onClick={() => onEnquire(flower)}
-                className="mt-3 w-fit text-sm font-semibold text-brand hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className="mt-3 w-fit text-sm font-semibold text-brand-ink hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
                 {ctaLabel} &rarr;
               </button>

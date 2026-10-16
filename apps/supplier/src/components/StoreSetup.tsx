@@ -19,11 +19,11 @@ export function StoreReadiness({ data }: { data: Readiness | null }) {
     { done: data.hasProduct, to: "/products/new", text: si ? "පළමු නිෂ්පාදනය එක් කරන්න" : "Add your first product" },
     { done: ["Submitted", "Approved"].includes(data.status), to: "/shop", text: si ? "සමාලෝචනය සඳහා ඉදිරිපත් කරන්න" : "Submit shop for review" },
   ] as const;
-  return <section className="space-y-4 rounded-xl border border-border bg-card p-5">
+  return <section className="space-y-4 rounded-2xl border border-border bg-card p-5">
     <div className="flex flex-wrap justify-between gap-3"><h2 className="text-lg font-semibold">{si ? "ඔබේ සාප්පුව සකසන්න" : "Set up your store"}</h2><Badge>{si ? ({ Draft: "කෙටුම්පත", Submitted: "ඉදිරිපත් කළ", Approved: "අනුමත කළ", "Changes requested": "වෙනස්කම් අවශ්‍යයි", Paused: "තාවකාලිකව නවතා ඇත" } as Record<string, string>)[data.status] : data.status}</Badge></div>
     <p className="text-sm text-muted-foreground">{steps.filter(s => s.done).length}/6 · {data.live ? (si ? "සාප්පුව සජීවීයි" : "Store live") : !data.hasProduct ? (si ? "සාප්පුව දියත් කිරීමට නිෂ්පාදනයක් එක් කරන්න." : "Add a product to launch your store.") : (si ? "අනුමත කළ නිෂ්පාදනයක් සහ ව්‍යාපාර අනුමැතිය අවශ්‍යයි." : "Business approval and an approved published product are required to go live.")}</p>
     {data.reason && <p role="status" className="rounded-lg bg-muted p-3 text-sm">{data.reason}</p>}
-    <ol className="grid gap-2 sm:grid-cols-2">{steps.map((step, index) => <li key={step.text}><Link to={step.to} className="flex min-h-11 items-center gap-3 rounded-lg border border-border p-3 text-sm hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring"><span aria-label={step.done ? (si ? "සම්පූර්ණයි" : "Complete") : (si ? "අසම්පූර්ණයි" : "Incomplete")} className="font-semibold text-brand">{step.done ? <Check aria-hidden="true" className="size-4" /> : index + 1}</span>{step.text}</Link></li>)}</ol>
+    <ol className="grid gap-2 sm:grid-cols-2">{steps.map((step, index) => <li key={step.text}><Link to={step.to} className="flex min-h-11 items-center gap-3 rounded-2xl border border-border p-3 text-sm hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring"><span aria-label={step.done ? (si ? "සම්පූර්ණයි" : "Complete") : (si ? "අසම්පූර්ණයි" : "Incomplete")} className="font-semibold text-brand-ink">{step.done ? <Check aria-hidden="true" className="size-4" /> : index + 1}</span>{step.text}</Link></li>)}</ol>
   </section>;
 }
 export function PortalSettings({ data }: { data: Readiness }) {
@@ -40,7 +40,7 @@ export function PortalSettings({ data }: { data: Readiness }) {
     try { const result = await submitReviewFn(); setMessage(result.ok ? (si ? "සමාලෝචනය සඳහා ඉදිරිපත් කරන ලදී." : "Shop submitted for review.") : result.message); if (result.ok) await router.invalidate(); }
     catch { setMessage(si ? "ඉදිරිපත් කිරීම අසාර්ථකයි." : "Could not submit. Please try again."); } finally { setBusy(false); }
   }
-  return <section className="space-y-5 rounded-xl border border-border bg-card p-5">
+  return <section className="space-y-5 rounded-2xl border border-border bg-card p-5">
     <h2 className="text-lg font-semibold">{si ? "සේවා සහ දැනුම්දීම්" : "Services & notifications"}</h2>
     <form onSubmit={e => void save(e)} className="space-y-4">
       <div className="space-y-2"><Label htmlFor="service-areas">{si ? "සේවා ප්‍රදේශ" : "Service areas"}</Label><Input id="service-areas" value={form.areas} maxLength={1000} onChange={e => setForm({ ...form, areas: e.target.value })} /></div>

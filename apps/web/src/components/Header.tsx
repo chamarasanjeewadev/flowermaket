@@ -116,7 +116,7 @@ function Wordmark({ ariaLabel }: { ariaLabel: string }) {
       className="inline-flex rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
       aria-label={ariaLabel}
     >
-      <img src="/logo.png" alt={ariaLabel} className="h-8 w-auto sm:h-9" />
+      <img src="/logo.png" alt={ariaLabel} className="h-7 w-auto sm:h-8" />
     </Link>
   );
 }
@@ -268,7 +268,7 @@ function MobileSearch() {
       onSubmit={handleSubmit}
       className="mx-auto max-w-6xl px-4 pb-3 md:hidden"
     >
-      <div className="flex h-11 items-center overflow-hidden rounded-full border border-border bg-card shadow-sm focus-within:ring-2 focus-within:ring-ring">
+      <div className="flex h-10 items-center overflow-hidden rounded-xl bg-foreground/[0.06] transition-shadow focus-within:bg-card focus-within:ring-4 focus-within:ring-ring/15">
         <input
           type="search"
           value={q}
@@ -276,12 +276,12 @@ function MobileSearch() {
           placeholder={t.catalog.searchPlaceholder}
           aria-label={t.nav.search}
           enterKeyHint="search"
-          className="h-full min-w-0 flex-1 bg-transparent pl-4 text-[16px] text-foreground placeholder:text-muted-foreground focus:outline-none [&::-webkit-search-cancel-button]:hidden"
+          className="h-full min-w-0 flex-1 bg-transparent pl-3.5 text-[16px] text-foreground placeholder:text-muted-foreground focus:outline-none [&::-webkit-search-cancel-button]:hidden"
         />
         <button
           type="submit"
           aria-label={t.nav.search}
-          className="mr-1 inline-flex size-9 shrink-0 items-center justify-center rounded-full bg-brand text-brand-foreground transition-colors hover:bg-brand/90"
+          className="mr-1 inline-flex size-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:text-foreground"
         >
           <Search className="size-[18px]" aria-hidden="true" />
         </button>
@@ -296,11 +296,11 @@ export function Header({ session }: { session: SessionUser }) {
   const [mobileOpen, setMobileOpen] = React.useState(false);
 
   const navLink =
-    "rounded-full px-3 py-1.5 text-sm font-medium text-foreground/70 transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring [&.active]:text-foreground [&.active]:bg-accent";
+    "rounded-full px-3 py-1.5 text-[13px] font-medium tracking-[-0.01em] text-foreground/65 transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring [&.active]:text-foreground";
 
   return (
-    <header className="sticky top-0 z-40 border-b border-border bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/65">
-      <div className="mx-auto flex h-14 max-w-6xl items-center gap-2 px-4 sm:h-[72px] sm:gap-3">
+    <header className="glass sticky top-0 z-40 border-b border-foreground/[0.06]">
+      <div className="mx-auto flex h-14 max-w-6xl items-center gap-2 px-4 sm:h-16 sm:gap-3">
         <Wordmark ariaLabel={t.nav.homeAria} />
 
         <nav
@@ -354,7 +354,7 @@ export function Header({ session }: { session: SessionUser }) {
             to="/$locale/products"
             params={{ locale }}
             aria-label={t.nav.browse}
-            className="hidden size-10 items-center justify-center rounded-full text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:inline-flex"
+            className="hidden size-10 items-center justify-center rounded-full text-foreground transition-colors hover:bg-foreground/[0.06] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:inline-flex"
           >
             <Search className="size-[18px]" aria-hidden="true" />
           </Link>
@@ -380,11 +380,11 @@ export function Header({ session }: { session: SessionUser }) {
             to="/$locale/enquiry"
             params={{ locale }}
             aria-label={t.nav.enquiry}
-            className="relative inline-flex size-10 items-center justify-center rounded-full bg-brand text-brand-foreground transition-colors hover:bg-brand/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+            className="relative inline-flex size-10 items-center justify-center rounded-full text-foreground transition-colors hover:bg-foreground/[0.06] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
           >
             <ShoppingBag className="size-[18px]" aria-hidden="true" />
             {hydrated && count > 0 && (
-              <span className="absolute -right-1 -top-1 flex min-w-5 items-center justify-center rounded-full bg-foreground px-1.5 text-xs font-semibold text-background">
+              <span className="absolute right-0.5 top-0.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-brand px-1 text-[11px] font-semibold tabular-nums text-brand-foreground ring-2 ring-background">
                 {count}
               </span>
             )}
@@ -408,12 +408,12 @@ export function Header({ session }: { session: SessionUser }) {
               <SheetDescription className="sr-only">
                 {t.nav.siteNavigation}
               </SheetDescription>
-              <nav aria-label="Mobile" className="mt-6 flex flex-col gap-1">
+              <nav aria-label="Mobile" className="mt-6 flex flex-col">
                 <Link
                   to="/$locale/products"
                   params={{ locale }}
                   onClick={() => setMobileOpen(false)}
-                  className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-accent"
+                  className="flex items-center gap-3 border-b border-border/70 px-1 py-3.5 text-[17px] font-medium tracking-[-0.015em] text-foreground transition-colors hover:text-brand-ink"
                 >
                   {t.nav.browse}
                 </Link>
@@ -422,7 +422,7 @@ export function Header({ session }: { session: SessionUser }) {
                   params={{ locale }}
                   search={{}}
                   onClick={() => setMobileOpen(false)}
-                  className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-accent"
+                  className="flex items-center gap-3 border-b border-border/70 px-1 py-3.5 text-[17px] font-medium tracking-[-0.015em] text-foreground transition-colors hover:text-brand-ink"
                 >
                   {t.nav.shops}
                 </Link>
@@ -430,7 +430,7 @@ export function Header({ session }: { session: SessionUser }) {
                   to="/$locale/fresh-flowers-near-me"
                   params={{ locale }}
                   onClick={() => setMobileOpen(false)}
-                  className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-accent"
+                  className="flex items-center gap-3 border-b border-border/70 px-1 py-3.5 text-[17px] font-medium tracking-[-0.015em] text-foreground transition-colors hover:text-brand-ink"
                 >
                   {t.nav.nearMe}
                 </Link>
@@ -439,7 +439,7 @@ export function Header({ session }: { session: SessionUser }) {
                   params={{ locale }}
                   search={{ type: "wholesale" }}
                   onClick={() => setMobileOpen(false)}
-                  className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-accent"
+                  className="flex items-center gap-3 border-b border-border/70 px-1 py-3.5 text-[17px] font-medium tracking-[-0.015em] text-foreground transition-colors hover:text-brand-ink"
                 >
                   {t.nav.wholesale}
                 </Link>
@@ -448,7 +448,7 @@ export function Header({ session }: { session: SessionUser }) {
                   params={{ locale }}
                   search={{ q: undefined }}
                   onClick={() => setMobileOpen(false)}
-                  className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-accent"
+                  className="flex items-center gap-3 border-b border-border/70 px-1 py-3.5 text-[17px] font-medium tracking-[-0.015em] text-foreground transition-colors hover:text-brand-ink"
                 >
                   {t.nav.quotation}
                 </Link>
@@ -456,7 +456,7 @@ export function Header({ session }: { session: SessionUser }) {
                   to="/$locale/design"
                   params={{ locale }}
                   onClick={() => setMobileOpen(false)}
-                  className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-accent"
+                  className="flex items-center gap-3 border-b border-border/70 px-1 py-3.5 text-[17px] font-medium tracking-[-0.015em] text-foreground transition-colors hover:text-brand-ink"
                 >
                   {t.nav.design}
                 </Link>
@@ -464,12 +464,12 @@ export function Header({ session }: { session: SessionUser }) {
                   to="/$locale/blog"
                   params={{ locale }}
                   onClick={() => setMobileOpen(false)}
-                  className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-accent"
+                  className="flex items-center gap-3 border-b border-border/70 px-1 py-3.5 text-[17px] font-medium tracking-[-0.015em] text-foreground transition-colors hover:text-brand-ink"
                 >
                   {t.nav.guides}
                 </Link>
               </nav>
-              <div className="mt-6 space-y-2 border-t pt-6">
+              <div className="mt-6 space-y-2">
                 {session.kind === "anonymous" && (
                   <Link
                     to="/$locale/login"

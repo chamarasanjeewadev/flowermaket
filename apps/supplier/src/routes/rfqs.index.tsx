@@ -70,8 +70,8 @@ function RfqInboxPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="font-display text-3xl sm:text-4xl">{t.rfqs.title}</h1>
-        <p className="mt-1 max-w-xl text-sm text-muted-foreground">
+        <h1 className="font-display text-[2rem] leading-[1.08] sm:text-[2.5rem]">{t.rfqs.title}</h1>
+        <p className="mt-1 max-w-2xl text-lead">
           {t.rfqs.subtitle}
         </p>
       </div>
@@ -83,7 +83,7 @@ function RfqInboxPage() {
           description={t.rfqs.emptyDescription}
         />
       ) : (
-        <div className="space-y-4">{rfqs.map(rfq => <article key={rfq.id} className="space-y-3 rounded-xl border border-border bg-card p-5">
+        <div className="space-y-4">{rfqs.map(rfq => <article key={rfq.id} className="space-y-3 rounded-2xl border border-border bg-card p-5">
           <div className="flex flex-wrap justify-between gap-3"><h2 className="font-semibold">{rfq.orderNo}</h2><RfqStatusBadge status={rfq.expiresAt && new Date(rfq.expiresAt) <= new Date() && ["sent", "viewed", "quoted"].includes(rfq.status) ? "expired" : rfq.status} /></div>
           <p>{rfq.firstItemDescription ?? `${rfq.itemCount} items`}{rfq.itemCount > 1 && ` +${rfq.itemCount - 1}`}</p>
           <p className="text-sm text-muted-foreground">Required: {rfq.neededByDate ?? "—"} · Area: {rfq.deliveryArea ?? "—"}</p>

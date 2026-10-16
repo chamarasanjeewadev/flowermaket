@@ -10,49 +10,53 @@
 @custom-variant dark (&:is(.dark *));
 
 /*
- * FlowerMarket.lk design system — "playful editorial boutique".
- * Warm cream canvas, near-black ink, a tangerine signature accent, and a
- * spread of pastel surfaces (butter / blush / sage / peach / lilac / coral)
- * used as stages behind product photography and as category-card tints.
+ * FlowerMarket.lk design system — "boutique, Apple-clear" (refresh 2026-10).
+ * Brand stays: ink + tangerine + Fraunces headlines. The canvas moved from
+ * warm cream to a quiet porcelain so product photography leads; photos sit
+ * on one neutral stage instead of rotating pastels. Depth is reserved for
+ * floating layers (nav, menus, sheets) — resting surfaces are flat.
+ * Pastels remain available as tokens for small accents (seller-type tiles).
  * Light theme only for now (see the note on .dark below).
  */
 :root {
-  --radius: 0.5rem;
+  --radius: 0.75rem; /* inputs; cards use radius-2xl, panels radius-3xl */
 
   /* Core surfaces */
-  --background: #f5f3ee; /* warm cream canvas */
-  --foreground: #16162a; /* near-black ink */
+  --background: #fafaf8; /* porcelain canvas */
+  --foreground: #16162a; /* brand ink */
   --card: #ffffff;
   --card-foreground: #16162a;
   --popover: #ffffff;
   --popover-foreground: #16162a;
+  --stage: #f2f1ee; /* neutral photo stage */
 
-  /* Primary = ink (the reference's dark CTAs) */
+  /* Primary = ink */
   --primary: #16162a;
-  --primary-foreground: #f5f3ee;
+  --primary-foreground: #ffffff;
 
-  --secondary: #ece8e0;
+  --secondary: #efeeea;
   --secondary-foreground: #16162a;
-  --muted: #ece8e0;
-  --muted-foreground: #6c6b63;
+  --muted: #f2f1ee;
+  --muted-foreground: #6b6a72;
 
-  /* Subtle warm hover/active surface (shadcn "accent") */
-  --accent: #ece7de;
+  /* Subtle hover/active surface (shadcn "accent") */
+  --accent: #efeeea;
   --accent-foreground: #16162a;
 
   --destructive: #d1442c;
   --destructive-foreground: #ffffff;
-  --success: #2e5b42; /* deep sage-green */
+  --success: #2e5b42;
   --success-foreground: #ffffff;
-  --warning: #b8862a; /* readable amber on cream */
+  --warning: #9a6d14;
   --warning-foreground: #ffffff;
 
-  --border: #e5e1d8;
-  --input: #e5e1d8;
+  --border: #e7e5e0;
+  --input: #dddbd5;
   --ring: #f26b3a; /* tangerine focus ring */
 
-  /* Signature accent + pastel surfaces (see @theme inline for utilities) */
-  --brand: #f26b3a; /* tangerine */
+  /* Signature accent. brand-ink is the AA-contrast text tone of tangerine. */
+  --brand: #f26b3a;
+  --brand-ink: #b8481c;
   --brand-foreground: #ffffff;
   --butter: #f4de73;
   --blush: #f1c7dd;
@@ -61,6 +65,10 @@
   --peach: #f0dcc1;
   --lilac: #b98be0;
   --coral: #e8654a;
+
+  /* Elevation for floating layers only */
+  --elev-float: 0 1px 2px rgb(22 22 42 / 0.04),
+    0 12px 32px -12px rgb(22 22 42 / 0.18);
 }
 
 /*
@@ -105,6 +113,9 @@
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: 1.25rem;
+  --radius-3xl: 1.75rem;
+  --shadow-float: var(--elev-float);
 
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -133,6 +144,8 @@
   /* Brand + pastel surfaces → bg-brand, text-brand, bg-butter, bg-sage, … */
   --color-brand: var(--brand);
   --color-brand-foreground: var(--brand-foreground);
+  --color-brand-ink: var(--brand-ink);
+  --color-stage: var(--stage);
   --color-butter: var(--butter);
   --color-blush: var(--blush);
   --color-sage: var(--sage);
@@ -153,6 +166,12 @@
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
+    font-feature-settings: "cv11", "ss01";
+  }
+  h1,
+  h2,
+  h3 {
+    text-wrap: balance;
   }
   :focus-visible {
     outline: 2px solid color-mix(in oklab, var(--color-ring) 65%, transparent);
@@ -173,10 +192,43 @@
   font-family: var(--font-display);
   font-optical-sizing: auto;
   font-variation-settings:
-    "SOFT" 30,
-    "WONK" 1;
-  letter-spacing: -0.015em;
-  font-weight: 500;
+    "SOFT" 50,
+    "WONK" 0;
+  letter-spacing: -0.025em;
+  font-weight: 450;
+  text-wrap: balance;
+}
+
+/* Lead paragraph — the Apple-style intro line under a page title. */
+@utility text-lead {
+  font-size: clamp(1.0625rem, 0.95rem + 0.5vw, 1.3125rem);
+  line-height: 1.45;
+  letter-spacing: -0.011em;
+  color: var(--color-muted-foreground);
+  text-wrap: pretty;
+}
+
+/* Frosted floating bar (header, sticky action bars). */
+@utility glass {
+  background-color: color-mix(in oklab, var(--color-background) 72%, transparent);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+}
+
+/* One orchestrated entrance, used on the web hero only. */
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+}
+@utility animate-rise {
+  animation: rise-in 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .animate-rise {
+    animation: none;
+  }
 }
 
 /* Faint ruled-grid canvas, echoing the reference's paper texture. */

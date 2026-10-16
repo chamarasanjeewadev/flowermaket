@@ -1,7 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { formatRupees } from "@flowers/api/money";
 import { cn } from "@flowers/ui/lib/utils";
-import { ArrowUpRight, BadgeCheck, MapPin } from "lucide-react";
+import { ChevronRight, BadgeCheck, MapPin } from "lucide-react";
 import { localizedName } from "../../i18n";
 import { useT } from "../../i18n/react";
 import type { ShopDirectoryDTO } from "../../server/catalog";
@@ -23,7 +23,7 @@ export function ShopCard({ shop }: { shop: ShopDirectoryDTO }) {
     <Link
       to="/$locale/shops/$slug"
       params={{ locale, slug: shop.slug }}
-      className="group flex h-full flex-col overflow-hidden rounded-xl border border-border/60 bg-card transition-all hover:-translate-y-0.5 hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      className="group flex h-full flex-col overflow-hidden rounded-3xl border border-border/70 bg-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
     >
       {/* Media */}
       <div
@@ -37,7 +37,7 @@ export function ShopCard({ shop }: { shop: ShopDirectoryDTO }) {
             src={shop.bannerUrl}
             alt=""
             loading="lazy"
-            className="size-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+            className="size-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.03] motion-reduce:transition-none"
           />
         ) : previews.length > 0 ? (
           <div
@@ -57,7 +57,7 @@ export function ShopCard({ shop }: { shop: ShopDirectoryDTO }) {
                 alt=""
                 loading="lazy"
                 className={cn(
-                  "size-full object-cover transition-transform duration-500 group-hover:scale-[1.03]",
+                  "size-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.03] motion-reduce:transition-none",
                   previews.length >= 3 && i === 0 && "col-span-2 row-span-2",
                 )}
               />
@@ -74,7 +74,7 @@ export function ShopCard({ shop }: { shop: ShopDirectoryDTO }) {
           </div>
         )}
         {shop.productCount > 0 && (
-          <span className="absolute bottom-3 right-3 rounded-full bg-background/90 px-2.5 py-1 text-xs font-semibold text-foreground backdrop-blur">
+          <span className="absolute bottom-3 right-3 glass rounded-full px-2.5 py-1 text-xs font-medium text-foreground">
             {shop.productCount === 1
               ? t.shops.oneProduct
               : f(t.shops.productsCount, { count: shop.productCount })}
@@ -91,7 +91,7 @@ export function ShopCard({ shop }: { shop: ShopDirectoryDTO }) {
           className="-mt-7 size-14 text-lg"
         />
         <div className="mt-3 flex items-start justify-between gap-2">
-          <h2 className="font-display text-xl leading-tight">{name}</h2>
+          <h2 className="text-[19px] font-semibold leading-tight tracking-[-0.02em]">{name}</h2>
           {shop.verificationStatus === "verified" && (
             <BadgeCheck
               className="mt-0.5 size-5 shrink-0 text-sage-deep"
@@ -114,10 +114,10 @@ export function ShopCard({ shop }: { shop: ShopDirectoryDTO }) {
               ? t.shops.noProductsYet
               : f(t.shops.fromPrice, { price: formatRupees(shop.minPrice) })}
           </span>
-          <span className="inline-flex items-center gap-1 font-medium text-brand">
+          <span className="inline-flex items-center gap-0.5 font-medium text-brand-ink">
             {t.shops.visitShop}
-            <ArrowUpRight
-              className="size-4 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5"
+            <ChevronRight
+              className="size-4 transition-transform group-hover:translate-x-0.5"
               aria-hidden="true"
             />
           </span>

@@ -2,7 +2,7 @@ import * as React from "react";
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { formatRupees } from "@flowers/api/money";
 import { Badge } from "@flowers/ui/components/badge";
-import { ArrowUpRight, Clock, Info, MapPin } from "lucide-react";
+import { ChevronRight, Clock, Info, MapPin } from "lucide-react";
 import { PriceBlock } from "../../components/catalog/PriceBlock";
 import { WholesaleInfo } from "../../components/catalog/WholesaleInfo";
 import { AddToEnquiryButton } from "../../components/catalog/AddToEnquiryButton";
@@ -179,9 +179,9 @@ function ProductDetailPage() {
       : product.shop.districtNameEn;
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-8">
+    <div className="mx-auto max-w-6xl px-4 pb-20 pt-6 sm:pt-8">
       {/* Breadcrumb */}
-      <nav className="mb-4 text-sm text-muted-foreground" aria-label="Breadcrumb">
+      <nav className="mb-6 text-[13px] text-muted-foreground" aria-label="Breadcrumb">
         <Link to="/$locale" params={{ locale }} className="hover:text-foreground">
           {t.catalog.breadcrumbHome}
         </Link>
@@ -195,10 +195,10 @@ function ProductDetailPage() {
         </Link>
       </nav>
 
-      <div className="grid gap-8 lg:grid-cols-2">
+      <div className="grid gap-8 lg:grid-cols-[1.15fr_1fr] lg:gap-14">
         {/* Gallery */}
         <div>
-          <div className="aspect-square overflow-hidden rounded-lg border border-border/60 bg-butter">
+          <div className="aspect-square overflow-hidden rounded-3xl bg-stage">
             <img
               src={images[active]!.url}
               alt={images[active]!.altText ?? name}
@@ -214,8 +214,8 @@ function ProductDetailPage() {
                     onClick={() => setActive(i)}
                     aria-label={`Image ${i + 1}`}
                     className={
-                      "size-16 overflow-hidden rounded-lg border-2 transition-colors " +
-                      (i === active ? "border-brand" : "border-border")
+                      "size-16 overflow-hidden rounded-xl bg-stage ring-offset-2 ring-offset-background transition-shadow " +
+                      (i === active ? "ring-2 ring-foreground" : "ring-1 ring-transparent hover:ring-border")
                     }
                   >
                     <img
@@ -238,7 +238,7 @@ function ProductDetailPage() {
             </Badge>
           </div>
 
-          <h1 className="font-display text-3xl sm:text-4xl">{name}</h1>
+          <h1 className="font-display text-[2rem] leading-[1.08] sm:text-[2.75rem]">{name}</h1>
 
           <PriceBlock
             price={product.price}
@@ -310,7 +310,7 @@ function ProductDetailPage() {
           <Link
             to="/$locale/shops/$slug"
             params={{ locale, slug: product.shop.slug }}
-            className="group mt-2 flex items-center gap-4 rounded-xl border border-border bg-card p-4 transition-colors hover:border-foreground/30"
+            className="group mt-2 flex items-center gap-4 rounded-2xl bg-stage p-4 transition-colors hover:bg-secondary"
           >
             <ShopAvatar
               name={product.shop.nameEn}
@@ -330,9 +330,9 @@ function ProductDetailPage() {
                 </span>
               </span>
             </span>
-            <span className="hidden shrink-0 items-center gap-1 text-sm font-medium text-brand sm:inline-flex">
+            <span className="hidden shrink-0 items-center gap-1 text-sm font-medium text-brand-ink sm:inline-flex">
               {t.catalog.viewShop}
-              <ArrowUpRight className="size-4" aria-hidden="true" />
+              <ChevronRight className="size-4" aria-hidden="true" />
             </span>
           </Link>
 
@@ -343,7 +343,7 @@ function ProductDetailPage() {
             <Link
               to="/$locale/fresh-flowers-near-me"
               params={{ locale }}
-              className="inline-flex items-center gap-1.5 font-medium text-brand hover:underline"
+              className="inline-flex items-center gap-1.5 font-medium text-brand-ink hover:underline"
             >
               <MapPin className="size-4" aria-hidden="true" />
               {t.catalog.nearMeLink}
@@ -355,7 +355,7 @@ function ProductDetailPage() {
               className="inline-flex items-center gap-1.5 text-muted-foreground hover:text-foreground hover:underline"
             >
               {f(t.catalog.moreInDistrict, { district: districtName })}
-              <ArrowUpRight className="size-4" aria-hidden="true" />
+              <ChevronRight className="size-4" aria-hidden="true" />
             </Link>
           </nav>
         </div>
