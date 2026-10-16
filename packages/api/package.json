@@ -12,7 +12,8 @@
     "./flowers": "./src/flowers-client.ts",
     "./slug": "./src/slug.ts",
     "./invite-message": "./src/invite-message.ts",
-    "./supplier-workflow": "./src/supplier-workflow.ts"
+    "./supplier-workflow": "./src/supplier-workflow.ts",
+    "./local-requests": "./src/local-requests/index.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
