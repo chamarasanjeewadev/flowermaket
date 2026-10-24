@@ -5,4 +5,4 @@
  */
 
 /** Marketplace WhatsApp number that receives enquiries (digits only). */
-export const WHATSAPP_NUMBER = "94778540633";
+export const WHATSAPP_NUMBER = "94760903845";

@@ -132,8 +132,8 @@ describe("buildWhatsappUrl", () => {
   });
 
   it("normalises a formatted number to digits only", () => {
-    const url = buildWhatsappUrl("hi", "+94 77 854 0633");
-    expect(url).toBe("https://wa.me/94778540633?text=hi");
+    const url = buildWhatsappUrl("hi", "+94 76 090 3845");
+    expect(url).toBe("https://wa.me/94760903845?text=hi");
   });
 });
 

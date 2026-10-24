@@ -128,7 +128,9 @@ export type WhatsappSource =
   | "enquiry_page"
   | "bouquet_designer"
   | "quotation_generator"
-  | "design_limit";
+  | "design_limit"
+  | "header"
+  | "footer";
 
 export const track = {
   viewItem(p: TrackedProduct): void {

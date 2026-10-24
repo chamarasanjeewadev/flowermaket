@@ -2,9 +2,11 @@ import { Link } from "@tanstack/react-router";
 import { useT } from "../i18n/react";
 import {
   CONTACT_EMAIL,
-  CONTACT_PHONE,
-  CONTACT_PHONE_DISPLAY,
+  CONTACT_WHATSAPP_DISPLAY,
+  CONTACT_WHATSAPP_URL,
 } from "../lib/site";
+import { track } from "../lib/analytics";
+import { WhatsAppGlyph } from "./WhatsAppGlyph";
 
 const SISTER_PRODUCTS = [
   { name: "BabyJourney", url: "https://babyjourney.lk" },
@@ -79,11 +81,21 @@ export function Footer() {
             <p className="text-[13px] font-semibold text-foreground">
               {t.footer.contact}
             </p>
+            <a
+              href={CONTACT_WHATSAPP_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => track.whatsappLead("footer")}
+              className="inline-flex items-center gap-1.5 text-[13px] font-medium text-foreground transition-colors hover:text-[#128C7E]"
+            >
+              <WhatsAppGlyph className="size-4 text-[#25D366]" />
+              {CONTACT_WHATSAPP_DISPLAY}
+            </a>
+            <p className="text-xs text-muted-foreground">
+              {t.footer.whatsappOnly}
+            </p>
             <a href={`mailto:${CONTACT_EMAIL}`} className={linkClass}>
               {CONTACT_EMAIL}
-            </a>
-            <a href={`tel:${CONTACT_PHONE}`} className={linkClass}>
-              {CONTACT_PHONE_DISPLAY}
             </a>
           </nav>
           <nav

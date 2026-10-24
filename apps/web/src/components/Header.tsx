@@ -36,6 +36,9 @@ import { useT } from "../i18n/react";
 import { signOut } from "../server/auth";
 import { setLocale } from "../server/locale";
 import { refreshSession, type SessionUser } from "../lib/session";
+import { CONTACT_WHATSAPP_URL } from "../lib/site";
+import { track } from "../lib/analytics";
+import { WhatsAppGlyph } from "./WhatsAppGlyph";
 import { useEnquiry } from "../lib/enquiry";
 
 const LANGUAGES: ReadonlyArray<{
@@ -358,6 +361,16 @@ export function Header({ session }: { session: SessionUser }) {
           >
             <Search className="size-[18px]" aria-hidden="true" />
           </Link>
+          <a
+            href={CONTACT_WHATSAPP_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() => track.whatsappLead("header")}
+            aria-label={t.nav.whatsapp}
+            className="inline-flex size-10 items-center justify-center rounded-full text-[#25D366] transition-colors hover:bg-foreground/[0.06] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <WhatsAppGlyph className="size-[19px]" />
+          </a>
           <LanguageSwitcher />
           {session.kind === "authenticated" ? (
             <UserMenu session={session} />
@@ -470,6 +483,22 @@ export function Header({ session }: { session: SessionUser }) {
                 </Link>
               </nav>
               <div className="mt-6 space-y-2">
+                <a
+                  href={CONTACT_WHATSAPP_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() => {
+                    track.whatsappLead("header");
+                    setMobileOpen(false);
+                  }}
+                  className={cn(
+                    buttonVariants({ variant: "outline" }),
+                    "w-full gap-2",
+                  )}
+                >
+                  <WhatsAppGlyph className="size-4 text-[#25D366]" />
+                  {t.nav.whatsapp}
+                </a>
                 {session.kind === "anonymous" && (
                   <Link
                     to="/$locale/login"

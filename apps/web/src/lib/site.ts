@@ -3,14 +3,17 @@
  * `SITE_URL` is read lazily (Workers bind env per request) and guarded so
  * the same helper is safe in client bundles.
  */
+import { WHATSAPP_NUMBER } from "@flowers/integrations";
 import { LOCALES, type Locale } from "../i18n";
 
 export const FALLBACK_SITE_URL = "https://flowermarket.lk";
 
 /** Primary public contact address, surfaced in the footer and structured data. */
 export const CONTACT_EMAIL = "hi@flowermarket.lk";
-export const CONTACT_PHONE = "+94778540633";
-export const CONTACT_PHONE_DISPLAY = "+94 77 854 0633";
+/** The marketplace number is WhatsApp-only (no voice calls), so link to a chat, never `tel:`. */
+export const CONTACT_WHATSAPP = `+${WHATSAPP_NUMBER}`;
+export const CONTACT_WHATSAPP_DISPLAY = "+94 76 090 3845";
+export const CONTACT_WHATSAPP_URL = `https://wa.me/${WHATSAPP_NUMBER}`;
 
 export function siteUrl(): string {
   if (typeof process !== "undefined" && process.env?.SITE_URL) {

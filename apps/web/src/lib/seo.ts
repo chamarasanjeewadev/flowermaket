@@ -5,7 +5,7 @@
  * and dependency-light. All URLs are absolutised via `absoluteUrl` so the
  * markup is valid regardless of the locale prefix in the current path.
  */
-import { absoluteUrl, siteUrl, CONTACT_EMAIL, CONTACT_PHONE } from "./site";
+import { absoluteUrl, siteUrl, CONTACT_EMAIL, CONTACT_WHATSAPP, CONTACT_WHATSAPP_URL } from "./site";
 import type { Locale } from "../i18n";
 
 export const SITE_NAME = "FlowerMarket.lk";
@@ -70,13 +70,14 @@ export function organizationJsonLd() {
     description:
       "A Sri Lankan marketplace for browsing retail and wholesale flower listings by category, district and seller.",
     email: CONTACT_EMAIL,
-    telephone: CONTACT_PHONE,
+    telephone: CONTACT_WHATSAPP,
     areaServed: { "@type": "Country", name: "Sri Lanka" },
     contactPoint: {
       "@type": "ContactPoint",
       contactType: "customer support",
       email: CONTACT_EMAIL,
-      telephone: CONTACT_PHONE,
+      telephone: CONTACT_WHATSAPP,
+      url: CONTACT_WHATSAPP_URL,
       areaServed: "LK",
       availableLanguage: ["en", "si"],
     },
