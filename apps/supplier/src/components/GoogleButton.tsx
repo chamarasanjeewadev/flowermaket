@@ -48,7 +48,7 @@ export function GoogleButton({
     <Button
       type="button"
       variant="outline"
-      className="w-full"
+      className="h-12 w-full rounded-xl border-2 text-base font-medium"
       disabled={disabled || loading}
       onClick={() => void handleClick()}
     >

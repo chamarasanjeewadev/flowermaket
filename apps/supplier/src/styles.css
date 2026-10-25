@@ -7,3 +7,28 @@
 input:not([type="checkbox"]):not([type="radio"]):not([type="file"]), select, button {
   min-height: 2.75rem;
 }
+
+/*
+ * Supplier portal theme — "farm to florist": rose-red, forest green and warm
+ * cream, taken from the FlowerMarket.lk supplier campaign. Scoped here so the
+ * buyer site and admin keep the shared tangerine brand.
+ */
+:root {
+  --background: #fdfaf2; /* cream */
+  --foreground: #14301f; /* forest ink */
+  --primary: #14301f;
+  --primary-foreground: #ffffff;
+  --brand: #c8102e; /* rose red */
+  --brand-ink: #a50d25;
+  --brand-foreground: #ffffff;
+  --ring: #c8102e;
+  --success: #1f6b3a;
+  --sage-deep: #1f6b3a;
+  --stage: #f4efe2;
+  --muted: #f4efe2;
+  --secondary: #f4efe2;
+  --accent: #f4efe2;
+  --border: #e8dfcb;
+  --input: #dccfb3;
+  --muted-foreground: #5d6b60;
+}

@@ -2,20 +2,14 @@ import * as React from "react";
 import { Link, createFileRoute, useRouter } from "@tanstack/react-router";
 import { Alert, AlertDescription } from "@flowers/ui/components/alert";
 import { Button } from "@flowers/ui/components/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@flowers/ui/components/card";
 import { Input } from "@flowers/ui/components/input";
 import { Label } from "@flowers/ui/components/label";
 import { Loader2 } from "lucide-react";
 import { safeRedirectPath } from "@flowers/api/redirect";
-import { signIn, requestPhoneOtp, verifyPhoneOtp } from "../server/auth";
+import { signIn } from "../server/auth";
 import { GoogleButton } from "../components/GoogleButton";
 import { useT } from "../i18n/react";
+import { AuthShell } from "../components/AuthShell";
 
 export const Route = createFileRoute("/login")({
   validateSearch: (
@@ -38,49 +32,6 @@ function LoginPage() {
   const [error, setError] = React.useState<string | null>(searchError ?? null);
   const [busy, setBusy] = React.useState(false);
 
-  // Phone-OTP handover login (for email-less suppliers).
-  const [phoneMode, setPhoneMode] = React.useState(false);
-  const [phone, setPhone] = React.useState("");
-  const [otp, setOtp] = React.useState("");
-  const [otpSent, setOtpSent] = React.useState(false);
-  const [phoneBusy, setPhoneBusy] = React.useState(false);
-
-  async function handleSendOtp() {
-    setError(null);
-    if (!phone.trim()) {
-      setError("Enter your phone number.");
-      return;
-    }
-    setPhoneBusy(true);
-    try {
-      const result = await requestPhoneOtp({ data: { phone: phone.trim() } });
-      if (result.ok) setOtpSent(true);
-      else setError(result.message ?? "Could not send the code.");
-    } finally {
-      setPhoneBusy(false);
-    }
-  }
-
-  async function handleVerifyOtp() {
-    setError(null);
-    if (!otp.trim()) {
-      setError("Enter the code you received.");
-      return;
-    }
-    setPhoneBusy(true);
-    try {
-      const result = await verifyPhoneOtp({ data: { phone: phone.trim(), token: otp.trim() } });
-      if (result.ok) {
-        await router.invalidate();
-        await router.navigate({ to: afterLogin });
-      } else {
-        setError(result.message ?? "Invalid code.");
-      }
-    } finally {
-      setPhoneBusy(false);
-    }
-  }
-
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
@@ -102,159 +53,80 @@ function LoginPage() {
     }
   }
 
+  const field = "mt-2 h-12 rounded-xl text-base";
+  const label = "text-base font-medium";
   return (
-    <div className="flex min-h-dvh flex-col items-center justify-center bg-background p-6">
-      <Card className="w-full max-w-sm">
-        <CardHeader className="text-center">
-          <img
-            src="/logo.png"
-            alt="FlowerMarket.lk"
-            className="mx-auto mb-3 h-12 w-auto"
-          />
-          <CardTitle className="sr-only">FlowerMarket.lk — Supplier sign in</CardTitle>
-          <CardDescription>{t.auth.signInSub}</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {session.kind === "config_error" ? (
+    <AuthShell title={t.auth.welcomeBack} subtitle={t.auth.signInSub}>
+      {session.kind === "config_error" ? (
+        <Alert variant="destructive">
+          <AlertDescription>
+            Server configuration error: Supabase credentials are not set. Set
+            AUTH_DISABLED=1 for local dev, or configure SUPABASE_URL and
+            SUPABASE_ANON_KEY. Access is denied until this is resolved.
+          </AlertDescription>
+        </Alert>
+      ) : session.kind === "auth_disabled" ? (
+        <div className="space-y-4">
+          <Alert>
+            <AlertDescription>{t.auth.devMode}</AlertDescription>
+          </Alert>
+          <Button asChild variant="brand" className="h-12 w-full text-base">
+            <Link to="/">{t.auth.continueToDashboard}</Link>
+          </Button>
+        </div>
+      ) : (
+        <div className="space-y-5">
+          {error && (
             <Alert variant="destructive">
-              <AlertDescription>
-                Server configuration error: Supabase credentials are not set.
-                Set AUTH_DISABLED=1 for local dev, or configure SUPABASE_URL
-                and SUPABASE_ANON_KEY. Access is denied until this is resolved.
-              </AlertDescription>
+              <AlertDescription>{error}</AlertDescription>
             </Alert>
-          ) : session.kind === "auth_disabled" ? (
-            <div className="space-y-4">
-              <Alert>
-                <AlertDescription>{t.auth.devMode}</AlertDescription>
-              </Alert>
-              <Button asChild variant="brand" className="w-full">
-                <Link to="/">{t.auth.continueToDashboard}</Link>
-              </Button>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {error && (
-                <Alert variant="destructive">
-                  <AlertDescription>{error}</AlertDescription>
-                </Alert>
-              )}
-              <GoogleButton redirect={redirectTo ? afterLogin : undefined} />
-              <div className="flex items-center gap-3">
-                <span className="h-px flex-1 bg-border" />
-                <span className="text-xs text-muted-foreground">
-                  {t.auth.or}
-                </span>
-                <span className="h-px flex-1 bg-border" />
-              </div>
-              <form
-                className="space-y-4"
-                onSubmit={(e) => void handleSubmit(e)}
-              >
-                <div>
-                  <Label htmlFor="email">{t.auth.email}</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    autoComplete="email"
-                    className="mt-1.5"
-                    placeholder={t.auth.emailPlaceholder}
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="password">{t.auth.password}</Label>
-                  <Input
-                    id="password"
-                    type="password"
-                    autoComplete="current-password"
-                    className="mt-1.5"
-                    placeholder={t.auth.passwordPlaceholder}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                  />
-                </div>
-                <Button
-                  type="submit"
-                  variant="brand"
-                  className="w-full"
-                  disabled={busy}
-                >
-                  {busy ? <Loader2 className="animate-spin" /> : null}
-                  {busy ? t.auth.signingIn : t.auth.signIn}
-                </Button>
-              </form>
-
-              <div className="rounded-2xl border border-border p-3">
-                {!phoneMode ? (
-                  <button
-                    type="button"
-                    className="w-full text-center text-sm text-muted-foreground underline hover:text-foreground"
-                    onClick={() => setPhoneMode(true)}
-                  >
-                    Sign in with your phone number
-                  </button>
-                ) : (
-                  <div className="space-y-3">
-                    <div>
-                      <Label htmlFor="phone">Phone (94…)</Label>
-                      <Input
-                        id="phone"
-                        inputMode="tel"
-                        className="mt-1.5"
-                        placeholder="94771234567"
-                        value={phone}
-                        onChange={(e) => setPhone(e.target.value)}
-                        disabled={otpSent}
-                      />
-                    </div>
-                    {otpSent && (
-                      <div>
-                        <Label htmlFor="otp">Code</Label>
-                        <Input
-                          id="otp"
-                          inputMode="numeric"
-                          className="mt-1.5"
-                          placeholder="123456"
-                          value={otp}
-                          onChange={(e) => setOtp(e.target.value)}
-                        />
-                      </div>
-                    )}
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="w-full"
-                      disabled={phoneBusy}
-                      onClick={() => void (otpSent ? handleVerifyOtp() : handleSendOtp())}
-                    >
-                      {phoneBusy ? <Loader2 className="animate-spin" /> : null}
-                      {otpSent ? "Verify code" : "Send code"}
-                    </Button>
-                  </div>
-                )}
-              </div>
-
-              <p className="text-center text-sm text-muted-foreground">
-                New supplier?{" "}
-                <Link to="/register" className="underline hover:text-foreground">
-                  Create an account
-                </Link>
-              </p>
-            </div>
           )}
-        </CardContent>
-      </Card>
-      <p className="mt-6 text-center text-xs text-muted-foreground">
-        Need help?{" "}
-        <a
-          href="mailto:hi@flowermarket.lk"
-          className="underline hover:text-foreground"
-        >
-          hi@flowermarket.lk
-        </a>
-      </p>
-    </div>
+          <GoogleButton redirect={redirectTo ? afterLogin : undefined} />
+          <div className="flex items-center gap-3">
+            <span className="h-px flex-1 bg-border" />
+            <span className="text-sm text-muted-foreground">{t.auth.or}</span>
+            <span className="h-px flex-1 bg-border" />
+          </div>
+
+          <form className="space-y-5" onSubmit={(e) => void handleSubmit(e)}>
+              <div>
+                <Label htmlFor="email" className={label}>{t.auth.email}</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  autoComplete="email"
+                  className={field}
+                  placeholder={t.auth.emailPlaceholder}
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                />
+              </div>
+              <div>
+                <Label htmlFor="password" className={label}>{t.auth.password}</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  autoComplete="current-password"
+                  className={field}
+                  placeholder={t.auth.passwordPlaceholder}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                />
+              </div>
+              <Button type="submit" variant="brand" className="h-12 w-full rounded-xl text-base font-semibold shadow-lg shadow-brand/25" disabled={busy}>
+                {busy ? <Loader2 className="animate-spin" /> : null}
+                {busy ? t.auth.signingIn : t.auth.signIn}
+              </Button>
+            </form>
+
+          <p className="rounded-xl bg-muted px-4 py-3 text-center text-base text-foreground">
+            {t.auth.newSupplier}{" "}
+            <Link to="/register" className="font-semibold text-brand-ink underline underline-offset-4">
+              {t.auth.createAccount}
+            </Link>
+          </p>
+        </div>
+      )}
+    </AuthShell>
   );
 }

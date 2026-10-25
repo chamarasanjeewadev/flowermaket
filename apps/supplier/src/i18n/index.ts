@@ -11,7 +11,7 @@ export { en, si };
 export const LOCALES = ["en", "si"] as const;
 export type Locale = (typeof LOCALES)[number];
 
-export const DEFAULT_LOCALE: Locale = "en";
+export const DEFAULT_LOCALE: Locale = "si";
 
 export const DICTS: Record<Locale, Dict> = { en, si };
 

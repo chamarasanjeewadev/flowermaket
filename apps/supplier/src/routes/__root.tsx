@@ -345,7 +345,9 @@ function RootLayout() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
   const isFullBleed =
-    pathname === "/login" || pathname === "/onboarding";
+    pathname === "/login" ||
+    pathname === "/register" ||
+    pathname === "/onboarding";
 
   return (
     <I18nProvider locale={locale}>
