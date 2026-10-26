@@ -67,48 +67,51 @@ export function AuthShell({
 
   return (
     <div className="flex min-h-dvh flex-col bg-background lg:flex-row">
-      <aside className="relative flex flex-col bg-background lg:min-h-dvh lg:w-[48%]">
-        <div className="px-6 pt-7 lg:px-14 lg:pt-12">
-          <img src="/logo.png" alt="FlowerMarket.lk" className="h-12 w-auto self-start lg:h-16" />
+      <aside className="relative flex flex-col bg-background lg:min-h-dvh lg:w-[52%] lg:justify-center">
+        <div className="flex flex-col px-6 pt-7 lg:px-14 lg:py-10">
+          <div className="lg:flex lg:flex-col">
+            <img src="/logo.png" alt="FlowerMarket.lk" className="h-12 w-auto self-start lg:h-16" />
 
-          <div className="mt-6 max-w-[22rem] sm:max-w-xl lg:mt-10 lg:max-w-lg">
-            <p className="text-lg font-bold leading-snug text-brand sm:text-xl lg:text-2xl">
-              {t.auth.heroKicker}
-            </p>
-            <h1 className="mt-2 text-[1.6rem] font-black leading-[1.35] text-[#0f3d22] sm:text-4xl sm:leading-[1.3] lg:text-[2.5rem] lg:leading-[1.3]">
-              {t.auth.heroTitle}
-            </h1>
-            <p className="mt-3 hidden max-w-sm text-lg font-medium leading-8 text-foreground sm:block">
-              {t.auth.heroSub}
-            </p>
+            <div className="mt-6 max-w-[22rem] sm:max-w-xl lg:mt-10 lg:max-w-lg">
+              <p className="text-lg font-bold leading-snug text-brand sm:text-xl lg:text-2xl">
+                {t.auth.heroKicker}
+              </p>
+              <h1 className="mt-2 text-[1.6rem] font-black leading-[1.35] text-[#0f3d22] sm:text-4xl sm:leading-[1.3] lg:text-[2.5rem] lg:leading-[1.3]">
+                {t.auth.heroTitle}
+              </h1>
+              <p className="mt-3 hidden max-w-sm text-lg font-medium leading-8 text-foreground sm:block">
+                {t.auth.heroSub}
+              </p>
+            </div>
+
+            <ul className="mt-5 hidden flex-wrap gap-2 lg:flex">
+              {perks.map(({ icon: Icon, label }) => (
+                <li
+                  key={label}
+                  className="flex items-center gap-2 rounded-full bg-card py-1.5 pl-1.5 pr-4 text-sm font-semibold text-foreground shadow-sm ring-1 ring-border/60"
+                >
+                  <span className="grid size-7 place-items-center rounded-full bg-brand text-brand-foreground">
+                    <Icon className="size-4" />
+                  </span>
+                  {label}
+                </li>
+              ))}
+            </ul>
           </div>
 
-          <ul className="mt-5 hidden flex-wrap gap-2 lg:flex">
-            {perks.map(({ icon: Icon, label }) => (
-              <li
-                key={label}
-                className="flex items-center gap-2 rounded-full bg-card py-1.5 pl-1.5 pr-4 text-sm font-semibold text-foreground shadow-sm ring-1 ring-border/60"
-              >
-                <span className="grid size-7 place-items-center rounded-full bg-brand text-brand-foreground">
-                  <Icon className="size-4" />
-                </span>
-                {label}
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        {/* Photo gets its own band below the copy so the grower's face is never covered */}
-        <div className="relative mt-4 min-h-[17rem] flex-1 lg:min-h-[24rem]">
-          <img
-            src="/hero-farmer.webp"
-            alt=""
-            className="absolute inset-0 size-full object-cover object-[center_25%] [mask-image:linear-gradient(to_bottom,transparent,#000_22%)]"
-          />
+          {/* The photo is portrait: show it whole in a framed card (never masked or
+              covered) so the grower, her smile and the flowers all stay visible. */}
+          <div className="relative mt-6 aspect-square w-full max-w-md overflow-hidden rounded-3xl shadow-xl ring-1 ring-border/60 sm:aspect-[5/4] lg:mt-8 lg:aspect-[5/4] xl:aspect-square">
+            <img
+              src="/hero-farmer.webp"
+              alt="A Sri Lankan flower grower packing fresh roses and gerberas"
+              className="absolute inset-0 size-full object-cover object-[center_52%]"
+            />
+          </div>
         </div>
       </aside>
 
-      <main className="relative -mt-8 flex flex-1 flex-col rounded-t-[2rem] border-t border-border bg-background px-5 pb-10 pt-6 sm:px-10 lg:mt-0 lg:rounded-none lg:px-16 lg:py-10">
+      <main className="relative mt-8 flex flex-1 flex-col rounded-t-[2rem] border-t border-border bg-background px-5 pb-10 pt-6 sm:px-10 lg:mt-0 lg:rounded-none lg:px-16 lg:py-10">
         <div className="flex justify-end">
           <LanguageSwitch locale={locale} />
         </div>

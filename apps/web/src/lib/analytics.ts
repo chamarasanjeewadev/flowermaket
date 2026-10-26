@@ -128,6 +128,7 @@ export type WhatsappSource =
   | "enquiry_page"
   | "bouquet_designer"
   | "quotation_generator"
+  | "home_quick_request"
   | "design_limit"
   | "header"
   | "footer";

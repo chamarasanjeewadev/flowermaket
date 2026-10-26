@@ -98,3 +98,39 @@ export function buildWhatsappUrl(
   const digits = numberDigits.replace(/\D/g, "");
   return `https://wa.me/${digits}?text=${encodeURIComponent(text)}`;
 }
+
+export interface QuickRequestLine {
+  name: string;
+  qty: number;
+  /** "stem" | "bunch" | "arrangement" | "item" */
+  unit: string;
+}
+
+export interface BuildQuickRequestTextInput {
+  lines: readonly QuickRequestLine[];
+  /** Free-text list typed or pasted by the customer. */
+  freeText?: string;
+  name?: string;
+  phone?: string;
+  dateNeeded?: string;
+  area?: string;
+}
+
+/** Home-page quick request: picked flowers and/or a free-text list → WhatsApp. */
+export function buildQuickRequestText(input: BuildQuickRequestTextInput): string {
+  const out: string[] = ["Hello FlowerMarket.lk 🌸", "", "I need a quote for these flowers:", ""];
+  const lines = input.lines.filter((l) => l.name.trim() && l.qty > 0);
+  lines.forEach((l, i) => {
+    const plural = l.qty === 1 ? l.unit : l.unit === "bunch" ? "bunches" : `${l.unit}s`;
+    out.push(`${i + 1}. ${l.name.trim()} × ${Math.floor(l.qty)} ${plural}`);
+  });
+  const free = input.freeText?.trim();
+  if (free) out.push(...(lines.length ? [""] : []), free);
+  const details: string[] = [];
+  if (input.name?.trim()) details.push(`Name: ${input.name.trim()}`);
+  if (input.phone?.trim()) details.push(`Phone: ${input.phone.trim()}`);
+  if (input.dateNeeded?.trim()) details.push(`Date needed: ${input.dateNeeded.trim()}`);
+  if (input.area?.trim()) details.push(`Delivery area: ${input.area.trim()}`);
+  if (details.length) out.push("", ...details);
+  return out.join("\n");
+}

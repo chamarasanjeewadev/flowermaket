@@ -8,6 +8,8 @@ import {
   Store,
 } from "lucide-react";
 import { SELLER_TYPES, type SellerType } from "@flowers/api/constants";
+import { QuickRequest } from "../../components/home/QuickRequest";
+import { listFeaturedVariants, listFlowerVariants } from "../../server/flowers";
 import { ProductCard } from "../../components/catalog/ProductCard";
 import { ShopCard } from "../../components/sellers/ShopCard";
 import { SellerTypeTiles } from "../../components/sellers/SellerTypeTiles";
@@ -28,12 +30,15 @@ import {
 
 export const Route = createFileRoute("/$locale/")({
   loader: async () => {
-    const [categories, featured, shops] = await Promise.all([
-      getCategoriesWithCounts(),
-      getFeaturedProducts(),
-      listShops({ data: {} }),
-    ]);
-    return { categories, featured, shops };
+    const [categories, featured, shops, flowers, popularFlowers] =
+      await Promise.all([
+        getCategoriesWithCounts(),
+        getFeaturedProducts(),
+        listShops({ data: {} }),
+        listFlowerVariants(),
+        listFeaturedVariants(),
+      ]);
+    return { categories, featured, shops, flowers, popularFlowers };
   },
   head: ({ params }) => {
     const locale = params.locale as import("../../i18n").Locale;
@@ -67,7 +72,8 @@ export const Route = createFileRoute("/$locale/")({
 });
 
 function HomePage() {
-  const { categories, featured, shops } = Route.useLoaderData();
+  const { categories, featured, shops, flowers, popularFlowers } =
+    Route.useLoaderData();
   const { locale, t, f } = useT();
   const sellerCounts = Object.fromEntries(
     SELLER_TYPES.map((type) => [
@@ -84,62 +90,54 @@ function HomePage() {
 
   return (
     <>
-      {/* Hero — centred headline over one large stage. Compact on mobile so
-          listings sit near the fold; the stage image is tablet/desktop only. */}
-      <section className="px-4 pt-6 sm:pt-16 lg:pt-20">
-        <div className="mx-auto max-w-3xl text-center">
-          <h1 className="animate-rise font-display text-[2.375rem] leading-[1.02] sm:text-[4.25rem] lg:text-[5.25rem]">
-            {t.home.heroLead} {t.home.heroHighlight}
-          </h1>
-          <p
-            className="animate-rise text-lead mx-auto mt-3 line-clamp-2 max-w-xl sm:mt-5 sm:line-clamp-none"
-            style={{ animationDelay: "80ms" }}
-          >
-            {t.home.heroSubtitle}
-          </p>
-          <div
-            className="animate-rise mt-5 flex flex-wrap items-center justify-center gap-x-6 gap-y-3 sm:mt-8"
-            style={{ animationDelay: "160ms" }}
-          >
-            <Link
-              to="/$locale/products"
-              params={{ locale }}
-              search={{ type: "retail" }}
-              className={cn(buttonVariants({ size: "lg" }), "px-6 sm:px-7")}
+      {/* Hero — headline beside the quick-request card so a visitor can send
+          a flower list from the first screen. Card first on mobile. */}
+      <section className="px-4 pt-6 sm:pt-12 lg:pt-16">
+        <div className="mx-auto grid max-w-6xl grid-cols-1 items-start gap-5 sm:gap-8 lg:grid-cols-[1.05fr_1fr] lg:gap-14">
+          <div className="min-w-0 text-center lg:pt-6 lg:text-left">
+            <h1 className="animate-rise font-display text-[2.375rem] leading-[1.02] sm:text-[3.75rem] lg:text-[4.5rem]">
+              {t.home.heroLead} {t.home.heroHighlight}
+            </h1>
+            <p
+              className="animate-rise text-lead mx-auto mt-5 hidden max-w-xl sm:block lg:mx-0"
+              style={{ animationDelay: "80ms" }}
             >
-              {t.home.ctaShopRetail}
-            </Link>
-            <Link
-              to="/$locale/products"
-              params={{ locale }}
-              search={{ type: "wholesale" }}
-              className="group inline-flex items-center gap-0.5 text-[15px] font-medium text-brand-ink hover:underline underline-offset-4"
+              {t.home.heroSubtitle}
+            </p>
+            <div
+              className="animate-rise mt-4 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 sm:mt-8 lg:justify-start"
+              style={{ animationDelay: "160ms" }}
             >
-              {t.home.ctaBuyWholesale}
-              <ChevronRight
-                className="size-4 transition-transform group-hover:translate-x-0.5"
-                aria-hidden="true"
-              />
-            </Link>
+              <Link
+                to="/$locale/products"
+                params={{ locale }}
+                search={{ type: "retail" }}
+                className={cn(buttonVariants({ size: "lg" }), "px-6 sm:px-7")}
+              >
+                {t.home.ctaShopRetail}
+              </Link>
+              <Link
+                to="/$locale/products"
+                params={{ locale }}
+                search={{ type: "wholesale" }}
+                className="group inline-flex items-center gap-0.5 text-[15px] font-medium text-brand-ink hover:underline underline-offset-4"
+              >
+                {t.home.ctaBuyWholesale}
+                <ChevronRight
+                  className="size-4 transition-transform group-hover:translate-x-0.5"
+                  aria-hidden="true"
+                />
+              </Link>
+            </div>
+            <img
+              src="/flowers/hero-bouquet.webp"
+              alt="Fresh gerbera bouquet"
+              className="animate-rise mt-8 hidden h-72 w-auto rounded-3xl bg-stage object-contain p-4 lg:block"
+              style={{ animationDelay: "240ms" }}
+            />
           </div>
-        </div>
-
-        <div
-          className="animate-rise relative mx-auto mt-12 hidden max-w-6xl overflow-hidden rounded-3xl bg-stage sm:block lg:mt-16"
-          style={{ animationDelay: "240ms" }}
-        >
-          <img
-            src="/flowers/hero-bouquet.webp"
-            alt="Fresh gerbera bouquet"
-            className="mx-auto h-[420px] w-auto object-contain py-8 lg:h-[520px]"
-          />
-          <div className="glass absolute bottom-5 left-5 max-w-xs rounded-2xl px-5 py-4 shadow-float">
-            <p className="text-[15px] font-semibold leading-snug tracking-[-0.015em]">
-              {t.home.stickerTitle}
-            </p>
-            <p className="mt-0.5 text-[13px] text-muted-foreground">
-              {t.home.stickerSub}
-            </p>
+          <div className="animate-rise min-w-0" style={{ animationDelay: "120ms" }}>
+            <QuickRequest flowers={flowers} featured={popularFlowers} />
           </div>
         </div>
       </section>
