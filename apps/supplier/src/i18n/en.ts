@@ -65,6 +65,9 @@ export const en = {
       "Our team will review your shop details and notify you once verified. You can continue editing while the team reviews it.",
   },
   onboarding: {
+    signedInAs: "Signed in as",
+    noShopYet: "This account has no shop yet. Already have a shop with another email or Google account?",
+    switchAccount: "Sign in with that account",
     title: "Set up your shop",
     subtitle: "Create your shop profile to start selling on FlowerMarket.lk.",
     nameEn: "Shop name (English)",

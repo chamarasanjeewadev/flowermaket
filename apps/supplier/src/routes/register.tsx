@@ -70,7 +70,9 @@ function RegisterPage() {
             <AlertDescription>{notice}</AlertDescription>
           </Alert>
         )}
-        <GoogleButton />
+        <GoogleButton
+          redirect={invite ? `/onboarding?invite=${encodeURIComponent(invite)}` : undefined}
+        />
         <div className="flex items-center gap-3">
           <span className="h-px flex-1 bg-border" />
           <span className="text-sm text-muted-foreground">{t.auth.or}</span>

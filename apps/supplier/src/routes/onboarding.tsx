@@ -17,7 +17,7 @@ import { Flower, Loader2 } from "lucide-react";
 import { DISTRICTS } from "@flowers/api/constants";
 import type { SellerType } from "@flowers/api/constants";
 import { SellerTypePicker } from "../components/SellerTypePicker";
-import { getInvite } from "../server/auth";
+import { getInvite, signOut } from "../server/auth";
 import { createShopFn } from "../server/shops";
 import { useT } from "../i18n/react";
 
@@ -44,6 +44,7 @@ function OnboardingPage() {
   const { redirect: returnTo } = Route.useSearch();
   const { invite } = Route.useSearch();
   const { invite: inviteDetails } = Route.useLoaderData();
+  const { session } = Route.useRouteContext();
   const [serverError, setServerError] = React.useState<string | null>(null);
 
   const form = useForm({
@@ -93,6 +94,31 @@ function OnboardingPage() {
         </CardHeader>
 
         <CardContent>
+          {session.kind === "no_shop" && (
+            <div className="mb-5 rounded-xl bg-muted px-4 py-3 text-base">
+              <p>
+                {t.onboarding.signedInAs}:{" "}
+                <strong className="break-all">{session.email}</strong>
+              </p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {t.onboarding.noShopYet}
+              </p>
+              <Button
+                type="button"
+                variant="outline"
+                className="mt-3 h-11 w-full rounded-xl text-base"
+                onClick={() =>
+                  void (async () => {
+                    await signOut();
+                    await router.invalidate();
+                    await router.navigate({ to: "/login" });
+                  })()
+                }
+              >
+                {t.onboarding.switchAccount}
+              </Button>
+            </div>
+          )}
           {serverError && (
             <Alert variant="destructive" className="mb-4">
               <AlertDescription>{serverError}</AlertDescription>

@@ -67,21 +67,15 @@ export function AuthShell({
 
   return (
     <div className="flex min-h-dvh flex-col bg-background lg:flex-row">
-      <aside className="relative isolate overflow-hidden bg-background lg:flex lg:w-[48%] lg:flex-col lg:justify-between">
-        {/* Grower photo, fading into the cream canvas on the text side */}
-        <img
-          src="/hero-farmer.webp"
-          alt=""
-          className="absolute inset-x-0 bottom-0 -z-10 h-[46%] w-full object-cover object-[center_85%] lg:object-[center_40%] [mask-image:linear-gradient(to_bottom,transparent,#000_30%)] lg:h-[52%]"
-        />
-        <div className="flex min-h-[32rem] flex-col px-6 pb-14 pt-7 lg:min-h-dvh lg:justify-between lg:px-14 lg:py-12">
+      <aside className="relative flex flex-col bg-background lg:min-h-dvh lg:w-[48%]">
+        <div className="px-6 pt-7 lg:px-14 lg:pt-12">
           <img src="/logo.png" alt="FlowerMarket.lk" className="h-12 w-auto self-start lg:h-16" />
 
-          <div className="mt-5 max-w-[22rem] sm:max-w-xl lg:mt-0 lg:max-w-lg">
+          <div className="mt-6 max-w-[22rem] sm:max-w-xl lg:mt-10 lg:max-w-lg">
             <p className="text-lg font-bold leading-snug text-brand sm:text-xl lg:text-2xl">
               {t.auth.heroKicker}
             </p>
-            <h1 className="mt-2 text-[1.6rem] font-black leading-[1.35] text-[#0f3d22] sm:text-4xl sm:leading-[1.3] lg:text-[2.75rem] lg:leading-[1.3]">
+            <h1 className="mt-2 text-[1.6rem] font-black leading-[1.35] text-[#0f3d22] sm:text-4xl sm:leading-[1.3] lg:text-[2.5rem] lg:leading-[1.3]">
               {t.auth.heroTitle}
             </h1>
             <p className="mt-3 hidden max-w-sm text-lg font-medium leading-8 text-foreground sm:block">
@@ -89,19 +83,28 @@ export function AuthShell({
             </p>
           </div>
 
-          <ul className="mt-6 hidden flex-col gap-3 lg:flex">
+          <ul className="mt-5 hidden flex-wrap gap-2 lg:flex">
             {perks.map(({ icon: Icon, label }) => (
               <li
                 key={label}
-                className="flex w-fit items-center gap-3 rounded-full bg-card/90 py-2 pl-2 pr-5 text-base font-semibold text-foreground shadow-sm backdrop-blur-sm"
+                className="flex items-center gap-2 rounded-full bg-card py-1.5 pl-1.5 pr-4 text-sm font-semibold text-foreground shadow-sm ring-1 ring-border/60"
               >
-                <span className="grid size-9 place-items-center rounded-full bg-brand text-brand-foreground">
-                  <Icon className="size-5" />
+                <span className="grid size-7 place-items-center rounded-full bg-brand text-brand-foreground">
+                  <Icon className="size-4" />
                 </span>
                 {label}
               </li>
             ))}
           </ul>
+        </div>
+
+        {/* Photo gets its own band below the copy so the grower's face is never covered */}
+        <div className="relative mt-4 min-h-[17rem] flex-1 lg:min-h-[24rem]">
+          <img
+            src="/hero-farmer.webp"
+            alt=""
+            className="absolute inset-0 size-full object-cover object-[center_25%] [mask-image:linear-gradient(to_bottom,transparent,#000_22%)]"
+          />
         </div>
       </aside>
 
