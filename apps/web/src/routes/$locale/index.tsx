@@ -52,7 +52,7 @@ export const Route = createFileRoute("/$locale/")({
         ...socialMeta({
           title,
           description,
-          url: absoluteUrl(`/${locale}/`),
+          url: absoluteUrl(`/${locale}`),
           locale,
         }),
       ],

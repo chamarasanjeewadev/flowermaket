@@ -47,6 +47,18 @@ export function socialMeta(input: {
     { property: "og:description", content: input.description },
     { property: "og:url", content: input.url },
     { property: "og:image", content: image },
+    { property: "og:image:secure_url", content: image },
+    // Declaring size/type lets Facebook render the card on the first scrape
+    // instead of waiting to download the image. Only the default asset has
+    // known dimensions.
+    ...(input.image === undefined
+      ? [
+          { property: "og:image:type", content: "image/png" },
+          { property: "og:image:width", content: "1200" },
+          { property: "og:image:height", content: "630" },
+        ]
+      : []),
+    { property: "og:image:alt", content: input.title },
     { name: "twitter:card", content: "summary_large_image" },
     { name: "twitter:title", content: input.title },
     { name: "twitter:description", content: input.description },
